@@ -126,6 +126,31 @@ if [ "$virtprovider" == "vbox" ]; then
 	VBoxManage storageattach $vmname --storagectl SATA --type hdd --port 0 --device 0 --medium "$vmdir"/$vmname.vdi
 	# Start VM
 	VBoxManage startvm $vmname
+	sleep 5
+	# Do not exit on errors (use of grep)
+	set +e
+	# Expressed in minutes
+	i=${TIMEOUT:-30}
+	# Because sleep step below is 15s
+	i=$((i*4))
+	while true; do
+		if [ $(VBoxManage guestproperty enumerate $vmname | wc -l) -eq 1 ]; then
+			echo "VM $vmname was killed or is not running any more"
+			exit 1
+		fi
+		netinfos=$(VBoxManage guestproperty enumerate $vmname | grep '/VirtualBox/GuestInfo/Net/0/V4/IP')
+		if [ -n "$netinfos" ]; then
+			break
+		fi
+		i=$((i-1))
+		if [ $i -eq 0 ]; then
+			echo "VM $vmname took too long to start"
+			exit 1
+		fi
+		echo -en "\rWaiting a bit longer ... ($i)"
+		sleep 15
+	done
+	echo -e "\nAll done, VM $vmname IP is $(echo $netinfos | awk '{print $4}' | sed -e 's/,.*$//')"
 elif [ "$virtprovider" == "kvm" ]; then
 	# Check if VM already exists
 	virsh list --all --name | egrep -q "^${vmname}$"
