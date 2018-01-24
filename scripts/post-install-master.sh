@@ -20,6 +20,14 @@ if [ -d /etc/update-motd.d ]; then
 	rm -f /etc/update-motd.d/10-help-text
 fi
 
+# IPv6 disabling can be done in preseed but is less "generic"
+# d-i debian-installer/add-kernel-opts string ipv6.disable=1 ...
+# Disable IPv6 if not activated
+if [ ! -d /proc/sys/net/ipv6 ]; then
+	sed -i -e 's/GRUB_CMDLINE_LINUX="/GRUB_CMDLINE_LINUX="ipv6.disable=1 /' /etc/default/grub
+	update-grub
+fi
+
 # Enable extra modules
 echo -e 'bonding\n8021q' >>/etc/modules
 

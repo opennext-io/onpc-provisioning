@@ -1,0 +1,148 @@
+---
+- hosts: master
+  become: yes
+
+  vars_files:
+    - ../vars/master-configure_vars.yml
+
+  tasks:
+
+    - name: Describing Hosts
+      debug: msg="Computer {{ ansible_hostname }} is running {{ ansible_os_family }}/{{ ansible_distribution }}"
+
+    - name: Listing Network Interfaces
+      debug: msg="Found Interfaces List {{ ansible_interfaces }} Primary {{ ansible_default_ipv4.interface }}"
+
+    - name: Selecting secondary IPv4 interface
+      set_fact:
+        itfs: "{% set itfs = itfs|default([]) + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ itfs | list }}"
+      when: (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'ether' and
+             item != ansible_default_ipv4.interface)
+      with_items: "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"
+
+    - name: Remembering secondary IPv4 interface
+      set_fact:
+        itf: "{{ itfs[0].device }}"
+      when: (itfs|default([])|length>0 and
+             itfs[0].active == false)
+
+    - name: Configuring {{ itfs[0].device }}
+      template:
+        src: ../templates/itf_cfg.j2
+        dest: /etc/network/interfaces.d/{{ itf }}
+        owner: root
+        group: root
+        mode: 0644
+      when: itf is defined
+
+    - name: Starting interface {{ itfs[0].device }}
+      command: ifup {{ itf }}
+      when: itf is defined
+
+    - name: Configuring IP forwarding
+      lineinfile:
+        path: /etc/sysctl.conf 
+        regexp: '^.*net.ipv4.ip_forward=.*$'
+        line: 'net.ipv4.ip_forward=1'
+        state: present
+        owner: root
+        group: root
+        mode: 0644
+      when: itf is defined
+
+    - name: Reloading System Defaults
+      command: sysctl -p
+      when: itf is defined
+
+    - name: Configuring SSH defaults
+      template:
+        src: ../templates/ssh_cfg.j2
+        dest: /home/vagrant/.ssh/config
+        owner: vagrant
+        group: vagrant
+        mode: 0644
+      when: itf is defined
+
+    - name: Configuring System Wide Proxy
+      lineinfile:
+        path: /etc/environment
+        backrefs: yes
+        regexp: '^no_proxy="(.*)"$'
+        line: 'no_proxy="\1,{{ ip_prefix | default("20.20.20")}}.0/{{ ip_netmask_bits | default(24) }}"'
+        state: present
+        owner: root
+        group: root
+        mode: 0644
+      when: itf is defined
+
+    - name: Configuring NTP
+      lineinfile:
+        path: /etc/ntp.conf
+        insertafter: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { regexp: '^#broadcast ', line: 'broadcast {{ ip_prefix | default("20.20.20")}}.{{ ip_netmask_broadcast | default(255) }}' }
+        - { regexp: '^# \/etc\/ntp.conf,', line: 'interface listen {{ ip_prefix | default("20.20.20")}}.{{ ip_suffix | default(1) }}' }
+        - { regexp: '^# \/etc\/ntp.conf,', line: 'interface listen 127.0.0.1' }
+        - { regexp: '^# \/etc\/ntp.conf,', line: 'interface ignore wildcard' }
+      when: itf is defined
+
+    - name: Restarting NTP Service
+      service: name=ntp enabled=yes state=restarted
+      when: itf is defined
+
+    - name: Cleaning Up Hosts File
+      lineinfile:
+        path: /etc/hosts
+        regexp: "{{ item }}"
+        state: absent
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - '^127.0.1.1\s.*'
+        - '^$'
+        - '^#.*IPv6.*'
+        - '.*::.*'
+      notify: Creating Hosts File Template
+      when: itf is defined
+
+    - name: Copying Network Hosts Script
+      copy:
+        src: ../files/network-hosts.sh
+        dest: /usr/local/bin/network-hosts.sh
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Copying Network Hosts Service Config File
+      copy:
+        src: ../files/network-hosts.service
+        dest: /lib/systemd/system/network-hosts.service
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restarting Network Hosts Service
+
+  handlers:
+
+    - name: Creating Hosts File Template
+      copy:
+        remote_src: yes
+        src: /etc/hosts
+        dest: /etc/hosts.tmpl
+        owner: root
+        group: root
+        mode: 0644
+
+    - name: Activating Network Hosts Service
+      command: systemctl enable network-hosts.service
+      listen: "Restarting Network Hosts Service"
+
+    - name: Running Network Hosts Service
+      command: /usr/local/bin/network-hosts.sh
+      listen: "Restarting Network Hosts Service"

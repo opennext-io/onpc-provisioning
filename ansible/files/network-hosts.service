@@ -1,0 +1,9 @@
+[Unit]
+After=sshd.service
+Description=Configure secondary network interface
+
+[Service]
+ExecStart=/usr/local/bin/network-hosts.sh
+
+[Install]
+WantedBy=default.target

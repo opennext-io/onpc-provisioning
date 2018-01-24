@@ -152,10 +152,10 @@ if [ "$virtprovider" == "vbox" ]; then
 	done
 	ip=$(echo $netinfos | awk '{print $4}' | sed -e 's/,.*$//')
 	echo -e "\n\nAll done, VM $vmname IP is $ip"
-	echo -e "[master]\n$ip\n" > $CMDDIR/ansible/inventory/master
+	echo -e "[master]\n$ip\n\n[all:vars]\nansible_user=vagrant\n" > $CMDDIR/ansible/inventory/master
 	type ansible >/dev/null 2>&1
 	if [ $? -eq 0 ]; then
-		echo -e "\n\nTry running the following: ansible -i ansible/inventory/master -m ping all -u vagrant\n"
+		echo -e "\n\nTry running the following: ansible all -i ansible/inventory/master -m ping\n"
 	fi
 elif [ "$virtprovider" == "kvm" ]; then
 	# Check if VM already exists

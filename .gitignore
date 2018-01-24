@@ -2,3 +2,4 @@
 .*.swap
 *.bak
 *.iso
+*.retry
