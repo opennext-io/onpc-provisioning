@@ -1,0 +1,8 @@
+# Secondary Network Interface retrieval task
+---
+- name: Selecting secondary IPv4 interface
+  set_fact:
+    itfs: "{% set itfs = itfs|default([]) + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ itfs | list }}"
+  when: (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'ether' and
+         item != ansible_default_ipv4.interface)
+  with_items: "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"

@@ -3,7 +3,7 @@
   become: yes
 
   vars_files:
-    - ../vars/master-configure_vars.yml
+    - ../vars/master-configure-system_vars.yml
 
   tasks:
 
@@ -13,18 +13,11 @@
     - name: Listing Network Interfaces
       debug: msg="Found Interfaces List {{ ansible_interfaces }} Primary {{ ansible_default_ipv4.interface }}"
 
-    - name: Selecting secondary IPv4 interface
-      set_fact:
-        itfs: "{% set itfs = itfs|default([]) + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ itfs | list }}"
-      when: (hostvars[inventory_hostname]['ansible_' + item]['type'] == 'ether' and
-             item != ansible_default_ipv4.interface)
-      with_items: "{{ hostvars[inventory_hostname]['ansible_interfaces'] }}"
+    - import_tasks: ../tasks/secondary_network_interface.yml
 
-    - name: Remembering secondary IPv4 interface
-      set_fact:
-        itf: "{{ itfs[0].device }}"
-      when: (itfs|default([])|length>0 and
-             itfs[0].active == false)
+    - import_tasks: ../tasks/select_secondary_network_interface.yml
+      vars:
+       itf_state: false
 
     - name: Configuring {{ itfs[0].device }}
       template:
@@ -41,7 +34,7 @@
 
     - name: Configuring IP forwarding
       lineinfile:
-        path: /etc/sysctl.conf 
+        path: /etc/sysctl.conf
         regexp: '^.*net.ipv4.ip_forward=.*$'
         line: 'net.ipv4.ip_forward=1'
         state: present

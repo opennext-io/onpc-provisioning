@@ -19,6 +19,6 @@ and you'll be able to launch the master configuration via:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure.yml
 
 You can customize the IP settings of the secondary network interface using:
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure.yml --extra-vars "ip_prefix=10.11.12 ip_suffix=123 ip_netmask_bits=20"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-system.yml --extra-vars "ip_prefix=10.11.12 ip_suffix=123 ip_netmask_bits=20"
 
 Look into ansible/vars/master-configure_vars.yml to see what can be configured

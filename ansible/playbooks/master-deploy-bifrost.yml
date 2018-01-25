@@ -1,0 +1,56 @@
+---
+- hosts: master
+  become: no
+
+  vars:
+    home: /home/vagrant
+    git: "{{ home }}/bifrost"
+    venv: "{{ home }}/.venv/bifrost"
+
+  tasks:
+
+    - name: Retrieving Bifrost GitHub Repository
+      git:
+        repo: https://github.com/obourdon/bifrost
+        dest: "{{ git }}"
+
+    - name: Creating Bifrost Virtualenv Directory
+      file:
+        path: "{{ venv }}"
+        owner: vagrant
+        group: vagrant
+        mode: 0755
+        state: directory
+
+    - name: Setting Up Bifrost Environment
+      command: "./scripts/env-setup.sh"
+      args:
+        chdir: "{{ git }}"
+        creates: "{{ venv }}/bin/activate"
+      environment:
+        LC_ALL: C
+        VENV: "{{ venv }}"
+        https_proxy: ""
+      register: setup_result
+
+    - name: Getting Setup Result
+      set_fact:
+        todo: "{{ setup_result.stdout.split('\n')[-3:-1] | join(' && ') | replace('source','.') | replace('env-vars','../env-vars') }}"
+
+    - import_tasks: ../tasks/secondary_network_interface.yml
+
+    - import_tasks: ../tasks/select_secondary_network_interface.yml
+      vars:
+       itf_state: true
+
+    - debug: msg="ssh vagrant@{{ ansible_default_ipv4.address }} -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }}'"
+
+    - name: Running Bifrost Playbook
+      shell: ". ../env-vars && . {{ venv }}/bin/activate && ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }}"
+      args:
+        chdir: "{{ git }}/playbooks"
+      environment:
+        LC_ALL: C
+        VENV: "{{ venv }}"
+        https_proxy: ""
+      when: todo is undefined
