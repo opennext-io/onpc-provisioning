@@ -26,6 +26,7 @@ preseed=${PRESEED_URL:-http://www.olivierbourdon.com/preseed_master.cfg}
 noipv6=${NOIPV6:+"1"}
 httpproxy=${PROXY:-""}
 passwd=${PASSWD:-"vagrant"}
+domainname=${DOMAIN:-"vagrantup.com"}
 
 # Check virtuzalization mode
 case $virtprovider in
@@ -82,6 +83,12 @@ if [ ! -r $iso ]; then
 	fi
 	if [ -n "$passwd" ]; then
 		opts="${opts}-w $passwd "
+	fi
+	if [ -n "$vmname" ]; then
+		opts="${opts}-n $vmname "
+	fi
+	if [ -n "$domainname" ]; then
+		opts="${opts}-d $domainname "
 	fi
 	if [ -n "$opts" ]; then
 		opts=$(echo "$opts" | sed -e 's/  *$//')

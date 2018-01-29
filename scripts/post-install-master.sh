@@ -10,12 +10,14 @@ if [ -n "$proxy" ]; then
 	echo -e "http_proxy=http://${proxy}/\nftp_proxy=ftp://${proxy}/\nhttps_proxy=https://${proxy}/\nno_proxy=\"localhost,127.0.0.1\"" >>/etc/environment
 fi
 
+hostname=$(hostname)
+domainname=$(dnsdomainname)
 # Put banner in /etc/issue* files
 for f in /etc/issue*; do
-	sed -i '/^Ubuntu/i master host/machine\n' $f
+	sed -i "/^Ubuntu/i $hostname host/machine\n" $f
 done
 if [ -d /etc/update-motd.d ]; then
-	echo -e '#!/bin/sh\nprintf "\\nmaster host/machine\\n\\n"' >/etc/update-motd.d/20-machine-name
+	echo -e "#!/bin/sh\nprintf \"\\n$hostname host/machine\\n\\n\"" >/etc/update-motd.d/20-machine-name
 	chmod 755 /etc/update-motd.d/20-machine-name
 	rm -f /etc/update-motd.d/10-help-text
 fi
@@ -32,14 +34,14 @@ fi
 echo -e 'bonding\n8021q' >>/etc/modules
 
 # Set hostname
-echo "master" >/etc/hostname
+echo "${hostname}.${domainname}" >/etc/hostname
 
 # Vagrant user priviledges
 echo -e 'vagrant\tALL=(ALL) NOPASSWD:ALL' >/etc/sudoers.d/vagrant_user
 
 # Populate vagrant user home with OSA git repositories and ssh keys
 su - vagrant -c 'touch .sudo_as_admin_successful && mkdir -p .cache && chmod 700 .cache && touch .cache/motd.legal-displayed && \
- 	mkdir -p .ssh && chmod 700 .ssh && ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -N "" && sed -i -e "s/@ubuntu/@master/" .ssh/id_rsa.pub && cp .ssh/id_rsa.pub .ssh/authorized_keys && \
+ 	mkdir -p .ssh && chmod 700 .ssh && ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -N "" && sed -i -e "s/@ubuntu/@${hostname}.${domainname}/" .ssh/id_rsa.pub && cp .ssh/id_rsa.pub .ssh/authorized_keys && \
  	wget -q -O - http://www.olivierbourdon.com/ssh-keys >>.ssh/authorized_keys && \
 	wget -q -O - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub >>.ssh/authorized_keys'
 

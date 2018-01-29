@@ -17,19 +17,23 @@ cleanup() {
 }
 
 usage() {
-	echo -e "\nUsage: $(basename $0) [-i] [-p proxy-url] [-s preseed-url] [-w admin-user-passwd] <path>/<bootable-ISO>\n"
+	echo -e "\nUsage: $(basename $0) [-i] [-d domainname] [-n nodename] [-p proxy-url] [-s preseed-url] [-w admin-user-passwd] <path>/<bootable-ISO>\n"
 	exit $1
 }
 
 # A POSIX variable
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
-while getopts "h?ip:s:w:" opt; do
+while getopts "d:h?in:p:s:w:" opt; do
     case "$opt" in
+    d)  domainname=$OPTARG
+        ;;
     h|\?)
         usage 0
         ;;
     i)  noipv6=1
+        ;;
+    n)  nodename=$OPTARG
         ;;
     p)  httpproxy=$OPTARG
         ;;
@@ -51,6 +55,8 @@ preseed=${preseed:-http://www.olivierbourdon.com/preseed_master.cfg}
 noipv6=${noipv6:+" ipv6.disable=1"}
 httpproxy=${httpproxy:-""}
 passwd=${passwd:-"vagrant"}
+domainname=${domainname:-"vagrantup.com"}
+nodename=${nodename:-"master"}
 
 # Check command line arguments
 if [ $# -ne 1 ]; then
@@ -103,11 +109,18 @@ dd if=$tmpiso bs=512 count=1 of=$tmpdir/isohdpfx.bin >/dev/null 2>&1
 echo "Modifying ..."
 # Boot menu timeout changed to 3 seconds
 sed -i -e 's?timeout 0?timeout 30?' $tmpdir/isolinux.cfg
-# Menu item update
+# Menu item updates
 if [ -n "$httpproxy" ]; then
 	proxy=" mirror/http/proxy=${httpproxy}"
 fi
-addonsflags="preseed/url=${preseed} netcfg/choose_interface=auto locale=en_US keyboard-configuration/layoutcode=us priority=critical${noipv6}${proxy}${pass}"
+extras=""
+if [ -n "$nodename" ]; then
+	extras="$extras netcfg/get_hostname=${nodename}"
+fi
+if [ -n "$domainname" ]; then
+	extras="$extras netcfg/get_domain=${domainname}"
+fi
+addonsflags="preseed/url=${preseed} netcfg/choose_interface=auto locale=en_US keyboard-configuration/layoutcode=us priority=critical${noipv6}${proxy}${pass}${extras}"
 sed -i -e 's?default install?default net?' -e 's?label install?label net?' \
 	-e 's?menu label ^Install?menu label ^Net Install (fully automated)?' \
 	-e "s?append vga=788 initrd=initrd.gz --- quiet?append vga=788 initrd=initrd.gz $addonsflags --- quiet?" \
