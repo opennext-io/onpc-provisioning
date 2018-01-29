@@ -25,6 +25,7 @@ vmdisk=${MASTER_VM_DISK:-10240}
 preseed=${PRESEED_URL:-http://www.olivierbourdon.com/preseed_master.cfg}
 noipv6=${NOIPV6:+"1"}
 httpproxy=${PROXY:-""}
+username=${USER:-"vagrant"}
 passwd=${PASSWD:-"vagrant"}
 domainname=${DOMAIN:-"vagrantup.com"}
 
@@ -89,6 +90,9 @@ if [ ! -r $iso ]; then
 	fi
 	if [ -n "$domainname" ]; then
 		opts="${opts}-d $domainname "
+	fi
+	if [ -n "$username" ]; then
+		opts="${opts}-u $username "
 	fi
 	if [ -n "$opts" ]; then
 		opts=$(echo "$opts" | sed -e 's/  *$//')
@@ -155,7 +159,7 @@ if [ "$virtprovider" == "vbox" ]; then
 	done
 	ip=$(echo $netinfos | awk '{print $4}' | sed -e 's/,.*$//')
 	echo -e "\n\nAll done, VM $vmname IP is $ip"
-	echo -e "[master]\n$ip\n\n[all:vars]\nansible_user=vagrant\n" > $CMDDIR/ansible/inventory/master
+	echo -e "[master]\n$ip\n\n[all:vars]\nansible_user=$username\n" > $CMDDIR/ansible/inventory/master
 	if type ansible >/dev/null 2>&1; then
 		echo -e "\n\nTry running the following: ansible all -i ansible/inventory/master -m ping\n"
 	fi

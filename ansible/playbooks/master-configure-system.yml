@@ -50,9 +50,9 @@
     - name: Configuring SSH defaults
       template:
         src: ../templates/ssh_cfg.j2
-        dest: /home/vagrant/.ssh/config
-        owner: vagrant
-        group: vagrant
+        dest: "/home/{{ systemuser }}/.ssh/config"
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
         mode: 0644
       when: itf is defined
 

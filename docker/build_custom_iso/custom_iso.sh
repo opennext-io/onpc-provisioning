@@ -17,14 +17,14 @@ cleanup() {
 }
 
 usage() {
-	echo -e "\nUsage: $(basename $0) [-i] [-d domainname] [-n nodename] [-p proxy-url] [-s preseed-url] [-w admin-user-passwd] <path>/<bootable-ISO>\n"
+	echo -e "\nUsage: $(basename $0) [-i] [-d domainname] [-n nodename] [-p proxy-url] [-s preseed-url] [-u user] [-w admin-user-passwd] <path>/<bootable-ISO>\n"
 	exit $1
 }
 
 # A POSIX variable
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
-while getopts "d:h?in:p:s:w:" opt; do
+while getopts "d:h?in:p:s:u:w:" opt; do
     case "$opt" in
     d)  domainname=$OPTARG
         ;;
@@ -38,6 +38,8 @@ while getopts "d:h?in:p:s:w:" opt; do
     p)  httpproxy=$OPTARG
         ;;
     s)  preseed=$OPTARG
+        ;;
+    u)  username=$OPTARG
         ;;
     w)  passwd=$OPTARG
         ;;
@@ -119,6 +121,9 @@ if [ -n "$nodename" ]; then
 fi
 if [ -n "$domainname" ]; then
 	extras="$extras netcfg/get_domain=${domainname}"
+fi
+if [ -n "$username" ]; then
+	extras="$extras passwd/username=${username} passwd/user-fullname=${username}"
 fi
 addonsflags="preseed/url=${preseed} netcfg/choose_interface=auto locale=en_US keyboard-configuration/layoutcode=us priority=critical${noipv6}${proxy}${pass}${extras}"
 sed -i -e 's?default install?default net?' -e 's?label install?label net?' \

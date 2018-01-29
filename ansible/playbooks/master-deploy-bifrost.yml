@@ -2,10 +2,9 @@
 - hosts: master
   become: no
 
-  vars:
-    home: /home/vagrant
-    git: "{{ home }}/bifrost"
-    venv: "{{ home }}/.venv/bifrost"
+  vars_files:
+    - ../vars/master-configure-system_vars.yml
+    - ../vars/master-deploy-bifrost_vars.yml
 
   tasks:
 
@@ -17,8 +16,8 @@
     - name: Creating Bifrost Virtualenv Directory
       file:
         path: "{{ venv }}"
-        owner: vagrant
-        group: vagrant
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
         mode: 0755
         state: directory
 
@@ -43,7 +42,7 @@
       vars:
        itf_state: true
 
-    - debug: msg="ssh vagrant@{{ ansible_default_ipv4.address }} -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }}'"
+    - debug: msg="ssh {{ systemuser }}@{{ ansible_default_ipv4.address }} -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }}'"
 
     - name: Running Bifrost Playbook
       shell: ". ../env-vars && . {{ venv }}/bin/activate && ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }}"

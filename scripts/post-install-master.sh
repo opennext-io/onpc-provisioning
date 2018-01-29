@@ -4,6 +4,9 @@
 set -ex
 exec > >(tee -i /var/log/"$(basename "$0" .sh)"_"$(date '+%Y-%m-%d_%H-%M-%S')".log) 2>&1
 
+# Store boot arguments in environment
+eval $(cat /proc/cmdline | tr ' ' '\n' | grep '=' | awk -F= '{gsub("/","_",$1);gsub("-","_",$1);printf "%s=%s\n",$1,$2}')
+
 # Retrieve proxy information from installation
 proxy=$(grep Acquire::http::Proxy /etc/apt/apt.conf | sed -e 's/";$//' | awk -F/ '{print $3}')
 if [ -n "$proxy" ]; then
@@ -36,11 +39,12 @@ echo -e 'bonding\n8021q' >>/etc/modules
 # Set hostname
 echo "${hostname}.${domainname}" >/etc/hostname
 
-# Vagrant user priviledges
-echo -e 'vagrant\tALL=(ALL) NOPASSWD:ALL' >/etc/sudoers.d/vagrant_user
+# System user priviledges
+username=${passwd_username:-vagrant}
+echo -e "${username}\tALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${username}_user
 
-# Populate vagrant user home with OSA git repositories and ssh keys
-su - vagrant -c 'touch .sudo_as_admin_successful && mkdir -p .cache && chmod 700 .cache && touch .cache/motd.legal-displayed && \
+# Populate system user home with OSA git repositories and ssh keys
+su - ${username} -c 'touch .sudo_as_admin_successful && mkdir -p .cache && chmod 700 .cache && touch .cache/motd.legal-displayed && \
  	mkdir -p .ssh && chmod 700 .ssh && ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -N "" && sed -i -e "s/@ubuntu/@${hostname}.${domainname}/" .ssh/id_rsa.pub && cp .ssh/id_rsa.pub .ssh/authorized_keys && \
  	wget -q -O - http://www.olivierbourdon.com/ssh-keys >>.ssh/authorized_keys && \
 	wget -q -O - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub >>.ssh/authorized_keys'

@@ -1,0 +1,4 @@
+---
+home: "/home/{{ systemuser }}"
+git: "{{ home }}/bifrost"
+venv: "{{ home }}/.venv/bifrost"

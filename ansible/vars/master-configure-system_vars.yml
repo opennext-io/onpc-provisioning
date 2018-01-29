@@ -4,3 +4,4 @@ ip_suffix: 1
 ip_netmask: 255.255.255.0
 ip_netmask_bits: 24
 ip_netmask_broadcast: 255
+systemuser: vagrant
