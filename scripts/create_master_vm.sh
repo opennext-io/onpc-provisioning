@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Do not exit on errors
-set +e
+# Exit on errors
+set -e
 
 # This script can run only on MacOSX and Linux
 # The readlink command needs to support -f option
@@ -50,7 +50,7 @@ getcmd() {
 		fi
 		shift
 	done
-	echo -e "\nERROR $(basename $0): please install any of missing command(s): $cmds\n"
+	echo -e "\nERROR $(basename $0): please install any of missing command(s): $cmds\n" >/dev/tty
 	return 1
 }
 
@@ -60,16 +60,14 @@ if [ ! -r $iso ]; then
 	echo "Using docker to build custom ISO ..."
 	# Fetch some required commands
 	dockercmd=$(getcmd docker)
-	if [ $? -ne 0 ]; then
-		echo -e "$dockercmd"
-		exit 1
-	fi
 	if [ ! -d $CMDDIR/docker/build_custom_iso ]; then
 		echo -e "\nERROR $(basename $0): missing dir $CMDDIR/docker/build_custom_iso\n"
 		exit 1
 	fi
 	tag=custom-iso:latest
-	(cd $CMDDIR/docker/build_custom_iso ; docker build -t $tag .)
+	if ! docker images $tag | grep -q custom; then
+		(cd $CMDDIR/docker/build_custom_iso ; docker build -t $tag .)
+	fi
 	dir=/tmp
 	mkdir -p $(dirname $iso)
 	opts=""
@@ -89,24 +87,25 @@ if [ ! -r $iso ]; then
 		opts=$(echo "$opts" | sed -e 's/  *$//')
 		opts="-e opts=\"$opts\""
 	fi
-	eval docker run -t $opts -e "iso=$dir/custom.iso" -v $(dirname $iso):$dir $tag
+	if ! eval docker run -t $opts -e "iso=$dir/custom.iso" -v $(dirname $iso):$dir $tag; then
+		echo -e "\nERROR $(basename $0): can not built iso\n"
+		exit 1
+	fi
 fi
 
 # Retrieve 1st active network interface
 activenetitf=$(ifconfig | awk '/UP,/{itf=$1}/inet /{print itf,$2}' | egrep -v '^lo|^vbox|^utun' | sed -e 's/: .*//' | head -1)
 
 if [ "$virtprovider" == "vbox" ]; then
+	# Fetch some required commands
+	vboxcmd=$(getcmd VBoxManage)
 	# Check if VM already exists
-	VBoxManage list vms | egrep -q "^\"${vmname}\" "
-	if [ $? -eq 0 ]; then
+	if VBoxManage list vms | egrep -q "^\"${vmname}\" "; then
 		echo -e "\nERROR $(basename $0): VirtualBox VM with name [$vmname] already exists !!!\n"
 		exit 1
 	fi
 
 	netitf=$(VBoxManage list bridgedifs | grep $activenetitf | grep '^Name: ' | sed -e 's/Name: *//')
-
-	# Exit on errors
-	set -e
 
 	# Base of VM is Ubuntu 64bits
 	vmuuid=$(VBoxManage createvm --name $vmname --ostype Ubuntu_64 --register | egrep "^UUID: " | awk '{print $NF}')
@@ -127,19 +126,16 @@ if [ "$virtprovider" == "vbox" ]; then
 	# Start VM
 	VBoxManage startvm $vmname
 	sleep 5
-	# Do not exit on errors (use of grep)
-	set +e
 	# Expressed in minutes
 	i=${TIMEOUT:-30}
 	# Because sleep step below is 15s
 	i=$((i*4))
 	while true; do
-		if [ $(VBoxManage guestproperty enumerate $vmname | wc -l) -eq 1 ]; then
-			echo "VM $vmname was killed or is not running any more"
+		if [ $(VBoxManage guestproperty enumerate $vmname 2>/dev/null | wc -l) -le 1 ]; then
+			echo "VM $vmname was killed, deleted or is not running any more"
 			exit 1
 		fi
-		netinfos=$(VBoxManage guestproperty enumerate $vmname | grep '/VirtualBox/GuestInfo/Net/0/V4/IP')
-		if [ -n "$netinfos" ]; then
+		if netinfos=$(VBoxManage guestproperty enumerate $vmname | grep '/VirtualBox/GuestInfo/Net/0/V4/IP'); then
 			break
 		fi
 		i=$((i-1))
@@ -147,25 +143,24 @@ if [ "$virtprovider" == "vbox" ]; then
 			echo "VM $vmname took too long to start"
 			exit 1
 		fi
-		echo -en "\rWaiting a bit longer ... ($i)"
+		echo -en "\rWaiting a bit longer ... ($i) \t"
 		sleep 15
 	done
 	ip=$(echo $netinfos | awk '{print $4}' | sed -e 's/,.*$//')
 	echo -e "\n\nAll done, VM $vmname IP is $ip"
 	echo -e "[master]\n$ip\n\n[all:vars]\nansible_user=vagrant\n" > $CMDDIR/ansible/inventory/master
-	type ansible >/dev/null 2>&1
-	if [ $? -eq 0 ]; then
+	if type ansible >/dev/null 2>&1; then
 		echo -e "\n\nTry running the following: ansible all -i ansible/inventory/master -m ping\n"
 	fi
 elif [ "$virtprovider" == "kvm" ]; then
 	# Check if VM already exists
-	virsh list --all --name | egrep -q "^${vmname}$"
-	if [ $? -eq 0 ]; then
+	if virsh list --all --name 2>/dev/null | egrep -q "^${vmname}$"; then
 		echo -e "\nERROR $(basename $0): VirtualBox VM with name [$vmname] already exists !!!\n"
 		exit 1
 	fi
 
 	echo -e "\nNot implemented yet !!!\n"
 fi
+echo "All done"
 
 exit 0

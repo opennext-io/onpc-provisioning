@@ -5,7 +5,7 @@ set -ex
 exec > >(tee -i /var/log/"$(basename "$0" .sh)"_"$(date '+%Y-%m-%d_%H-%M-%S')".log) 2>&1
 
 # Retrieve proxy information from installation
-proxy=`grep Acquire::http::Proxy /etc/apt/apt.conf | sed -e 's/";$//' | awk -F/ '{print $3}'`
+proxy=$(grep Acquire::http::Proxy /etc/apt/apt.conf | sed -e 's/";$//' | awk -F/ '{print $3}')
 if [ -n "$proxy" ]; then
 	echo -e "http_proxy=http://${proxy}/\nftp_proxy=ftp://${proxy}/\nhttps_proxy=https://${proxy}/\nno_proxy=\"localhost,127.0.0.1\"" >>/etc/environment
 fi
@@ -43,13 +43,10 @@ su - vagrant -c 'touch .sudo_as_admin_successful && mkdir -p .cache && chmod 700
  	wget -q -O - http://www.olivierbourdon.com/ssh-keys >>.ssh/authorized_keys && \
 	wget -q -O - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub >>.ssh/authorized_keys'
 
-# Do not exit on errors (calls to grep)
-set +e
-
 # Function to install VirtualBox Guest Addditions according to proper version
 vbox() {
 	echo "Handling VirtualBox platform"
-	vboxversion=`dmidecode | grep vboxVer | awk '{print $NF}' | sed -e 's/.*_//'`
+	vboxversion=$(dmidecode | grep vboxVer | awk '{print $NF}' | sed -e 's/.*_//')
 	if [ -n "$vboxversion" ]; then
 		echo "Found version $vboxversion"
 		wget -q -c http://download.virtualbox.org/virtualbox/$vboxversion/VBoxGuestAdditions_${vboxversion}.iso -O /root/VBoxGuestAdditions.iso
@@ -99,7 +96,7 @@ _EOF
 	echo "Done handling VirtualBox platform"
 }
 
-hosttype=`type dmidecode >/dev/null 2>&1 && dmidecode -s system-product-name`
+hosttype=$(type dmidecode >/dev/null 2>&1 && dmidecode -s system-product-name)
 # dmidecode is available
 if [ $? -eq 0 ]; then
 	case $hosttype in

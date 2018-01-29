@@ -1,18 +1,24 @@
 #!/bin/bash
 
+# Exit on errors
+set -e
+
 tmpiso=/tmp/mini.iso
 tmpdir=/tmp/mini
 
 # Cleanup function called on any exit condition
 trap cleanup EXIT
 cleanup() {
+	ret=$?
 	# Cleanup
 	echo "Cleaning up ..."
 	rm -rf $tmpdir $tmpiso
+	exit $ret
 }
 
 usage() {
 	echo -e "\nUsage: $(basename $0) [-i] [-p proxy-url] [-s preseed-url] [-w admin-user-passwd] <path>/<bootable-ISO>\n"
+	exit $1
 }
 
 # A POSIX variable
@@ -21,8 +27,7 @@ OPTIND=1         # Reset in case getopts has been used previously in the shell.
 while getopts "h?ip:s:w:" opt; do
     case "$opt" in
     h|\?)
-        usage
-        exit 0
+        usage 0
         ;;
     i)  noipv6=1
         ;;
@@ -33,8 +38,7 @@ while getopts "h?ip:s:w:" opt; do
     w)  passwd=$OPTARG
         ;;
     *)	echo "Unknown option $opt"
-	usage
-	exit 1
+	usage 1
 	;;
     esac
 done
@@ -50,11 +54,10 @@ passwd=${passwd:-"vagrant"}
 
 # Check command line arguments
 if [ $# -ne 1 ]; then
-	usage
+	usage 1
 	exit 1
 fi
-echo $1 | egrep -q '\.iso$'
-if [ $? -ne 0 ]; then
+if ! echo $1 | egrep -q '\.iso$'; then
 	echo -e "\nUsage: $(basename $0) <path>/<bootable-ISO> must end with .iso\n"
 	exit 1
 fi
@@ -65,6 +68,7 @@ if [ -r $1 ]; then
 	exit 0
 fi
 # Complete path of target ISO
+touch $1
 vmiso=$(readlink -f $1)
 if [ -z "$vmiso" ]; then
 	touch $1
@@ -72,10 +76,7 @@ if [ -z "$vmiso" ]; then
 	rm -f $1
 fi
 
-# Exit on errors
-set -e
-
-echo -e "\nERROR $(basename $0): file $1 does not exists or is not readable !!!\n"
+echo -e "\nWARNING $(basename $0): file $1 does not exists or is not readable !!!\n"
 echo "Trying to rebuild it. Downloading ..."
 # Set default vagrant user password
 if [ -n "$passwd" ]; then

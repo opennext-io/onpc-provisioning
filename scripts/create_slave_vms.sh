@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Do not exit on errors
-set +e
+# Exit on errors
+set -e
 
 # This script can run only on MacOSX and Linux
 # The readlink command needs to support -f option
@@ -35,8 +35,7 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
-echo "$1" | egrep -q '^[1-9][0-9]*$'
-if [ $? -ne 0 ]; then
+if ! echo "$1" | egrep -q '^[1-9][0-9]*$'; then
 	echo -e "\nUsage: $(basename $0) #nb-vms-to-launch\n\n\tinvalid integer $1\n"
 	exit 1
 fi
@@ -49,14 +48,10 @@ if [ "$virtprovider" == "vbox" ]; then
 	for i in $(seq 1 $1); do
 		lvmname=${vmname}-$i
 		# Check if VM already exists
-		VBoxManage list vms | egrep -q "^\"${lvmname}\" "
-		if [ $? -eq 0 ]; then
+		if VBoxManage list vms | egrep -q "^\"${lvmname}\" "; then
 			echo -e "\nERROR $(basename $0): VirtualBox VM with name [$lvmname] already exists !!!\n"
 			exit 1
 		fi
-
-		# Exit on errors
-		set -e
 
 		# Base of VM is Ubuntu 64bits
 		vmuuid=$(VBoxManage createvm --name $lvmname --ostype Ubuntu_64 --register | egrep "^UUID: " | awk '{print $NF}')
@@ -73,8 +68,6 @@ if [ "$virtprovider" == "vbox" ]; then
 		VBoxManage storageattach $lvmname --storagectl SATA --type hdd --port 0 --device 0 --medium "$vmdir"/$lvmname.vdi
 		# Start VM
 		VBoxManage startvm $lvmname
-		# Do not exit on errors (use of grep)
-		set +e
 	done
 elif [ "$virtprovider" == "kvm" ]; then
 	echo -e "\nNot implemented yet !!!\n"
