@@ -30,3 +30,8 @@ At the very end of this Ansible deployment, you'll see a debug message which wil
 ssh user@192.168.0.131 -t 'cd /home/user/bifrost/playbooks && . /home/user/.venv/bifrost/bin/activate && . ../env-vars && https_proxy= ansible-playbook -i inventory/target install.yaml -e network_interface=enp0s8'
 
 this is because the Ansible deployment needs to run on the host where Bifrost will be configured and installed
+
+Once everything is deployed successfully, you can start 3 slave VMs using:
+./scripts/create_slave_vms.sh 3
+
+which will get provisioned with IPA image (Ironic Python Agent) and register automatically into ironic to wait for proper provisioning

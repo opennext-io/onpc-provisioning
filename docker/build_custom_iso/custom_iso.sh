@@ -89,7 +89,7 @@ echo "Trying to rebuild it. Downloading ..."
 # Set default vagrant user password
 if [ -n "$passwd" ]; then
 	if [ ! -r ./passwd/bin/activate ]; then
-		virtualenv passwd
+		virtualenv ./passwd
 	fi
 	. ./passwd/bin/activate
 	pip install -U pip passlib

@@ -25,8 +25,8 @@ vmdisk=${MASTER_VM_DISK:-10240}
 preseed=${PRESEED_URL:-http://www.olivierbourdon.com/preseed_master.cfg}
 noipv6=${NOIPV6:+"1"}
 httpproxy=${PROXY:-""}
-username=${USER:-"vagrant"}
-passwd=${PASSWD:-"vagrant"}
+username=${ADMINUSER:-"vagrant"}
+passwd=${ADMINPASSWD:-"vagrant"}
 domainname=${DOMAIN:-"vagrantup.com"}
 
 # Check virtuzalization mode
@@ -41,6 +41,48 @@ if [ $# -ne 0 ]; then
 	echo -e "\nUsage: $(basename $0)\n"
 	exit 1
 fi
+
+checkstring() {
+	if [ -z "$2" ] && [ -n "$3" ] && ! $3; then
+		echo -e "\nUsage: $(basename $0): $1 variable error\n\n\tcan not be empty\n"
+		exit 1
+	fi
+	if [ -n "$4" ] && ! $(echo -e "$2" | egrep -q $4); then
+		echo -e "\nUsage: $(basename $0): $1 variable error\n\n\tinvalid input, does not match valid regexp\n"
+		exit 1
+	fi
+	if [ -n "$5" ] && echo -e "$2" | egrep -q $5; then
+		echo -e "\nUsage: $(basename $0): $1 variable error\n\n\tinvalid input, matches some invalid regexp\n"
+		exit 1
+	fi
+}
+
+checkstring ADMINUSER   "$username"  false '^[A-Za-z][A-Za-z0-9]*$' '^.*\s.*$|^root$'
+checkstring ADMINPASSWD "$passwd"    false '^[A-Za-z0-9/@_=+-]+$' '^.*\s.*$'
+checkstring PROXY       "$httpproxy" true
+
+checknumber() {
+	if ! echo "$2" | egrep -q '^[1-9][0-9]*$'; then
+		echo -e "\nUsage: $(basename $0): $1 variable error\n\n\tinvalid integer $2\n"
+		exit 1
+	fi
+	if [ -n "$3" ] && [ $2 -lt $3 ]; then
+		echo -e "\nUsage: $(basename $0) $1 variable error\n\n\t$2 too small, must be greater than $3\n"
+		exit 1
+	fi
+	if [ -n "$4" ] && [ $2 -gt $4 ]; then
+		echo -e "\nUsage: $(basename $0) $1 variable error\n\n\t$2 too big, must be smaller than $3\n"
+		exit 1
+	fi
+	if [ -n "$5" ] && [ $(expr $2 % $5) -ne 0 ]; then
+		echo -e "\nUsage: $(basename $0) $1 variable error\n\n\tinvalid integer $2, must be multiple of $5\n"
+		exit 1
+	fi
+}
+
+checknumber MASTER_VM_MEM  $vmmem  512  ""  8
+checknumber MASTER_VM_DISK $vmdisk 5120 "" 1024
+checknumber MASTER_VM_CPUS $vmcpus 1    16  1
 
 getcmd() {
 	cmds="$*"
@@ -105,7 +147,16 @@ if [ ! -r $iso ]; then
 fi
 
 # Retrieve 1st active network interface
-activenetitf=$(ifconfig | awk '/UP,/{itf=$1}/inet /{print itf,$2}' | egrep -v '^lo|^vbox|^utun' | sed -e 's/: .*//' | head -1)
+if type ip >/dev/null 2>&1; then
+	cmd="ip a | awk '/,*UP,*/{itf=\$2}/inet /{print itf,\$2}'"
+else
+	cmd="ifconfig | awk '/,*UP,*/{itf=\$1}/inet /{print itf,\$2}'"
+fi
+activenetitf=$(eval $cmd | egrep -v '^lo|^vbox|^utun|^docker|^openstack|^lxcbr|^virbr' | sed -e 's/: .*//' | head -1)
+if [ -z "$activenetitf" ]; then
+	echo -e "\nERROR $(basename $0): can not find network interface\n"
+	exit 1
+fi
 
 if [ "$virtprovider" == "vbox" ]; then
 	# Fetch some required commands
