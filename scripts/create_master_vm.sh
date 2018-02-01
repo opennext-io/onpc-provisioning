@@ -164,7 +164,20 @@ if [ "$virtprovider" == "vbox" ]; then
 	# Check if VM already exists
 	if VBoxManage list vms | egrep -q "^\"${vmname}\" "; then
 		echo -e "\nERROR $(basename $0): VirtualBox VM with name [$vmname] already exists !!!\n"
-		exit 1
+		echo -e -n "Do you want to erase it [y/n] "
+		ans=${YES:+"y"}
+		test -n "$ans" || read ans
+		if [ $(echo "$ans" | tr '[A-Z]' '[a-z]') != 'y' ]; then
+			exit 1
+		fi
+		if VBoxManage controlvm "${vmname}" poweroff 2>/dev/null; then
+			echo "${vmname} was powered off successfully"
+			# Wait a bit for poweroff to occur
+			sleep 2
+		else
+			echo "${vmname} was already powered off"
+		fi
+		VBoxManage unregistervm "${vmname}" --delete
 	fi
 
 	netitf=$(VBoxManage list bridgedifs | grep $activenetitf | grep '^Name: ' | sed -e 's/Name: *//')
@@ -186,7 +199,7 @@ if [ "$virtprovider" == "vbox" ]; then
 	vmdiskuuid=$(VBoxManage createmedium disk --filename "$vmdir"/$vmname --size $vmdisk | egrep "^.* UUID: " | awk '{print $NF}')
 	VBoxManage storageattach $vmname --storagectl SATA --type hdd --port 0 --device 0 --medium "$vmdir"/$vmname.vdi
 	# Start VM
-	VBoxManage startvm $vmname
+	VBoxManage startvm $vmname --type headless
 	sleep 5
 	# Expressed in minutes
 	i=${TIMEOUT:-30}

@@ -50,7 +50,20 @@ if [ "$virtprovider" == "vbox" ]; then
 		# Check if VM already exists
 		if VBoxManage list vms | egrep -q "^\"${lvmname}\" "; then
 			echo -e "\nERROR $(basename $0): VirtualBox VM with name [$lvmname] already exists !!!\n"
-			exit 1
+			echo -e -n "Do you want to erase it [y/n] "
+			ans=${YES:+"y"}
+			test -n "$ans" || read ans
+			if [ $(echo "$ans" | tr '[A-Z]' '[a-z]') != 'y' ]; then
+				exit 1
+			fi
+			if VBoxManage controlvm "${lvmname}" poweroff 2>/dev/null; then
+				echo "${lvmname} was powered off successfully"
+				# Wait a bit for poweroff to occur
+				sleep 2
+			else
+				echo "${lvmname} was already powered off"
+			fi
+			VBoxManage unregistervm "${lvmname}" --delete
 		fi
 
 		# Base of VM is Ubuntu 64bits
@@ -67,7 +80,7 @@ if [ "$virtprovider" == "vbox" ]; then
 		vmdiskuuid=$(VBoxManage createmedium disk --filename "$vmdir"/$lvmname --size $vmdisk | egrep "^.* UUID: " | awk '{print $NF}')
 		VBoxManage storageattach $lvmname --storagectl SATA --type hdd --port 0 --device 0 --medium "$vmdir"/$lvmname.vdi
 		# Start VM
-		VBoxManage startvm $lvmname
+		VBoxManage startvm $lvmname --type headless
 	done
 elif [ "$virtprovider" == "kvm" ]; then
 	echo -e "\nNot implemented yet !!!\n"
