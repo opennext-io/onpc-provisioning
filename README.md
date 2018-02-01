@@ -24,12 +24,15 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-
 Look into ansible/vars/master-configure_vars.yml to see what can be configured
 
 Once done, you have to prepare Bifrost environment properly:
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml
+ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml --extra-vars "keystone=true"
 
 At the very end of this Ansible deployment, you'll see a debug message which will tell you what you have to do next like:
-ssh user@192.168.0.131 -t 'cd /home/user/bifrost/playbooks && . /home/user/.venv/bifrost/bin/activate && . ../env-vars && https_proxy= ansible-playbook -i inventory/target install.yaml -e network_interface=enp0s8'
+ssh user@192.168.0.131 -t 'cd /home/user/bifrost/playbooks && . /home/user/.venv/bifrost/bin/activate && . ../env-vars && https_proxy= \
+	ansible-playbook -i inventory/target install.yaml -e network_interface=enp0s8 -e staging_drivers_include=true -e enable_keystone=true -e noauth_mode=false'
 
-this is because the Ansible deployment needs to run on the host where Bifrost will be configured and installed
+this is because the Ansible deployment needs to run on the host where Bifrost will be configured and installed.
+
+Remove the last 2 options (-e enable_keystone=true -e noauth_mode=false) if you do not want to use keystone service.
 
 Once everything is deployed successfully, you can start 3 slave VMs using:
 ./scripts/create_slave_vms.sh 3

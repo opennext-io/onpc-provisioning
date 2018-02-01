@@ -2,3 +2,5 @@
 home: "/home/{{ systemuser }}"
 git: "{{ home }}/bifrost"
 venv: "{{ home }}/.venv/bifrost"
+keystone: false
+keystone_opts: ""
