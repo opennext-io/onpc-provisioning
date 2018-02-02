@@ -5,6 +5,9 @@ if [ ! -f /etc/hosts.tmpl ]; then
 fi
 
 host=$(cat /etc/hostname)
+if [ $(echo "$host" | awk -F. '{print NF}') -gt 1 ]; then
+	host=$(echo "$host" | awk -F. '{print $1}')
+fi
 fqdn=${host}.vagrantup.com
 
 (echo "# Dynamically added at startup by $0 script" ; \
