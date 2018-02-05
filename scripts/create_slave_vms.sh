@@ -21,6 +21,7 @@ vmmem=${SLAVE_VM_MEM:-512}
 vmcpus=${SLAVE_VM_CPUS:-1}
 vmdisk=${SLAVE_VM_DISK:-248}
 maxvms=${MAX_SLAVES:-5}
+startingvmid=${START:-0}
 
 # Check virtuzalization mode
 case $virtprovider in
@@ -46,7 +47,7 @@ fi
 
 if [ "$virtprovider" == "vbox" ]; then
 	for i in $(seq 1 $1); do
-		lvmname=${vmname}-$i
+		lvmname=${vmname}-$(($startingvmid + $i))
 		# Check if VM already exists
 		if VBoxManage list vms | egrep -q "^\"${lvmname}\" "; then
 			echo -e "\nERROR $(basename $0): VirtualBox VM with name [$lvmname] already exists !!!\n"
