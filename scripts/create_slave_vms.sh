@@ -19,7 +19,7 @@ virtprovider=${VIRT:-vbox}
 vmname=${SLAVE_VM_NAME:-"slave"}
 vmmem=${SLAVE_VM_MEM:-512}
 vmcpus=${SLAVE_VM_CPUS:-1}
-vmdisk=${SLAVE_VM_DISK:-248}
+vmdisk=${SLAVE_VM_DISK:-4096}
 maxvms=${MAX_SLAVES:-5}
 startingvmid=${START:-0}
 
