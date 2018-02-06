@@ -21,7 +21,7 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-
 You can customize the IP settings of the secondary network interface using:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-system.yml --extra-vars "ip_prefix=192.168.1 ip_suffix=123 ip_netmask_bits=20"
 
-Look into ansible/vars/master-configure_vars.yml to see what can be configured
+Look into ansible/vars/master-configure-system_vars.yml to see what can be configured
 
 Once done, you have to prepare Bifrost environment properly:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml --extra-vars "keystone=true"

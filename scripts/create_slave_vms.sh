@@ -3,32 +3,20 @@
 # Exit on errors
 set -e
 
-# This script can run only on MacOSX and Linux
-# The readlink command needs to support -f option
-os=$(uname -s)
-case $os in
-	Darwin)	linkcmd=greadlink;;
-	Linux)	linkcmd=readlink;;
-	*)	echo -e "\nERROR $(basename $0): unsupported platform $os\n"; exit 1;;
-esac
+# Import some utilities
+. $(dirname $0)/functions.sh
 
 CMDDIR=$(dirname $(dirname $($linkcmd -f $0)))
 
 # VM parameters
-virtprovider=${VIRT:-vbox}
 vmname=${SLAVE_VM_NAME:-"slave"}
-vmmem=${SLAVE_VM_MEM:-512}
+vmmem=${SLAVE_VM_MEM:-1024}
 vmcpus=${SLAVE_VM_CPUS:-1}
 vmdisk=${SLAVE_VM_DISK:-4096}
 maxvms=${MAX_SLAVES:-5}
 startingvmid=${START:-0}
-
-# Check virtuzalization mode
-case $virtprovider in
-	vbox)	;;
-	kvm)	;;
-	*)	echo -e "\nERROR $(basename $0): unsupported virtualization $virtprovider\n"; exit 1;;
-esac
+vmvncbindip=${MASTER_VM_VNC_IP:-"0.0.0.0"}
+vmvncport=${MASTER_VM_VNC_PORT:-5900}
 
 # Check command line arguments
 if [ $# -ne 1 ]; then
@@ -36,55 +24,75 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
-if ! echo "$1" | egrep -q '^[1-9][0-9]*$'; then
-	echo -e "\nUsage: $(basename $0) #nb-vms-to-launch\n\n\tinvalid integer $1\n"
-	exit 1
-fi
-if [ $1 -gt $maxvms ]; then
-	echo -e "\nUsage: $(basename $0) #nb-vms-to-launch\n\n\tinteger too big $1, $maxvms maximum\n"
-	exit 1
-fi
+checkstring MASTER_VM_NAME   "$vmname"      false
+checkstring MASTER_VM_VNC_IP "$vmvncbindip" false '^([0–9]{1,3}\.){3}([0–9]{1,3})$'
 
-if [ "$virtprovider" == "vbox" ]; then
-	for i in $(seq 1 $1); do
-		lvmname=${vmname}-$(($startingvmid + $i))
+checknumber '#nb-vms-to-launch' $1         1    $maxvms
+checknumber MASTER_VM_MEM       $vmmem     1024 ""      8
+checknumber MASTER_VM_DISK      $vmdisk    4096 ""      1024
+checknumber MASTER_VM_CPUS      $vmcpus    1    16      1
+checknumber MASTER_VM_VNC_PORT  $vmvncport 5900 ""      1
+
+# Launch VM(s) according to provider
+for i in $(seq 1 $1); do
+	idx=$(($startingvmid + $i))
+	lvmname=${vmname}-$idx
+	if [ "$virtprovider" == "vbox" ]; then
 		# Check if VM already exists
-		if VBoxManage list vms | egrep -q "^\"${lvmname}\" "; then
-			echo -e "\nERROR $(basename $0): VirtualBox VM with name [$lvmname] already exists !!!\n"
-			echo -e -n "Do you want to erase it [y/n] "
-			ans=${YES:+"y"}
-			test -n "$ans" || read ans
-			if [ $(echo "$ans" | tr '[A-Z]' '[a-z]') != 'y' ]; then
-				exit 1
-			fi
-			if VBoxManage controlvm "${lvmname}" poweroff 2>/dev/null; then
-				echo "${lvmname} was powered off successfully"
+		if $vboxcmd list vms | egrep -q "^\"${lvmname}\" "; then
+			yesorno "VirtualBox VM with name [$lvmname] already exists" "Do you want to erase it [y/n] "
+			if $vboxcmd controlvm $lvmname poweroff 2>/dev/null; then
+				echo "$lvmname was powered off successfully"
 				# Wait a bit for poweroff to occur
 				sleep 2
 			else
-				echo "${lvmname} was already powered off"
+				echo "$lvmname was already powered off"
 			fi
-			VBoxManage unregistervm "${lvmname}" --delete
+			$vboxcmd unregistervm $lvmname --delete
 		fi
 
 		# Base of VM is Ubuntu 64bits
-		vmuuid=$(VBoxManage createvm --name $lvmname --ostype Ubuntu_64 --register | egrep "^UUID: " | awk '{print $NF}')
+		vmuuid=$($vboxcmd createvm --name $lvmname --ostype Ubuntu_64 --register | egrep "^UUID: " | awk '{print $NF}')
 		echo "Created $lvmname: $vmuuid"
 		# VM basics
-		VBoxManage modifyvm $lvmname --memory $vmmem --cpus $vmcpus --boot1 net --boot2 disk --boot3 none --audio none --usb off --rtcuseutc on --vram 16 --pae off
+		$vboxcmd modifyvm $lvmname --memory $vmmem --cpus $vmcpus --boot1 net --boot2 disk --boot3 none --audio none --usb off --rtcuseutc on --vram 16 --pae off
 		# VM networks
-		VBoxManage modifyvm $lvmname --nic1 intnet
+		$vboxcmd modifyvm $lvmname --nic1 intnet
 		# VM HDD
-		VBoxManage storagectl $lvmname --name SATA --add sata --controller IntelAHCI --portcount 1 --hostiocache off
-		eval $(VBoxManage showvminfo $lvmname --machinereadable | grep ^CfgFile=)
+		$vboxcmd storagectl $lvmname --name SATA --add sata --controller IntelAHCI --portcount 1 --hostiocache off
+		eval $($vboxcmd showvminfo $lvmname --machinereadable | grep ^CfgFile=)
 		vmdir=$(dirname "$CfgFile")
-		vmdiskuuid=$(VBoxManage createmedium disk --filename "$vmdir"/$lvmname --size $vmdisk | egrep "^.* UUID: " | awk '{print $NF}')
-		VBoxManage storageattach $lvmname --storagectl SATA --type hdd --port 0 --device 0 --medium "$vmdir"/$lvmname.vdi
+		vmdiskuuid=$($vboxcmd createmedium disk --filename "$vmdir"/$lvmname --size $vmdisk | egrep "^.* UUID: " | awk '{print $NF}')
+		$vboxcmd storageattach $lvmname --storagectl SATA --type hdd --port 0 --device 0 --medium "$vmdir"/$lvmname.vdi
 		# Start VM
-		VBoxManage startvm $lvmname --type headless
-	done
-elif [ "$virtprovider" == "kvm" ]; then
-	echo -e "\nNot implemented yet !!!\n"
-fi
+		$vboxcmd startvm $lvmname --type headless
+	elif [ "$virtprovider" == "kvm" ]; then
+		# Check if VM already exists
+		if $virshcmd list --all --name 2>/dev/null | egrep -q "^${lvmname}$"; then
+			yesorno "KVM VM with name [$lvmname] already exists" "Do you want to erase it [y/n] "
+			if $virshcmd destroy $lvmname 2>/dev/null; then
+				echo "$lvmname was powered off successfully"
+				# Wait a bit for poweroff to occur
+				sleep 2
+			else
+				echo "$lvmname was already powered off"
+			fi
+			$virshcmd undefine $lvmname --snapshots-metadata --remove-all-storage
+		fi
+		# As VNC is much more performant than virt-viewer, unsetting DISPLAY
+		# will prevent from launching the latest unless FORCEX environment
+		# variable is set
+		if [ -z "$FORCEX" ]; then
+			unset DISPLAY
+		fi
+		lvmvncport=$(($vmvncport + $idx))
+		echo -e "\nYou can attach to VNC console at ${vmvncbindip}:$lvmvncport (local IP address is $localip)\n"
+		# Start VM
+		$virtinstallcmd -v --virt-type kvm --name $lvmname --ram $vmmem --vcpus $vmcpus --os-type linux --os-variant ubuntu16.04 \
+			--disk path=/var/lib/libvirt/images/$lvmname.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
+			--network bridge=virbr1,model=virtio --pxe --noautoconsole \
+			--graphics vnc,listen=$vmvncbindip,port=$lvmvncport
+	fi
+done
 
 exit 0
