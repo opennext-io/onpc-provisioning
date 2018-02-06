@@ -46,8 +46,8 @@ echo -e "${username}\tALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${username}_user
 # Populate system user home with OSA git repositories and ssh keys
 su - ${username} -c 'touch .sudo_as_admin_successful && mkdir -p .cache && chmod 700 .cache && touch .cache/motd.legal-displayed && \
  	mkdir -p .ssh && chmod 700 .ssh && ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -N "" && sed -i -e "s/@ubuntu/@${hostname}.${domainname}/" .ssh/id_rsa.pub && cp .ssh/id_rsa.pub .ssh/authorized_keys && \
- 	wget -q -O - http://www.olivierbourdon.com/ssh-keys >>.ssh/authorized_keys && \
-	wget -q -O - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub >>.ssh/authorized_keys'
+	( wget -q -O - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub >>.ssh/authorized_keys || true ) && \
+ 	( wget -q -O - http://www.olivierbourdon.com/ssh-keys >>.ssh/authorized_keys || true )'
 
 # Function to install VirtualBox Guest Addditions according to proper version
 vbox() {
