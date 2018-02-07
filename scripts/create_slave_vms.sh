@@ -15,8 +15,9 @@ vmcpus=${SLAVE_VM_CPUS:-1}
 vmdisk=${SLAVE_VM_DISK:-4096}
 maxvms=${MAX_SLAVES:-5}
 startingvmid=${START:-0}
-vmvncbindip=${MASTER_VM_VNC_IP:-"0.0.0.0"}
-vmvncport=${MASTER_VM_VNC_PORT:-5900}
+vmvncbindip=${SLAVE_VM_VNC_IP:-"0.0.0.0"}
+vmvncport=${SLAVE_VM_VNC_PORT:-5900}
+vbmcport=${SLAVE_VM_VBMC_PORT:-6000}
 
 # Check command line arguments
 if [ $# -ne 1 ]; then
@@ -24,14 +25,14 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
-checkstring MASTER_VM_NAME   "$vmname"      false
-checkstring MASTER_VM_VNC_IP "$vmvncbindip" false '^([0–9]{1,3}\.){3}([0–9]{1,3})$'
+checkstring SLAVE_VM_NAME   "$vmname"      false
+checkstring SLAVE_VM_VNC_IP "$vmvncbindip" false '^([0–9]{1,3}\.){3}([0–9]{1,3})$'
 
 checknumber '#nb-vms-to-launch' $1         1    $maxvms
-checknumber MASTER_VM_MEM       $vmmem     1024 ""      8
-checknumber MASTER_VM_DISK      $vmdisk    4096 ""      1024
-checknumber MASTER_VM_CPUS      $vmcpus    1    16      1
-checknumber MASTER_VM_VNC_PORT  $vmvncport 5900 ""      1
+checknumber SLAVE_VM_MEM        $vmmem     1024 ""      8
+checknumber SLAVE_VM_DISK       $vmdisk    4096 ""      1024
+checknumber SLAVE_VM_CPUS       $vmcpus    1    16      1
+checknumber SLAVE_VM_VNC_PORT   $vmvncport 5900 ""      1
 
 # Launch VM(s) according to provider
 for i in $(seq 1 $1); do
@@ -77,6 +78,16 @@ for i in $(seq 1 $1); do
 			else
 				echo "$lvmname was already powered off"
 			fi
+			if vbmc stop $lvmname 2>/dev/null; then
+				echo "vbmc stop $lvmname OK"
+			else
+				echo "vbmc stop $lvmname KO"
+			fi
+			if vbmc delete $lvmname 2>/dev/null; then
+				echo "vbmc delete $lvmname OK"
+			else
+				echo "vbmc delete $lvmname KO"
+			fi
 			$virshcmd undefine $lvmname --snapshots-metadata --remove-all-storage
 		fi
 		# As VNC is much more performant than virt-viewer, unsetting DISPLAY
@@ -92,6 +103,14 @@ for i in $(seq 1 $1); do
 			--disk path=/var/lib/libvirt/images/$lvmname.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
 			--network bridge=virbr1,model=virtio --pxe --noautoconsole \
 			--graphics vnc,listen=$vmvncbindip,port=$lvmvncport
+		sleep 2
+		macaddr=$($virshcmd dumpxml $lvmname | xmllint --xpath 'string(//interface[@type="bridge"]/mac/@address)' -)
+		uuid=$($virshcmd dumpxml $lvmname | xmllint --xpath 'string(//uuid)' -)
+		nuuid=$(python -c "import sys;import uuid;print str(uuid.uuid3(uuid.NAMESPACE_DNS,sys.argv[1]))" $lvmname)
+		lvbmcport=$(($vbmcport + $idx))
+		vbmc add $lvmname --port $lvbmcport
+		vbmc start $lvmname
+		echo "$lvmname MAC=$macaddr UUID=$uuid BMCport=$lvbmcport"
 	fi
 done
 
