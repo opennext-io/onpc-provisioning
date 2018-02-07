@@ -1,4 +1,19 @@
 ---
+- hosts: localhost
+  connection: local
+
+  tasks:
+
+    - name: Retrieving local IP addresses list
+      set_fact:
+        forbidden_ips: "{{ ansible_all_ipv4_addresses | default([])}}"
+
+    - name: Describing Hosts
+      debug: msg="Computer {{ ansible_hostname }} is running {{ ansible_os_family }}/{{ ansible_distribution }}"
+
+    - name: Listing Network Interfaces
+      debug: msg="Found Interfaces List {{ ansible_interfaces }} Primary {{ ansible_default_ipv4.interface }} Local IPs {{ forbidden_ips }}"
+
 - hosts: master
   become: yes
 
@@ -7,11 +22,31 @@
 
   tasks:
 
+    - name: Retrieving local IP addresses list
+      set_fact:
+        local_ips: "{{ ansible_all_ipv4_addresses | default([])}}"
+
+    - name: Storing collision IP addresses list
+      set_fact:
+        collision_ips: "{{ hostvars['localhost']['forbidden_ips'] | default([]) | intersect(local_ips) }}"
+
+    - name: Computing provisioning master IP address
+      set_fact:
+        master_ip: '{{ ip_prefix | default("20.20.20")}}.{{ ip_suffix | default(1) }}'
+
     - name: Describing Hosts
       debug: msg="Computer {{ ansible_hostname }} is running {{ ansible_os_family }}/{{ ansible_distribution }}"
 
     - name: Listing Network Interfaces
-      debug: msg="Found Interfaces List {{ ansible_interfaces }} Primary {{ ansible_default_ipv4.interface }}"
+      debug: msg="Found Interfaces List {{ ansible_interfaces }} Primary {{ ansible_default_ipv4.interface }} Local IPs {{ local_ips }} Forbidden IPs {{ collision_ips }} Master IP {{ master_ip }}"
+
+    - name: Checking IP collisions
+      fail: msg="Collision in IP addresses {{ collision_ips }}"
+      when: collision_ips | length > 0
+
+    - name: Checking duplicate IPs
+      fail: msg="ip_prefix and ip_suffix variables lead to {{ ip_prefix }}.{{ ip_suffix}} colliding with {{ hostvars['localhost']['forbidden_ips'] }}"
+      when: master_ip in hostvars['localhost']['forbidden_ips']
 
     - import_tasks: ../tasks/secondary_network_interface.yml
 
