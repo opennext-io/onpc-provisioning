@@ -28,7 +28,7 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bif
 
 At the very end of this Ansible deployment, you'll see a debug message which will tell you what you have to do next like:
 ssh user@192.168.0.131 -t 'cd /home/user/bifrost/playbooks && . /home/user/.venv/bifrost/bin/activate && . ../env-vars && https_proxy= \
-	ansible-playbook -i inventory/target install.yaml -e network_interface=enp0s8 -e staging_drivers_include=true -e enable_keystone=true -e noauth_mode=false'
+	ansible-playbook -i inventory/target install.yaml -e dib_os_release=xenial -e dib_os_element=ubuntu -e network_interface=enp0s8 -e staging_drivers_include=true -e enable_keystone=true -e noauth_mode=false'
 
 this is because the Ansible deployment needs to run on the host where Bifrost will be configured and installed.
 

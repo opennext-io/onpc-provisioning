@@ -4,3 +4,5 @@ git: "{{ home }}/bifrost"
 venv: "{{ home }}/.venv/bifrost"
 keystone: false
 keystone_opts: ""
+os_release: "xenial"
+os_flavor: "ubuntu"

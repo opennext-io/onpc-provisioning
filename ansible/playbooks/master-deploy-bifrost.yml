@@ -36,6 +36,10 @@
       set_fact:
         todo: "{{ setup_result.stdout.split('\n')[-3:-1] | join(' && ') | replace('source','.') | replace('env-vars','../env-vars') }}"
 
+    - name: Computing OS Image Options
+      set_fact:
+        os_opts: " -e dib_os_release={{ os_release | default('xenial') }} -e dib_os_element={{ os_flavor | default('ubuntu') }}"
+
     - name: Computing Keystone Options
       set_fact:
         keystone_opts: " -e enable_keystone=true -e noauth_mode=false"
@@ -47,7 +51,7 @@
       vars:
        itf_state: true
 
-    - debug: msg="ssh {{ systemuser }}@{{ ansible_default_ipv4.address }} -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }}{{ keystone_opts }}'"
+    - debug: msg="ssh {{ systemuser }}@{{ ansible_default_ipv4.address }} -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }}{{ keystone_opts }}{{ os_opts }}'"
 
     - name: Running Bifrost Playbook
       shell: ". ../env-vars && . {{ venv }}/bin/activate && ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }} {{ keystone_opts }}"
