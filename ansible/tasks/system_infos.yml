@@ -1,0 +1,11 @@
+# System infos and network interfaces retrieval task
+---
+- name: Retrieving local IP addresses list
+  set_fact:
+    local_ips: "{{ ansible_all_ipv4_addresses | default([]) }}"
+
+- name: Describing Hosts
+  debug: msg="Computer {{ ansible_hostname }} is running {{ ansible_os_family }}/{{ ansible_distribution }}/{{ ansible_distribution_release }}"
+
+- name: Listing Network Interfaces
+  debug: msg="Found Interfaces List {{ ansible_interfaces }} Primary {{ ansible_default_ipv4.interface }} Local IPs {{ local_ips }}"
