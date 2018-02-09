@@ -2,6 +2,7 @@
 
 # Exits on errors
 set -ex
+# Trace everything into specific log file
 exec > >(tee -i /var/log/"$(basename "$0" .sh)"_"$(date '+%Y-%m-%d_%H-%M-%S')".log) 2>&1
 
 # Store boot arguments in environment
@@ -9,6 +10,7 @@ eval $(cat /proc/cmdline | tr ' ' '\n' | grep '=' | awk -F= '{gsub("/","_",$1);g
 
 # Retrieve proxy information from installation
 proxy=$(grep Acquire::http::Proxy /etc/apt/apt.conf | sed -e 's/";$//' | awk -F/ '{print $3}')
+# If exists, make it default proxy for all processes/envs on this machine
 if [ -n "$proxy" ]; then
 	echo -e "http_proxy=http://${proxy}/\nftp_proxy=ftp://${proxy}/\nhttps_proxy=https://${proxy}/\nno_proxy=\"localhost,127.0.0.1\"" >>/etc/environment
 fi
@@ -19,6 +21,7 @@ domainname=$(dnsdomainname)
 for f in /etc/issue*; do
 	sed -i "/^Ubuntu/i $hostname host/machine\n" $f
 done
+# Add same info in motd and remove some others
 if [ -d /etc/update-motd.d ]; then
 	echo -e "#!/bin/sh\nprintf \"\\n$hostname host/machine\\n\\n\"" >/etc/update-motd.d/20-machine-name
 	chmod 755 /etc/update-motd.d/20-machine-name
@@ -39,11 +42,13 @@ echo -e 'bonding\n8021q' >>/etc/modules
 # Set hostname
 echo "${hostname}.${domainname}" >/etc/hostname
 
-# System user priviledges
+# System user sudo priviledges
 username=${passwd_username:-vagrant}
 echo -e "${username}\tALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${username}_user
 
-# Populate system user home with OSA git repositories and ssh keys
+# Populate system user home
+# - add and remove some stuff so that 1st console/ssh login messages are cleaned up
+# - create new ssh key and poetntially add some from internet
 su - ${username} -c 'touch .sudo_as_admin_successful && mkdir -p .cache && chmod 700 .cache && touch .cache/motd.legal-displayed && \
  	mkdir -p .ssh && chmod 700 .ssh && ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -N "" && sed -i -e "s/@ubuntu/@${hostname}.${domainname}/" .ssh/id_rsa.pub && cp .ssh/id_rsa.pub .ssh/authorized_keys && \
 	( wget -q -O - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub >>.ssh/authorized_keys || true ) && \
@@ -102,8 +107,10 @@ _EOF
 	echo "Done handling VirtualBox platform"
 }
 
+# Virtualization specific tasks
+virtualization=$(type virt-what >/dev/null 2>&1 && virt-what | tr '\n' ' ' | sed -e 's/  *$//')
 hosttype=$(type dmidecode >/dev/null 2>&1 && dmidecode -s system-product-name)
-# dmidecode is available
+# dmidecode is available and output is used to do some virtualization specific steps
 if [ $? -eq 0 ]; then
 	case $hosttype in
 		VirtualBox) vbox;;
