@@ -101,7 +101,7 @@ for i in $(seq 1 $1); do
 		# Start VM
 		$virtinstallcmd -v --virt-type kvm --name $lvmname --ram $vmmem --vcpus $vmcpus --os-type linux --os-variant ubuntu16.04 \
 			--disk path=/var/lib/libvirt/images/$lvmname.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
-			--network bridge=virbr1,model=virtio --pxe --noautoconsole \
+			--network bridge=virbr1,model=virtio --pxe --boot network,hd --noautoconsole \
 			--graphics vnc,listen=$vmvncbindip,port=$lvmvncport
 		sleep 2
 		macaddr=$($virshcmd dumpxml $lvmname | xmllint --xpath 'string(//interface[@type="bridge"]/mac/@address)' -)
