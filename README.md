@@ -31,6 +31,26 @@ fatal: [172.20.20.64]: FAILED! => {"changed": false, "module_stderr": "Shared co
 
 Just rerun the same playbook adding -K option and provide the Ubuntu system user password.
 
+If the ssh-keys are not set up correctly yet you might use the following:
+
+# Download vagrant default ssh key into your home directory
+wget -q -O - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub >>~/.ssh/vagrant.pub
+
+# Copy force it on your remote machine (may be you'll need to change ubuntu user and IP below ;-))
+ssh-copy-id -f -i ~/.ssh/vagrant.pub ubuntu@172.20.20.64
+
+# Or use any other key you might already have
+ssh-copy-id -i ~/.ssh/my-key ubuntu@172.20.20.64
+
+# Verify ssh connection is successfull:
+ssh -i ~/.ssh/my-key ubuntu@172.20.20.64 uname -a
+
+# You'll need python to be installed on the remote system:
+ssh -t -i ~/.ssh/my-key ubuntu@172.20.20.64 'sudo apt-get update && sudo apt-get install -y python'
+
+# You can now rerun the playbook with proper options:
+ansible-playbook --private-key ~/.ssh/my-key  -K -i ansible/inventory/min-ubu-master-meylan ansible/playbooks/master-configure-system.yml 
+
 Once done, you have to prepare Bifrost environment properly:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml --extra-vars "keystone=true"
 

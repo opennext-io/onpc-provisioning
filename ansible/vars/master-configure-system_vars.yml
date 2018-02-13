@@ -8,4 +8,4 @@ ip_netmask_broadcast: 255
 # User which will be used for Ansible communication
 # and whose home will be retrieving and storing the
 # various Git repos
-systemuser: vagrant
+systemuser: "{{ ansible_user | default(vagrant) }}"
