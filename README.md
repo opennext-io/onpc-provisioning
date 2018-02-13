@@ -23,6 +23,14 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-
 
 Look into ansible/vars/master-configure-system_vars.yml to see what can be configured
 
+Note that you may need to add -K option for running this playbook so that the Ansible user sudo permissions are properly set.
+If you do not provide it in the first run and suoders are not yet configured properly, you will get the following output:
+
+TASK [Gathering Facts] **************************************************************************************************************************************************************************************
+fatal: [172.20.20.64]: FAILED! => {"changed": false, "module_stderr": "Shared connection to 172.20.20.64 closed.\r\n", "module_stdout": "sudo: a password is required\r\n", "msg": "MODULE FAILURE", "rc": 1}
+
+Just rerun the same playbook adding -K option and provide the Ubuntu system user password.
+
 Once done, you have to prepare Bifrost environment properly:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml --extra-vars "keystone=true"
 

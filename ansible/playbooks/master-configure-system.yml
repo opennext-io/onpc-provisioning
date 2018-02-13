@@ -79,6 +79,14 @@
         - "bonding"
         - "8021q"
 
+    - name: "Configuring sudoers for {{ systemuser }}"
+      template:
+        src: ../templates/sudoers.j2
+        dest: "/etc/sudoers.d/{{ systemuser }}_user"
+        owner: root
+        group: root
+        mode: 0440
+
     - name: Configuring SSH defaults
       template:
         src: ../templates/ssh_cfg.j2
