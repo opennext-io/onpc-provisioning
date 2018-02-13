@@ -48,7 +48,7 @@ echo -e "${username}\tALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${username}_user
 
 # Populate system user home
 # - add and remove some stuff so that 1st console/ssh login messages are cleaned up
-# - create new ssh key and poetntially add some from internet
+# - create new ssh key and potentially add some from internet
 su - ${username} -c 'touch .sudo_as_admin_successful && mkdir -p .cache && chmod 700 .cache && touch .cache/motd.legal-displayed && \
  	mkdir -p .ssh && chmod 700 .ssh && ssh-keygen -b 2048 -t rsa -f .ssh/id_rsa -N "" && sed -i -e "s/@ubuntu/@${hostname}.${domainname}/" .ssh/id_rsa.pub && cp .ssh/id_rsa.pub .ssh/authorized_keys && \
 	( wget -q -O - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub >>.ssh/authorized_keys || true ) && \

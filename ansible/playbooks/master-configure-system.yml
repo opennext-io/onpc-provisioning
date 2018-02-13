@@ -74,27 +74,10 @@
         reload: yes
       when: itf is defined
 
-    - include: ../tasks/kernel_drivers_modules.yml module={{ item }}
+    - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
       with_items:
         - "bonding"
         - "8021q"
-
-    - name: "Configuring sudoers for {{ systemuser }}"
-      template:
-        src: ../templates/sudoers.j2
-        dest: "/etc/sudoers.d/{{ systemuser }}_user"
-        owner: root
-        group: root
-        mode: 0440
-
-    - name: Configuring SSH defaults
-      template:
-        src: ../templates/ssh_cfg.j2
-        dest: "/home/{{ systemuser }}/.ssh/config"
-        owner: "{{ systemuser }}"
-        group: "{{ systemuser }}"
-        mode: 0644
-      when: itf is defined
 
     - name: Configuring System Wide Proxy
       lineinfile:
@@ -160,6 +143,10 @@
         group: root
         mode: 0644
       notify: Restarting Network Hosts Service
+
+    - meta: flush_handlers
+
+    - include_tasks: ../tasks/system_user_home.yml
 
   handlers:
 

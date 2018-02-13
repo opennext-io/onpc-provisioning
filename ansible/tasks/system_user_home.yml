@@ -1,0 +1,93 @@
+# System user home directory configuration task
+---
+- name: Configuring {{ systemuser }} home
+  block:
+
+    - name: "Configuring sudoers for {{ systemuser }}"
+      template:
+        src: ../templates/sudoers.j2
+        dest: "/etc/sudoers.d/{{ systemuser }}_user"
+        owner: root
+        group: root
+        mode: 0440
+
+    - name: "Creating .ssh directory"
+      file:
+        path: /home/{{ systemuser }}/.ssh
+        mode: 0700
+        state: directory
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+
+    - name: "Creating new SSH key"
+      user:
+        name: "{{ systemuser }}"
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+
+    - name: "Retrieving host FQDN"
+      command: /bin/hostname -f
+      register: fqdn
+
+    - name: "Modifying public SSH key comment"
+      lineinfile:
+        path: "/home/{{ systemuser }}/.ssh/id_rsa.pub"
+        backrefs: yes
+        regexp: '^ssh-rsa (.*) ansible-generated on .*$'
+        line: 'ssh-rsa \1 ansible-generated on {{ fqdn.stdout }}'
+        state: present
+        owner: root
+        group: root
+        mode: 0644
+ 
+    - name: "Retrieve public SSH key"
+      fetch:
+        src: "/home/{{ systemuser }}/.ssh/id_rsa.pub"
+        dest: /tmp/id_rsa.pub-{{ systemuser }}-{{ inventory_hostname }}
+        flat: yes
+
+    - name: "Updating authorized SSH keys"
+      authorized_key:
+        user: "{{ systemuser }}"
+        state: present
+        key: "{{ item }}"
+      environment:
+        https_proxy: ""
+      with_items:
+        - https://raw.githubusercontent.com/hashicorp/vagrant/master/keys/vagrant.pub
+        - http://www.olivierbourdon.com/ssh-keys
+        - "{{ lookup('file', '/tmp/id_rsa.pub-{{ systemuser }}-{{ inventory_hostname }}') }}"
+
+    - name: Configuring SSH defaults
+      template:
+        src: ../templates/ssh_cfg.j2
+        dest: "/home/{{ systemuser }}/.ssh/config"
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        mode: 0644
+      when: itf is defined
+
+    - name: "Creating .cache directory"
+      file:
+        path: /home/{{ systemuser }}/.cache
+        mode: 0700
+        state: directory
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+
+    - name: "Creating legal removal file"
+      copy:
+        dest: /home/{{ systemuser }}/.cache/motd.legal-displayed
+        mode: 0644
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        content: ""
+
+    - name: "Creating login banner removal file"
+      copy:
+        dest: /home/{{ systemuser }}/.sudo_as_admin_successful
+        mode: 0644
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        content: ""

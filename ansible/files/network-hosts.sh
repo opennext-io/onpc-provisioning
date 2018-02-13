@@ -9,6 +9,7 @@ if [ $(echo "$host" | awk -F. '{print NF}') -gt 1 ]; then
 	host=$(echo "$host" | awk -F. '{print $1}')
 fi
 fqdn=${host}.vagrantup.com
+echo "$fqdn" >/etc/hostname
 
 (echo "# Dynamically added at startup by $0 script" ; \
  ip a | awk -v h=${fqdn}=${host},${host}-priv 'BEGIN{n=0;split(h,a,",");} /^[1-9][0-9]*: .* state UP/{ok=1;next} /^[1-9]/{ok=0} ok && /inet /{split($2,b,"/");n++;printf "%s\t%s\n",b[1],a[n]}' ; \
