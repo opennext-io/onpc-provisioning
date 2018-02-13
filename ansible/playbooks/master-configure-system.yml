@@ -74,6 +74,11 @@
         reload: yes
       when: itf is defined
 
+    - include: ../tasks/kernel_drivers_modules.yml module={{ item }}
+      with_items:
+        - "bonding"
+        - "8021q"
+
     - name: Configuring SSH defaults
       template:
         src: ../templates/ssh_cfg.j2
