@@ -44,6 +44,31 @@ case $virtprovider in
 		;;
 	*)	echo -e "\nERROR $(basename $0): unsupported virtualization $virtprovider\n"; exit 1;;
 esac
+xmllintcmd=$(getcmd xmllint)
+
+# Function which returns variable assignments corresponding
+# to VM informations
+# Inputs:
+# $1: machine name/ID
+getvminfos() {
+	macaddr=""
+	uuid=""
+	case $virtprovider in
+		kvm)
+			macaddr=$($virshcmd dumpxml $1 | $xmllintcmd --xpath 'string(//interface[@type="bridge"]/mac/@address)' -)
+			uuid=$($virshcmd dumpxml $1 | $xmllintcmd --xpath 'string(//uuid)' -)
+			;;
+		*) ;;
+	esac
+	nuuid=$(python -c "import sys;import uuid;print str(uuid.uuid3(uuid.NAMESPACE_DNS,sys.argv[1]))" $1)
+	echo "uuid=$uuid"
+	if [ -n "$macaddr" ]; then
+		echo "macaddr=\"$macaddr\""
+	fi
+	if [ -n "$uuid" ]; then
+		echo "uuid=\"$uuid\""
+	fi
+}
 
 # Retrieve 1st active network interface
 if type ip >/dev/null 2>&1; then

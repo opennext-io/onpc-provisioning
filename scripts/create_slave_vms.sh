@@ -18,6 +18,19 @@ startingvmid=${START:-0}
 vmvncbindip=${SLAVE_VM_VNC_IP:-"0.0.0.0"}
 vmvncport=${SLAVE_VM_VNC_PORT:-5900}
 vbmcport=${SLAVE_VM_VBMC_PORT:-6000}
+vbmcuser=${VBMC_USER:-"admin"}
+vbmcpasswd=${VBMC_PASSWORD:-"password"}
+masterip=${MASTER_VM_IP:-"127.0.0.1"}
+masterport=${MASTER_VM_PORT:-7777}
+register=${REGISTER_URI:-"register"}
+unregister=${UNREGISTER_URI:-"unregister"}
+authuser=${KEYSTONE_USER:-""}
+authpasswd=${KEYSTONE_PASSWORD:-""}
+
+authcreds=""
+if [ -n "$authuser" ] && [ -n "$authpasswd" ]; then
+	authcreds="-u ${authuser}:${authpasswd}"
+fi
 
 # Check command line arguments
 if [ $# -ne 1 ]; then
@@ -71,6 +84,17 @@ for i in $(seq 1 $1); do
 		# Check if VM already exists
 		if $virshcmd list --all --name 2>/dev/null | egrep -q "^${lvmname}$"; then
 			yesorno "KVM VM with name [$lvmname] already exists" "Do you want to erase it [y/n] "
+			eval $(getvminfos $lvmname)
+			jsoninfos="{ \
+				\"name\": \"${lvmname}\", \
+				\"mac_addr\": \"${macaddr}\", \
+				\"virt-uuid\": \"${uuid}\" \
+			}"
+			if  curl -s $authcreds -H 'Content-Type: application/json' -X POST -d "$jsoninfos" http://${masterip}:${masterport}/${unregister}; then
+				echo "VM unregistration infos sent successfully"
+			else
+				echo "Failed to send VM unregistration infos"
+			fi
 			if $virshcmd destroy $lvmname 2>/dev/null; then
 				echo "$lvmname was powered off successfully"
 				# Wait a bit for poweroff to occur
@@ -79,14 +103,14 @@ for i in $(seq 1 $1); do
 				echo "$lvmname was already powered off"
 			fi
 			if vbmc stop $lvmname 2>/dev/null; then
-				echo "vbmc stop $lvmname OK"
+				echo "vbmc endpoint for $lvmname was stopped successfully"
 			else
-				echo "vbmc stop $lvmname KO"
+				echo "vbmc endpoint was already stopped for $lvmname"
 			fi
 			if vbmc delete $lvmname 2>/dev/null; then
-				echo "vbmc delete $lvmname OK"
+				echo "$lvmname was removed successfully from vbmc"
 			else
-				echo "vbmc delete $lvmname KO"
+				echo "vbmc was already deleted for $lvmname"
 			fi
 			$virshcmd undefine $lvmname --snapshots-metadata --remove-all-storage
 		fi
@@ -104,13 +128,26 @@ for i in $(seq 1 $1); do
 			--network bridge=virbr1,model=virtio --pxe --boot network,hd --noautoconsole \
 			--graphics vnc,listen=$vmvncbindip,port=$lvmvncport
 		sleep 2
-		macaddr=$($virshcmd dumpxml $lvmname | xmllint --xpath 'string(//interface[@type="bridge"]/mac/@address)' -)
-		uuid=$($virshcmd dumpxml $lvmname | xmllint --xpath 'string(//uuid)' -)
-		nuuid=$(python -c "import sys;import uuid;print str(uuid.uuid3(uuid.NAMESPACE_DNS,sys.argv[1]))" $lvmname)
 		lvbmcport=$(($vbmcport + $idx))
 		vbmc add $lvmname --port $lvbmcport
 		vbmc start $lvmname
-		echo "$lvmname MAC=$macaddr UUID=$uuid BMCport=$lvbmcport"
+		eval $(getvminfos $lvmname)
+		jsoninfos="{ \
+			\"name\": \"${lvmname}\", \
+			\"mac_addr\": \"${macaddr}\", \
+			\"virt-uuid\": \"${uuid}\", \
+			\"bmc_port\": ${lvbmcport}, \
+			\"bmc_host\": \"${localip}\", \
+			\"bmc_user\": \"${vbmcuser}\", \
+			\"bmc_password\": \"${vbmcpasswd}\", \
+			\"vnc_host\": \"${localip}\", \
+			\"vnc_port\": ${lvmvncport} \
+		}"
+		if  curl -s $authcreds -H 'Content-Type: application/json' -X POST -d "$jsoninfos" http://${masterip}:${masterport}/${register}; then
+			echo "VM registration infos sent successfully"
+		else
+			echo "Failed to send VM registration infos"
+		fi
 	fi
 done
 

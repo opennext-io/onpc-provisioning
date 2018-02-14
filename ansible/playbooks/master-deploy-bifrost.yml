@@ -62,3 +62,12 @@
         VENV: "{{ venv }}"
         https_proxy: ""
       when: todo is undefined
+
+    - name: Setting up Flask in virtualenv
+      pip:
+        virtualenv: ~/.venv/flask
+        name:
+          - flask
+          - apscheduler
+          - shade
+          - flask_httpauth
