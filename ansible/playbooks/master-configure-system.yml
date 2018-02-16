@@ -102,9 +102,6 @@
         mode: 0644
       with_items:
         - { regexp: '^#broadcast ', line: 'broadcast {{ ip_prefix | default("20.20.20") }}.{{ ip_netmask_broadcast | default(255) }}' }
-        - { regexp: '^# \/etc\/ntp.conf,', line: 'interface listen {{ ip_prefix | default("20.20.20") }}.{{ ip_suffix | default(1) }}' }
-        - { regexp: '^# \/etc\/ntp.conf,', line: 'interface listen 127.0.0.1' }
-        - { regexp: '^# \/etc\/ntp.conf,', line: 'interface ignore wildcard' }
       when: itf is defined
 
     - name: Restarting NTP Service
