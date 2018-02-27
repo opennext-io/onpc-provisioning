@@ -17,7 +17,9 @@ vmvncbindip=${MASTER_VM_VNC_IP:-"0.0.0.0"}
 vmvncport=${MASTER_VM_VNC_PORT:-5900}
 
 # ISO parameters
-preseed=${PRESEED_URL:-http://www.olivierbourdon.com/preseed_master.cfg}
+distribution=${DISTRO:-ubuntu}
+release=${RELEASE:-xenial}
+preseed=${PRESEED_URL:-http://www.olivierbourdon.com/preseed_master-${release}.cfg}
 noipv6=${NO_IPV6:+"1"}
 httpproxy=${PROXY:-""}
 username=${ADMIN_USER:-"vagrant"}
@@ -42,7 +44,7 @@ checknumber MASTER_VM_CPUS     $vmcpus    1    16 1
 checknumber MASTER_VM_VNC_PORT $vmvncport 5900 "" 1
 
 # Check existence of ISO
-iso=$CMDDIR/isos/custom.iso
+iso=$CMDDIR/isos/${distribution}-${release}-custom.iso
 if [ ! -r $iso ]; then
 	echo "Using docker to build custom ISO ..."
 	# Fetch some required commands
@@ -58,8 +60,14 @@ if [ ! -r $iso ]; then
 	dir=/tmp
 	mkdir -p $(dirname $iso)
 	opts=""
+	if [ -n "$distribution" ]; then
+		opts="${opts}-F $distribution "
+	fi
+	if [ -n "$release" ]; then
+		opts="${opts}-R $release "
+	fi
 	if [ -n "$preseed" ]; then
-		opts="-s $preseed "
+		opts="${opts}-s $preseed "
 	fi
 	if [ -n "$noipv6" ]; then
 		opts="${opts}-i "
@@ -83,7 +91,7 @@ if [ ! -r $iso ]; then
 		opts=$(echo "$opts" | sed -e 's/  *$//')
 		opts="-e opts=\"$opts\""
 	fi
-	if ! eval $dockercmd run -t $opts -e "iso=$dir/custom.iso" -v $(dirname $iso):$dir $tag; then
+	if ! eval $dockercmd run -t $opts -e "iso=$dir/$(basename $iso)" -v $(dirname $iso):$dir $tag; then
 		echo -e "\nERROR $(basename $0): can not built iso\n"
 		exit 1
 	fi

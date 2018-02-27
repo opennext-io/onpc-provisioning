@@ -70,19 +70,21 @@ Description=Install VirtualBox Guest Additions
 
 [Service]
 Type=oneshot
-ExecStart=/etc/init.d/configure_vbox_guest_additions.sh
+ExecStart=/etc/init.d/vbox_guest_additions
 RemainAfterExit=true
 
 [Install]
 WantedBy=multi-user.target
 _EOF
 		chmod 644 /lib/systemd/system/vbox_guest_additions.service
-		systemctl enable vbox_guest_additions.service
+		if ! systemctl enable vbox_guest_additions.service 2>/dev/null; then
+			ln -s /lib/systemd/system/vbox_guest_additions.service /etc/systemd/system
+		fi
 		# The script itself
-		cat >/etc/init.d/configure_vbox_guest_additions.sh <<_EOF
+		cat >/etc/init.d/vbox_guest_additions <<_EOF
 #!/bin/bash
 ### BEGIN INIT INFO
-# Provides:          configure_vbox_guest_additions.sh
+# Provides:          vbox_guest_additions
 # Required-Start:    \$remote_fs \$syslog
 # Required-Stop:     \$remote_fs \$syslog
 # Default-Start:     2 3 4 5
@@ -98,11 +100,13 @@ if [ -r /root/VBoxGuestAdditions.iso ]; then
 	/tmp/mnt/VBoxLinuxAdditions.run
 fi
 echo "Done running \$0"
-systemctl disable vbox_guest_additions.service
+if ! systemctl disable vbox_guest_additions.service 2>/dev/null; then
+	rm -f /etc/systemd/system/vbox_guest_additions.service
+fi
 rm -f /root/VBoxGuestAdditions.iso
 reboot
 _EOF
-		chmod 755 /etc/init.d/configure_vbox_guest_additions.sh
+		chmod 755 /etc/init.d/vbox_guest_additions
 	fi
 	echo "Done handling VirtualBox platform"
 }
@@ -116,6 +120,20 @@ if [ $? -eq 0 ]; then
 		VirtualBox) vbox;;
 		*)      echo -e "\nWARNING $(basename $0): unsupported platform $hosttype\n";;
 	esac
+fi
+
+# Regenerate some initrd files if missing
+regen=""
+for i in /boot/vmlinuz*; do
+	kvers=$(basename $i | sed -e 's/^vmlinuz-//')
+	if [ ! -f /boot/initrd.img-$kvers ]; then
+		update-initramfs -k $kvers -u
+		regen=true
+	fi
+done
+# In case some initrd were regenerated, update grub
+if [ -n "$regen" ]; then
+	update-grub2
 fi
 
 # Eject CD-ROM to avoid boot loop

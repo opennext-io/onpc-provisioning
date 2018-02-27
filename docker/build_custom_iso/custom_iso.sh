@@ -17,16 +17,19 @@ cleanup() {
 }
 
 usage() {
-	echo -e "\nUsage: $(basename $0) [-i] [-d domainname] [-n nodename] [-p proxy-url] [-s preseed-url] [-u user] [-w admin-user-passwd] <path>/<bootable-ISO>\n"
+	echo -e "\nUsage: $(basename $0) [-i] [-d domainname] [-n nodename] [-p proxy-url] [-s preseed-url] [-u user] [-w admin-user-passwd] \
+ [-F distro-flavor (ubuntu|centos)] [-R distro-release (xenial|trusty|7|6)] -<path>/<bootable-ISO>\n"
 	exit $1
 }
 
 # A POSIX variable
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
-while getopts "d:h?in:p:s:u:w:" opt; do
+while getopts "d:F:h?in:p:R:s:u:w:" opt; do
     case "$opt" in
     d)  domainname=$OPTARG
+        ;;
+    F)  flavor=$OPTARG
         ;;
     h|\?)
         usage 0
@@ -36,6 +39,8 @@ while getopts "d:h?in:p:s:u:w:" opt; do
     n)  nodename=$OPTARG
         ;;
     p)  httpproxy=$OPTARG
+        ;;
+    R)  release=$OPTARG
         ;;
     s)  preseed=$OPTARG
         ;;
@@ -53,12 +58,37 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
-preseed=${preseed:-http://www.olivierbourdon.com/preseed_master.cfg}
+flavor=${flavor:-ubuntu}
+release=${release:-xenial}
+preseed=${preseed:-http://www.olivierbourdon.com/preseed_master-${release}.cfg}
 noipv6=${noipv6:+" ipv6.disable=1"}
 httpproxy=${httpproxy:-""}
 passwd=${passwd:-"vagrant"}
 domainname=${domainname:-"vagrantup.com"}
 nodename=${nodename:-"master"}
+
+case "$flavor" in
+"ubuntu")
+	case "$release" in
+	"xenial" | "trusty") ;;
+	*)
+		echo -e "\nUsage: $(basename $0) supported $flavor version $release, only xenial and trusty\n"
+		exit 1
+	esac
+	;;
+"centos")
+	case "$release" in
+	"6" | "7") ;;
+	*)
+		echo -e "\nUsage: $(basename $0) supported $flavor version $release, only 6 and 7\n"
+		exit 1
+	esac
+	;;
+*)	
+	echo -e "\nUsage: $(basename $0) $flavor supported, only ubuntu and centos\n"
+	exit 1
+	;;
+esac
 
 # Check command line arguments
 if [ $# -ne 1 ]; then
@@ -98,7 +128,9 @@ if [ -n "$passwd" ]; then
 	pass=" passwd/user-password-crypted=$vpasswd"
 fi
 # Retrieve official ISO from net
-isourl=http://archive.ubuntu.com/ubuntu/dists/xenial/main/installer-amd64/current/images/netboot/mini.iso
+if [ "$flavor" == "ubuntu" ]; then
+	isourl=http://archive.ubuntu.com/ubuntu/dists/${release}/main/installer-amd64/current/images/netboot/mini.iso
+fi
 http_proxy=$httpproxy wget -c -q --show-progress $isourl -O $tmpiso
 # Cleanup
 rm -rf $tmpdir
@@ -128,7 +160,7 @@ fi
 addonsflags="preseed/url=${preseed} netcfg/choose_interface=auto locale=en_US keyboard-configuration/layoutcode=us priority=critical${noipv6}${proxy}${pass}${extras}"
 sed -i -e 's?default install?default net?' -e 's?label install?label net?' \
 	-e 's?menu label ^Install?menu label ^Net Install (fully automated)?' \
-	-e "s?append vga=788 initrd=initrd.gz --- quiet?append vga=788 initrd=initrd.gz $addonsflags --- quiet?" \
+	-e "s?append vga=788 initrd=initrd.gz \(--*\) quiet?append vga=788 initrd=initrd.gz $addonsflags \1 quiet?" \
 	$tmpdir/txt.cfg
 echo "Rebuilding ..."
 (cd $tmpdir ; xorriso -as mkisofs -isohybrid-mbr isohdpfx.bin -c boot.cat -b isolinux.bin -no-emul-boot \
