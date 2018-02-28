@@ -6,4 +6,4 @@ keystone: false
 keystone_opts: ""
 os_release: "xenial"
 os_flavor: "ubuntu"
-upstream_release: "stable-queens"
+upstream_release: "stable-pike"
