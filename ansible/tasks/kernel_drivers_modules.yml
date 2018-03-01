@@ -1,5 +1,6 @@
 # Linux kernel drivers/modules configuration task
 ---
+# Add the specified module into configuration
 - name: Configuring system module {{ module }}
   lineinfile:
     path: /etc/modules
@@ -9,7 +10,7 @@
     group: root
     mode: 0644
 
-# Add the 802.1q module
+# Add the specified module into running system
 - name: Loading system module {{ module }}
   modprobe:
     name: "{{ module }}"

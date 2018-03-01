@@ -1,0 +1,82 @@
+---
+- hosts: master
+  become: yes
+
+  vars_files:
+    - ../vars/master-configure-system_vars.yml
+
+  tasks:
+
+    - name: Retrieving Remote Ironic Informations
+      slurp:
+        src: "/etc/ironic/ironic.conf"
+      register:
+        ironic_info
+
+    - name: Retrieving Remote Cloud Informations
+      slurp:
+        src: "~{{ systemuser }}/.config/openstack/clouds.yaml"
+      register:
+        cloud_info
+
+    - name: Setting Facts From Remote Informations
+      set_fact:
+        clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
+        ironic: "{{ ironic_info['content'] | b64decode | regex_search('http_url *= .*') }}"
+
+    - set_fact:
+        ironic_http_url: "{{ ironic.split(' ')[-1] }}"
+
+    - name: Retrieving IPA informations
+      find:
+        paths: /httpboot
+        follow: yes
+        patterns: '^ipa\.(vmlinuz|initramfs)$'
+        use_regex: yes
+      register: ipa_infos
+
+    - name: Retrieving Deployment Image informations
+      find:
+        paths: /httpboot
+        follow: yes
+        patterns: '^deployment_image\..*'
+        use_regex: yes
+      register: di_infos
+
+    - name: Setting IPA and Deployment Image informations
+      set_fact:
+        ipa_files: "{{ ipa_infos.get('files', {}) | selectattr('path', 'defined') | map(attribute='path') | list }}"
+        deploy_files: "{{ di_infos.get('files', {}) | selectattr('path', 'defined') | map(attribute='path') | list }}"
+
+    - fail: msg="Bad number of IPA files {{ ipa_files | length }}"
+      when: ipa_files | length != 2
+
+    - fail: msg="Bad number of Deployment Image files {{ deploy_files | length }}"
+      when: deploy_files | length != 3
+
+    - name: Retrieving QCOW2 image Informations
+      stat:
+        path: /httpboot/deployment_image.qcow2
+      register: qcow2_infos
+
+    - set_fact:
+        ironic_deploy_kernel: "{{ ironic_http_url }}/ipa.vmlinuz"
+        ironic_deploy_ramdisk: "{{ ironic_http_url }}/ipa.initramfs"
+        ironic_image_kernel: "{{ ironic_http_url }}/deployment_image.vmlinuz"
+        ironic_image_ramdisk: "{{ ironic_http_url }}/deployment_image.initrd"
+        ironic_image_qcow2: "{{ ironic_http_url }}/deployment_image.qcow2"
+        ironic_image_checksum: "{{ qcow2_infos.get('stat', {}).get('md5', '')}}"
+        ironic_root_size: 3
+
+    - set_fact:
+        auth: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}) }}"
+        auth_type: "password"
+
+    - debug: msg="{{ auth_type }} => {{ auth }}"
+
+    - include_tasks: ../tasks/introspection_rule.yml content={{ item }}
+      with_items:
+        - "{{ lookup('template', '../templates/ironic_additional_rule.yaml.j2') | from_yaml | to_json }}"
+        - "{{ lookup('template', '../templates/ironic_driver_rule.yaml.j2') | from_yaml | to_json }}"
+        - "{{ lookup('template', '../templates/ironic_deploy_image_rule.yaml.j2') | from_yaml | to_json }}"
+

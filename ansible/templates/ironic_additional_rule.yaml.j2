@@ -1,0 +1,13 @@
+---
+description: "Add extra discovery hardware information to extra field"
+conditions: []
+actions:
+  - action: "set-attribute"
+    path: "/extra/disks"
+    value: "{data[inventory][disks]}"
+  - action: "set-attribute"
+    path: "/extra/cpu"
+    value: "{data[inventory][cpu]}"
+  - action: "set-attribute"
+    path: "/extra/system_vendor"
+    value: "{data[inventory][system_vendor]}"
