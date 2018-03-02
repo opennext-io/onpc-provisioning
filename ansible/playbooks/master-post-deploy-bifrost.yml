@@ -74,9 +74,9 @@
 
     - debug: msg="{{ auth_type }} => {{ auth }}"
 
-    - include_tasks: ../tasks/introspection_rule.yml content={{ item }}
+    - include_tasks: ../tasks/ironic_introspection_rule.yml name={{ item.name }} template={{ item.template }}
       with_items:
-        - "{{ lookup('template', '../templates/ironic_additional_rule.yaml.j2') | from_yaml | to_json }}"
-        - "{{ lookup('template', '../templates/ironic_driver_rule.yaml.j2') | from_yaml | to_json }}"
-        - "{{ lookup('template', '../templates/ironic_deploy_image_rule.yaml.j2') | from_yaml | to_json }}"
+        - { name: "Generic Introspection Rule", template: "../templates/ironic_additional_rule.yaml.j2" }
+        - { name: "Driver Rule", template: "../templates/ironic_driver_rule.yaml.j2" }
+        - { name: "Deploy Image Rule", template: "../templates/ironic_deploy_image_rule.yaml.j2" }
 

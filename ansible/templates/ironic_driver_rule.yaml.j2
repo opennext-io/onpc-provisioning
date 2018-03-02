@@ -9,21 +9,3 @@
     - action: "set-attribute"
       path: "/driver_info/deploy_ramdisk"
       value: "{{ ironic_deploy_ramdisk }}"
-
-- description: "Set driver_info.deploy_ramdisk if empty"
-  conditions:
-    - op: "is-empty"
-      field: "node://driver_info.deploy_ramdisk"
-  actions:
-    - action: "set-attribute"
-      path: "/driver_info/deploy_ramdisk"
-      value: "{{ ironic_deploy_ramdisk }}"
-
-- description: "Set driver_info.deploy_kernel if empty"
-  conditions:
-    - op: "is-empty"
-      field: "node://driver_info.deploy_kernel"
-  actions:
-    - action: "set-attribute"
-      path: "/driver_info/deploy_kernel"
-      value: "{{ ironic_deploy_kernel }}"
