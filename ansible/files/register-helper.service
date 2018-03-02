@@ -1,0 +1,9 @@
+[Unit]
+After=sshd.service
+Description=Baremetal Nodes Registration Utility
+
+[Service]
+ExecStart=/usr/local/bin/register-helper.sh
+
+[Install]
+WantedBy=default.target

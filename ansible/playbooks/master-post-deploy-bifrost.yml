@@ -80,3 +80,49 @@
         - { name: "Driver Rule", template: "../templates/ironic_driver_rule.yaml.j2" }
         - { name: "Deploy Image Rule", template: "../templates/ironic_deploy_image_rule.yaml.j2" }
 
+    - name: Setting up Flask in virtualenv
+      become: no
+      pip:
+        virtualenv: ~/.venv/flask
+        name:
+          - flask
+          - apscheduler
+          - git+https://github.com/obourdon/shade
+          - flask_httpauth
+
+    - name: Copying Register Helper Python Code
+      copy:
+        src: ../files/register_helper.py
+        dest: "/home/{{ systemuser }}/register_helper.py"
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        mode: 0755
+
+    - name: Copying Register Helper Launcher
+      template:
+        src: ../templates/register-helper.sh
+        dest: /usr/local/bin/register-helper.sh
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Copying Register Helper Service Config File
+      copy:
+        src: ../files/register-helper.service
+        dest: /lib/systemd/system/register-helper.service
+        owner: root
+        group: root
+        mode: 0644
+      notify: Restarting Register Helper Service
+
+    - meta: flush_handlers
+
+  handlers:
+
+    - name: Activating Register Helper Service
+      command: systemctl enable register-helper.service
+      listen: "Restarting Register Helper Service"
+
+    - name: Running Register Helper Service
+      command: systemctl start register-helper.service
+      listen: "Restarting Register Helper Service"

@@ -69,7 +69,9 @@ def verify_password(username, password):
         my_auth = _get_shade_auth()
         my_auth['auth']['username'] = username
         my_auth['auth']['password'] = password
-        my_auth['auth']['project_name'] = os.getenv('OS_ADMIN_PROJECT_NAME', "")
+        # TODO: see if the following line should be uncommented and add
+        # more security but simple HTTP Auth only supports user:passwd
+        # my_auth['auth']['project_name'] = os.getenv('OS_PROJECT_NAME', "")
         try:
             cloud = shade.operator_cloud(**my_auth)
             machines = cloud.list_machines()
@@ -81,11 +83,11 @@ def verify_password(username, password):
     # Unauthorized access
     return False
 
+
 # Alternate authentication solution which allows
 # access to incoming request informations
 # using @requires_auth annotations for REST entrypoints
 # below instead of @auth.login_required
-
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -105,12 +107,12 @@ def requires_auth(f):
 
 
 def _find_machine(mac_addr):
-    app.logger.error('==================== _find_machine Looking for {}'.format(mac_addr))
+    app.logger.debug('******************** Looking for machine with MAC address {}'.format(mac_addr))
     if not mac_addr:
         return None
     for key, value in registered_machines.items():
         if mac_addr in value.get('nics', []):
-            app.logger.error('Found {} in {}'.format(mac_addr, key))
+            app.logger.debug('Found {} in {}'.format(mac_addr, key))
             return key
     return None
 
@@ -220,7 +222,7 @@ def _get_shade_infos():
             modified = []
             for key, value in todo_machines.items():
                 app.logger.error('Machine vid {} needs to be updated with {}'.format(
-                    key, value))
+                    key, pprint.pformat(value)))
                 rkey = _find_machine(value.get('mac_addr', None))
                 # Machine with same MAC address has been found
                 if rkey:
@@ -231,6 +233,25 @@ def _get_shade_infos():
             for key in modified:
                 del todo_machines[key]
 
+        for uuid,machine in registered_machines.items():
+            app.logger.error('Checking machine uuid {}  => {}'.format(uuid,pprint.pformat(machine)))
+            mstate = machine.get('provision_state', None)
+            app.logger.error('Checking for state: {}'.format(mstate))
+            try:
+                if mstate == 'enroll':
+                    app.logger.error('Changing to state: {}'.format('manage'))
+                    state_res = cloud.node_set_provision_state(uuid, 'manage')
+                    app.logger.error('Changing node state {} gave {}'.format(uuid, pprint.pformat(state_res)))
+                elif mstate == 'manageable':
+                    app.logger.error('Changing to state: {}'.format('provide'))
+                    state_res = cloud.node_set_provision_state(uuid, 'provide')
+                    app.logger.error('Changing node state {} gave {}'.format(uuid, pprint.pformat(state_res)))
+                elif mstate == 'available':
+                    app.logger.error('Changing to state: {}'.format('active'))
+                    state_res = cloud.node_set_provision_state(uuid, 'active')
+                    app.logger.error('Changing node state {} gave {}'.format(uuid, pprint.pformat(state_res)))
+            except Exception as e:
+                app.logger.error('Got exception changing node to state {}: {}'.format(mstate, e))
     except Exception as e:
         app.logger.error('Got exception: {}'.format(e))
 
