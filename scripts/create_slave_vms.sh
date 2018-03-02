@@ -90,7 +90,7 @@ for i in $(seq 1 $1); do
 				\"mac_addr\": \"${macaddr}\", \
 				\"virt-uuid\": \"${uuid}\" \
 			}"
-			if  curl -s $authcreds -H 'Content-Type: application/json' -X POST -d "$jsoninfos" http://${masterip}:${masterport}/${unregister}; then
+			if  curl -s $authcreds -H 'Content-Type: application/json' -X DELETE -d "$jsoninfos" http://${masterip}:${masterport}/${unregister}/${uuid}; then
 				echo "VM unregistration infos sent successfully"
 			else
 				echo "Failed to send VM unregistration infos"
@@ -124,8 +124,11 @@ for i in $(seq 1 $1); do
 		echo -e "\nYou can attach to VNC console at ${vmvncbindip}:$lvmvncport (local IP address is $localip)\n"
 		# Start VM
 		$virtinstallcmd -v --virt-type kvm --name $lvmname --ram $vmmem --vcpus $vmcpus --os-type linux --os-variant ubuntu16.04 \
-			--disk path=/var/lib/libvirt/images/$lvmname.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
-			--network bridge=virbr1,model=virtio --pxe --boot network,hd --noautoconsole \
+			--disk path=/var/lib/libvirt/images/${lvmname}-1.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
+			--disk path=/var/lib/libvirt/images/${lvmname}-2.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
+			--network bridge=virbr1,model=virtio \
+			--network bridge=virbr2,model=virtio \
+			--pxe --boot network,hd --noautoconsole \
 			--graphics vnc,listen=$vmvncbindip,port=$lvmvncport
 		sleep 2
 		lvbmcport=$(($vbmcport + $idx))

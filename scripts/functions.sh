@@ -55,6 +55,11 @@ getvminfos() {
 	uuid=""
 	case $virtprovider in
 		kvm)
+			# All MAC addresses and bridges:
+			# $virshcmd dumpxml $1 | $xmllintcmd --xpath '//interface[@type="bridge"]/mac/@address|//interface[@type="bridge"]/source/@bridge' - | \
+			# 	tr ' ' '\n' | awk -F= '/address/{addr=$2}/bridge/{printf "%s/%s\n",addr,$2}' | sed -e 's/"//g' | tr '\n' ' '
+			# Example output: 52:54:00:0b:bd:bb/virbr1 52:54:00:b7:db:8f/virbr2
+			# Can be used in for i in $(...); do ... $i; done
 			macaddr=$($virshcmd dumpxml $1 | $xmllintcmd --xpath 'string(//interface[@type="bridge"]/mac/@address)' -)
 			uuid=$($virshcmd dumpxml $1 | $xmllintcmd --xpath 'string(//uuid)' -)
 			;;

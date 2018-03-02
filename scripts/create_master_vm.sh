@@ -12,7 +12,7 @@ CMDDIR=$(dirname $(dirname $($linkcmd -f $0)))
 vmname=${MASTER_VM_NAME:-"master"}
 vmmem=${MASTER_VM_MEM:-2048}
 vmcpus=${MASTER_VM_CPUS:-2}
-vmdisk=${MASTER_VM_DISK:-10240}
+vmdisk=${MASTER_VM_DISK:-16384}
 vmvncbindip=${MASTER_VM_VNC_IP:-"0.0.0.0"}
 vmvncport=${MASTER_VM_VNC_PORT:-5900}
 
