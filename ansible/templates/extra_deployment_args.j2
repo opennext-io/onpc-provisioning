@@ -1,0 +1,6 @@
+# Deployment parameters
+---
+{% for item in args %}
+{%- set key_val = item.split('=') %}
+{{ key_val[0] }}: {{ key_val[1] }}
+{% endfor %}

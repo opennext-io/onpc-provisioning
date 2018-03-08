@@ -38,7 +38,8 @@
 
     - name: Computing OS Image Options
       set_fact:
-        os_opts: " -e extra_dib_elements=devuser,cloud-init-nocloud -e dib_os_release={{ os_release | default('xenial') }} -e dib_os_element={{ os_flavor | default('ubuntu-minimal') }} -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}"
+        os_opts: " -e dib_image_type=baremetal -e extra_dib_elements=devuser,cloud-init-nocloud -e dib_os_release={{ os_release | default('xenial') }} -e dib_os_element={{ os_flavor | default('ubuntu-minimal') }} -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}"
+        opennext_opts: " -e use_symlinks=true"
 
     - name: Computing Keystone Options
       set_fact:
@@ -51,10 +52,29 @@
       vars:
        itf_state: true
 
-    - debug: msg="ssh {{ systemuser }}@{{ ansible_default_ipv4.address }} -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }}{{ keystone_opts }}{{ os_opts }}'"
+    - name: Retrieving all deploy options
+      set_fact:
+        all_args: "-e network_interface={{ itf }}{{ keystone_opts }}{{ os_opts }}{{ opennext_opts }}"
+        args_file: "~{{ systemuser }}/deploy_args.yml"
+
+    - name: Populating remote configuration file
+      template:
+        src: ../templates/extra_deployment_args.j2
+        dest: "{{ args_file }}"
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        mode: 0644
+      vars:
+        args: "{{ all_args.split(' ') | reject('equalto', '-e') | list }}"
+
+    - name: Printing complete deploy command
+      debug: msg="ssh {{ systemuser }}@{{ ansible_default_ipv4.address }} -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml {{ all_args }}'"
+
+    - name: Printing alternate (shorter) deploy command
+      debug: msg="ssh {{ systemuser }}@{{ ansible_default_ipv4.address }} -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e @{{ args_file }}'"
 
     - name: Running Bifrost Playbook
-      shell: ". ../env-vars && . {{ venv }}/bin/activate && ansible-playbook -i inventory/target install.yaml -e network_interface={{ itf }} {{ keystone_opts }}"
+      shell: ". ../env-vars && . {{ venv }}/bin/activate && ansible-playbook -i inventory/target install.yaml {{ all_args }}"
       args:
         chdir: "{{ git }}/playbooks"
       environment:
