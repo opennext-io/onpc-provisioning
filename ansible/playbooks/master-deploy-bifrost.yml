@@ -38,7 +38,7 @@
 
     - name: Computing OS Image Options
       set_fact:
-        os_opts: " -e dib_image_type=baremetal -e extra_dib_elements=devuser,cloud-init-nocloud -e dib_os_release={{ os_release | default('xenial') }} -e dib_os_element={{ os_flavor | default('ubuntu-minimal') }} -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}"
+        os_opts: " -e dib_image_type=bootloader -e extra_dib_elements=devuser,cloud-init-nocloud,openssh-server -e dib_os_release={{ os_release | default('xenial') }} -e dib_os_element={{ os_flavor | default('ubuntu-minimal') }} -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}"
         opennext_opts: " -e use_symlinks=true"
 
     - name: Computing Keystone Options

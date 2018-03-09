@@ -52,7 +52,7 @@
       when: ipa_files | length != 2
 
     - fail: msg="Bad number of Deployment Image files {{ deploy_files | length }}"
-      when: deploy_files | length != 3
+      when: deploy_files | length != 1
 
     - name: Retrieving QCOW2 image Informations
       stat:
@@ -66,7 +66,7 @@
         ironic_image_ramdisk: "{{ ironic_http_url }}/deployment_image.initrd"
         ironic_image_qcow2: "{{ ironic_http_url }}/deployment_image.qcow2"
         ironic_image_checksum: "{{ qcow2_infos.get('stat', {}).get('md5', '')}}"
-        ironic_root_size: 3
+        ironic_root_size: 20
 
     - set_fact:
         auth: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}) }}"

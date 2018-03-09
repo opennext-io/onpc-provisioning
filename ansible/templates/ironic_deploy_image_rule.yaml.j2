@@ -4,11 +4,8 @@
       field: "node://instance_info"
   actions:
     - action: "set-attribute"
-      path: "/instance_info/kernel"
-      value: "{{ ironic_image_kernel }}"
-    - action: "set-attribute"
-      path: "/instance_info/ramdisk"
-      value: "{{ ironic_image_ramdisk }}"
+      path: "/instance_info/image_type"
+      value: "whole_disk"
     - action: "set-attribute"
       path: "/instance_info/image_source"
       value: "{{ ironic_image_qcow2 }}"
