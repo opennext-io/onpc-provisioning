@@ -10,6 +10,7 @@
 # System imports
 import os
 import pprint
+import ast
 
 # Flask web service imports
 from flask import Flask, jsonify, request, abort
@@ -122,6 +123,14 @@ def _patch_machine(uuid, vid, changes):
     #uuid = uuid.encode('ascii', 'ignore')
     app.logger.error('==================== _patch_machine {} {} {}'.format(uuid, vid, changes))
     patch = []
+    if 'name' in changes:
+        registered_machines[uuid]['kvm-name'] = changes['name']
+    if 'virt-uuid' in changes:
+        registered_machines[uuid]['virt-uuid'] = changes['virt-uuid']
+    if 'vnc_host' in changes and 'vnc_port' in changes:
+        registered_machines[uuid]['vnc-info'] = "{}:{}".format(
+            changes['vnc_host'],changes['vnc_port'])
+
     # TODO: see later as it seems like changing name always lead to error 406
     if 'name1' in changes:
         patch.append({
@@ -184,6 +193,11 @@ def _get_shade_infos():
             keys.sort()
             for key in keys:
                 value = machine[key]
+                if key in ['extra']:
+                    v = value.get('all', None)
+                    if v:
+                        v = ast.literal_eval(v)
+                        value = {'all': v}
                 # Only keep usefull informations
                 if key not in ['links', 'ports']:
                     new_machine[key] = value
@@ -269,6 +283,42 @@ scheduler.start()
 @requires_auth
 def get_machines():
     return jsonify(registered_machines)
+
+# GET request handler to get current status of machines
+@app.route('/status')
+@requires_auth
+def get_status():
+    ret = {}
+    for k,v in registered_machines.items():
+        vname = v.get('kvm-name')
+        if not vname:
+            continue
+        ret[vname] = {'ironic-uuid': k}
+        for f in ['vnc-info', 'virt-uuid', 'power_state', 'target_power_state',
+        'provision_state', 'last_error', 'properties/cpus',
+        'properties/local_gb', 'properties/memory_mb', 'target_provision_state',
+        'extra/all/macs', 'extra/all/interfaces/eth0/ip',
+        ]:
+            if '/' not in f:
+                v1 = v.get(f)
+            else:
+                v1 = None
+                v2 = v
+                for f1 in f.split('/'):
+                    v2 = v2.get(f1)
+                    if not v2:
+                        break
+#                    if f1 == 'all':
+#                        try:
+#                            v2 = ast.literal_eval(v2)
+#                        except Exception as e:
+#                            v2 = None
+#                            break
+                if v2:
+                    v1 = v2
+            if v1:
+                ret[vname][f] = v1
+    return jsonify(ret)
 
 # POST request handler to register new machines
 @app.route('/register', methods=['POST'])
