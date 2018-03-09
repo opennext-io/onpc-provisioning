@@ -103,6 +103,7 @@
         mode: 0644
       with_items:
         - { regexp: '^DIB_DEV_USER_USERNAME=.*$', line: 'DIB_DEV_USER_USERNAME="{{ systemuser }}"' }
+        - { regexp: '^DIB_DEV_USER_PASSWORD=.*$', line: 'DIB_DEV_USER_PASSWORD="{{ systempasswd }}"' }
         - { regexp: '^DIB_DEV_USER_PWDLESS_SUDO=.*$', line: 'DIB_DEV_USER_PWDLESS_SUDO=true' }
         - { regexp: '^DIB_DEV_USER_AUTHORIZED_KEYS=.*$', line: 'DIB_DEV_USER_AUTHORIZED_KEYS="/home/{{ systemuser }}/.ssh/authorized_keys"' }
         - { regexp: '^DIB_DEV_USER_SHELL=.*$', line: 'DIB_DEV_USER_SHELL="/bin/bash"' }

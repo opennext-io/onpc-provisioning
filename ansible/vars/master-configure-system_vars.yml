@@ -9,3 +9,4 @@ ip_netmask_broadcast: 255
 # and whose home will be retrieving and storing the
 # various Git repos
 systemuser: "{{ ansible_user | default(vagrant) }}"
+systempasswd: "{{ ansible_user | default(vagrant) }}"
