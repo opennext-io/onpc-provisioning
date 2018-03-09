@@ -43,7 +43,7 @@ checkstring SLAVE_VM_VNC_IP "$vmvncbindip" false '^([0–9]{1,3}\.){3}([0–9]{1
 
 checknumber '#nb-vms-to-launch' $1         1    $maxvms
 checknumber SLAVE_VM_MEM        $vmmem     1024 ""      8
-checknumber SLAVE_VM_DISK       $vmdisk    4096 ""      1024
+checknumber SLAVE_VM_DISK       $vmdisk    2048 ""      1024
 checknumber SLAVE_VM_CPUS       $vmcpus    1    16      1
 checknumber SLAVE_VM_VNC_PORT   $vmvncport 5900 ""      1
 
