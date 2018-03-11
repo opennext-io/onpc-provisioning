@@ -92,6 +92,17 @@
         group: "{{ systemuser }}"
         content: ""
 
+    - name: Creating image partitioning templates
+      template:
+        src: "{{ item }}.j2"
+        dest: "{{ systemuserhome }}/{{ item | basename }}"
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        mode: 0644
+      with_items:
+        - ../templates/partitioning-std.yml
+        - ../templates/partitioning-lvm.yml
+
     - name: Configuring DIB_DEV_USER_*
       lineinfile:
         path: /etc/environment

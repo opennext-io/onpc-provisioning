@@ -63,8 +63,6 @@
     - set_fact:
         ironic_deploy_kernel: "{{ ironic_http_url }}/ipa.vmlinuz"
         ironic_deploy_ramdisk: "{{ ironic_http_url }}/ipa.initramfs"
-        ironic_image_kernel: "{{ ironic_http_url }}/deployment_image.vmlinuz"
-        ironic_image_ramdisk: "{{ ironic_http_url }}/deployment_image.initrd"
         ironic_image_qcow2: "{{ ironic_http_url }}/deployment_image.qcow2"
         ironic_image_checksum: "{{ qcow2_infos.get('stat', {}).get('md5', '')}}"
         ironic_root_size: 20

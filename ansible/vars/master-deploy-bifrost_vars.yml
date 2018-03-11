@@ -7,3 +7,5 @@ keystone_opts: ""
 os_release: "xenial"
 os_flavor: "ubuntu-minimal"
 upstream_release: "stable-pike"
+root_part_size_gb: 60
+partitioning_scheme: "partitioning-lvm"
