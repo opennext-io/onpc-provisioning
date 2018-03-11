@@ -100,7 +100,7 @@
 
     - name: Copying Register Helper Launcher
       template:
-        src: ../templates/register-helper.sh
+        src: ../templates/register-helper.sh.j2
         dest: /usr/local/bin/register-helper.sh
         owner: root
         group: root
