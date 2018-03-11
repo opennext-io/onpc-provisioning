@@ -6,33 +6,33 @@
     - name: "Configuring sudoers for {{ systemuser }}"
       template:
         src: ../templates/sudoers.j2
-        dest: "/etc/sudoers.d/{{ systemuser }}_user"
+        dest: /etc/sudoers.d/{{ systemuser }}_user
         owner: root
         group: root
         mode: 0440
 
-    - name: "Creating .ssh directory"
+    - name: Creating .ssh directory
       file:
-        path: /home/{{ systemuser }}/.ssh
+        path: "{{ systemuserhome }}/.ssh"
         mode: 0700
         state: directory
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
 
-    - name: "Creating new SSH key"
+    - name: Creating new SSH key
       user:
         name: "{{ systemuser }}"
         generate_ssh_key: yes
         ssh_key_bits: 2048
         ssh_key_file: .ssh/id_rsa
 
-    - name: "Retrieving host FQDN"
+    - name: Retrieving host FQDN
       command: /bin/hostname -f
       register: fqdn
 
-    - name: "Modifying public SSH key comment"
+    - name: Modifying public SSH key comment
       lineinfile:
-        path: "/home/{{ systemuser }}/.ssh/id_rsa.pub"
+        path: "{{ systemuserhome }}/.ssh/id_rsa.pub"
         backrefs: yes
         regexp: '^ssh-rsa (.*) ansible-generated on .*$'
         line: 'ssh-rsa \1 ansible-generated on {{ fqdn.stdout }}'
@@ -40,14 +40,14 @@
         owner: root
         group: root
         mode: 0644
- 
-    - name: "Retrieve public SSH key"
+
+    - name: Retrieve public SSH key
       fetch:
-        src: "/home/{{ systemuser }}/.ssh/id_rsa.pub"
+        src: "{{ systemuserhome }}/.ssh/id_rsa.pub"
         dest: /tmp/id_rsa.pub-{{ systemuser }}-{{ inventory_hostname }}
         flat: yes
 
-    - name: "Updating authorized SSH keys"
+    - name: Updating authorized SSH keys
       authorized_key:
         user: "{{ systemuser }}"
         state: present
@@ -62,31 +62,31 @@
     - name: Configuring SSH defaults
       template:
         src: ../templates/ssh_cfg.j2
-        dest: "/home/{{ systemuser }}/.ssh/config"
+        dest: "{{ systemuserhome }}/.ssh/config"
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
         mode: 0644
       when: itf is defined
 
-    - name: "Creating .cache directory"
+    - name: Creating .cache directory
       file:
-        path: /home/{{ systemuser }}/.cache
+        path: "{{ systemuserhome }}/.cache"
         mode: 0700
         state: directory
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
 
-    - name: "Creating legal removal file"
+    - name: Creating legal removal file
       copy:
-        dest: /home/{{ systemuser }}/.cache/motd.legal-displayed
+        dest: "{{ systemuserhome }}/.cache/motd.legal-displayed"
         mode: 0644
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
         content: ""
 
-    - name: "Creating login banner removal file"
+    - name: Creating login banner removal file
       copy:
-        dest: /home/{{ systemuser }}/.sudo_as_admin_successful
+        dest: "{{ systemuserhome }}/.sudo_as_admin_successful"
         mode: 0644
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
@@ -105,5 +105,5 @@
         - { regexp: '^DIB_DEV_USER_USERNAME=.*$', line: 'DIB_DEV_USER_USERNAME="{{ systemuser }}"' }
         - { regexp: '^DIB_DEV_USER_PASSWORD=.*$', line: 'DIB_DEV_USER_PASSWORD="{{ systempasswd }}"' }
         - { regexp: '^DIB_DEV_USER_PWDLESS_SUDO=.*$', line: 'DIB_DEV_USER_PWDLESS_SUDO=true' }
-        - { regexp: '^DIB_DEV_USER_AUTHORIZED_KEYS=.*$', line: 'DIB_DEV_USER_AUTHORIZED_KEYS="/home/{{ systemuser }}/.ssh/authorized_keys"' }
+        - { regexp: '^DIB_DEV_USER_AUTHORIZED_KEYS=.*$', line: 'DIB_DEV_USER_AUTHORIZED_KEYS="{{ systemuserhome }}/.ssh/authorized_keys"' }
         - { regexp: '^DIB_DEV_USER_SHELL=.*$', line: 'DIB_DEV_USER_SHELL="/bin/bash"' }

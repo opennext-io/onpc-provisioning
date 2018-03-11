@@ -55,7 +55,7 @@
     - name: Retrieving all deploy options
       set_fact:
         all_args: "-e network_interface={{ itf }}{{ keystone_opts }}{{ os_opts }}{{ opennext_opts }}"
-        args_file: "~{{ systemuser }}/deploy_args.yml"
+        args_file: "{{ systemuserhome }}/deploy_args.yml"
 
     - name: Populating remote configuration file
       template:

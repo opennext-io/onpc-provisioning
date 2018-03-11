@@ -4,6 +4,7 @@
 
   vars_files:
     - ../vars/master-configure-system_vars.yml
+    - ../vars//master-deploy-bifrost_vars.yml
 
   tasks:
 
@@ -15,7 +16,7 @@
 
     - name: Retrieving Remote Cloud Informations
       slurp:
-        src: "~{{ systemuser }}/.config/openstack/clouds.yaml"
+        src: "{{ systemuserhome }}/.config/openstack/clouds.yaml"
       register:
         cloud_info
 
@@ -83,7 +84,7 @@
     - name: Setting up Flask in virtualenv
       become: no
       pip:
-        virtualenv: ~/.venv/flask
+        virtualenv: "{{ systemuserhome }}/.venv/flask"
         name:
           - flask
           - apscheduler
@@ -93,7 +94,7 @@
     - name: Copying Register Helper Python Code
       copy:
         src: ../files/register_helper.py
-        dest: "/home/{{ systemuser }}/register_helper.py"
+        dest: "{{ systemuserhome }}/register_helper.py"
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
         mode: 0755

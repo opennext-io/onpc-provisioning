@@ -1,7 +1,7 @@
 ---
-home: "/home/{{ systemuser }}"
-git: "{{ home }}/bifrost"
-venv: "{{ home }}/.venv/bifrost"
+systemuserhome: "/home/{{ systemuser }}"
+git: "{{ systemuserhome }}/bifrost"
+venv: "{{ systemuserhome }}/.venv/bifrost"
 keystone: false
 keystone_opts: ""
 os_release: "xenial"

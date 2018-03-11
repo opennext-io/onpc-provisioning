@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd ~{{ systemuser }}
+cd {{ systemuserhome }}
 
 # OpenStack Ironic credentials
 . openrc bifrost-admin
@@ -8,6 +8,6 @@ cd ~{{ systemuser }}
 # Activate virtualenv which contains Flask and dependencies
 . .venv/flask/bin/activate
 
-export FLASK_APP=~{{ systemuser }}/register_helper.py
+export FLASK_APP={{ systemuserhome }}/register_helper.py
 
 flask run -h 0.0.0.0 -p 7777

@@ -11,6 +11,7 @@
 
   vars_files:
     - ../vars/master-configure-system_vars.yml
+    - ../vars/master-deploy-bifrost_vars.yml
     - ../vars/master-pkgs-ubuntu.yml
 
   tasks:
