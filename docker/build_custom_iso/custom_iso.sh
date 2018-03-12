@@ -18,6 +18,7 @@ cleanup() {
 
 usage() {
 	echo -e "\nUsage: $(basename $0) [-i] [-d domainname] [-n nodename] [-p proxy-url] [-s preseed-url] [-u user] [-w admin-user-passwd] \
+ [-I static-ip -N netmask -G gateway -D dns-servers] \
  [-F distro-flavor (ubuntu|centos)] [-R distro-release (xenial|trusty|7|6)] -<path>/<bootable-ISO>\n"
 	exit $1
 }
@@ -25,18 +26,26 @@ usage() {
 # A POSIX variable
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
-while getopts "d:F:h?in:p:R:s:u:w:" opt; do
+while getopts "d:D:F:G:h?iI:n:N:p:R:s:u:w:" opt; do
     case "$opt" in
     d)  domainname=$OPTARG
         ;;
+    D)  dnsservers=$OPTARG
+        ;;
     F)  flavor=$OPTARG
+        ;;
+    G)  gateway=$OPTARG
         ;;
     h|\?)
         usage 0
         ;;
     i)  noipv6=1
         ;;
+    I)  staticip=$OPTARG
+        ;;
     n)  nodename=$OPTARG
+        ;;
+    N)  netmask=$OPTARG
         ;;
     p)  httpproxy=$OPTARG
         ;;
@@ -58,6 +67,10 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
+staticip=${staticip:-""}
+netmask=${netmask:-""}
+gateway=${gateway:-""}
+dnsservers=${dnsservers:-""}
 flavor=${flavor:-ubuntu}
 release=${release:-xenial}
 preseed=${preseed:-http://www.olivierbourdon.com/preseed_master-${release}.cfg}
@@ -66,6 +79,17 @@ httpproxy=${httpproxy:-""}
 passwd=${passwd:-"vagrant"}
 domainname=${domainname:-"vagrantup.com"}
 nodename=${nodename:-"master"}
+
+extras=""
+if [ -n "$staticip" ] || [ -n "$netmask" ] || [ -n "$gateway" ] || [ -n "$dnsservers" ]; then
+	if [ -z "$staticip" ] || [ -z "$netmask" ] || [ -z "$gateway" ] || [ -z "$dnsservers" ]; then
+		echo -e "\nIncomplete static configuration\n"
+		exit 1
+	fi
+	dns=$(echo ${dnsservers} | sed -e 's/,/ /g')
+	extras="$extras netcfg/confirm_static=true netcfg/get_gateway=${gateway} netcfg/get_nameservers=\"${dns}\""
+	extras="$extras netcfg/disable_autoconfig=true netcfg/get_netmask=${netmask} netcfg/get_ipaddress=${staticip}"
+fi
 
 case "$flavor" in
 "ubuntu")
@@ -147,7 +171,6 @@ sed -i -e 's?timeout 0?timeout 30?' $tmpdir/isolinux.cfg
 if [ -n "$httpproxy" ]; then
 	proxy=" mirror/http/proxy=${httpproxy}"
 fi
-extras=""
 if [ -n "$nodename" ]; then
 	extras="$extras netcfg/get_hostname=${nodename}"
 fi

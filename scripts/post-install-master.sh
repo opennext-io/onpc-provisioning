@@ -6,7 +6,10 @@ set -ex
 exec > >(tee -i /var/log/"$(basename "$0" .sh)"_"$(date '+%Y-%m-%d_%H-%M-%S')".log) 2>&1
 
 # Store boot arguments in environment
-eval $(cat /proc/cmdline | tr ' ' '\n' | grep '=' | awk -F= '{gsub("/","_",$1);gsub("-","_",$1);printf "%s=%s\n",$1,$2}')
+# Need to exclude nameservers due to the potentiality of multiple values
+# netcfg/get_nameservers="IP1 IP2 IP3"
+# which can lead to parsing errors due to double-quotes
+eval $(cat /proc/cmdline | tr ' ' '\n' | grep '=' | grep -v 'netcfg/get_nameservers=' | awk -F= '{gsub("/","_",$1);gsub("-","_",$1);printf "%s=%s\n",$1,$2}')
 
 # Retrieve proxy information from installation
 proxy=$(grep Acquire::http::Proxy /etc/apt/apt.conf | sed -e 's/";$//' | awk -F/ '{print $3}')

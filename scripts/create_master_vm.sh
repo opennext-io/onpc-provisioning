@@ -25,6 +25,10 @@ httpproxy=${PROXY:-""}
 username=${ADMIN_USER:-"vagrant"}
 passwd=${ADMIN_PASSWD:-"vagrant"}
 domainname=${DOMAIN:-"vagrantup.com"}
+staticip=${STATICIP:-""}
+netmask=${NETMASK:-""}
+gateway=${GATEWAY:-""}
+dnsservers=${DNSSERVERS:-""}
 
 # Check command line arguments
 if [ $# -ne 0 ]; then
@@ -86,6 +90,18 @@ if [ ! -r $iso ]; then
 	fi
 	if [ -n "$username" ]; then
 		opts="${opts}-u $username "
+	fi
+	if [ -n "$staticip" ]; then
+		opts="${opts}-I $staticip "
+	fi
+	if [ -n "$netmask" ]; then
+		opts="${opts}-N $netmask "
+	fi
+	if [ -n "$gateway" ]; then
+		opts="${opts}-G $gateway "
+	fi
+	if [ -n "$dnsservers" ]; then
+		opts="${opts}-D $dnsservers "
 	fi
 	if [ -n "$opts" ]; then
 		opts=$(echo "$opts" | sed -e 's/  *$//')
