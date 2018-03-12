@@ -137,6 +137,8 @@ if [ -n "$regen" ]; then
 fi
 
 # Eject CD-ROM to avoid boot loop
-eject
+if ! eject; then
+	echo "Eject failed (most probably due to USB mounting of ISO)"
+fi
 
 exit 0
