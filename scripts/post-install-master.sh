@@ -6,10 +6,25 @@ set -ex
 exec > >(tee -i /var/log/"$(basename "$0" .sh)"_"$(date '+%Y-%m-%d_%H-%M-%S')".log) 2>&1
 
 # Store boot arguments in environment
-# Need to exclude nameservers due to the potentiality of multiple values
+# Need to exclude nameservers and ntp-server due to the potentiality of multiple values
 # netcfg/get_nameservers="IP1 IP2 IP3"
 # which can lead to parsing errors due to double-quotes
-eval $(cat /proc/cmdline | tr ' ' '\n' | grep '=' | grep -v 'netcfg/get_nameservers=' | awk -F= '{gsub("/","_",$1);gsub("-","_",$1);printf "%s=%s\n",$1,$2}')
+eval $(cat /proc/cmdline | tr ' ' '\n' | grep '=' | egrep -v 'netcfg/get_nameservers=|clock-setup/ntp-server=' | awk -F= '{gsub("/","_",$1);gsub("-","_",$1);printf "%s=%s\n",$1,$2}')
+
+# Update NTP configuration if necessary
+if egrep -q 'clock-setup/ntp-server="' /proc/cmdline; then
+	ntpservers=$(cat /proc/cmdline | sed -e 's?.*clock-setup/ntp-server="\([^"]*\)".*?\1?')
+	if [ -f /etc/ntp.conf ]; then
+		# Comment out all server and pool entries and add others
+		sed -i -e 's/^server /#server /' -e 's/^pool /#pool /' \
+			-e '/ntp server as a fallback/i# Custom ntp server list' \
+			/etc/ntp.conf
+		for n in $ntpservers; do
+			sed -i -e "/# Custom ntp server list/aserver $n" \
+				/etc/ntp.conf
+		done
+	fi
+fi
 
 # Retrieve proxy information from installation
 proxy=$(grep Acquire::http::Proxy /etc/apt/apt.conf | sed -e 's/";$//' | awk -F/ '{print $3}')

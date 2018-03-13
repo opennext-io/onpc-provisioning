@@ -29,6 +29,7 @@ staticip=${STATICIP:-""}
 netmask=${NETMASK:-""}
 gateway=${GATEWAY:-""}
 dnsservers=${DNSSERVERS:-""}
+ntpservers=${NTPSERVERS:-""}
 
 # Check command line arguments
 if [ $# -ne 0 ]; then
@@ -102,6 +103,9 @@ if [ ! -r $iso ]; then
 	fi
 	if [ -n "$dnsservers" ]; then
 		opts="${opts}-D $dnsservers "
+	fi
+	if [ -n "$ntpservers" ]; then
+		opts="${opts}-T $ntpservers "
 	fi
 	if [ -n "$opts" ]; then
 		opts=$(echo "$opts" | sed -e 's/  *$//')

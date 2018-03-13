@@ -18,7 +18,7 @@ cleanup() {
 
 usage() {
 	echo -e "\nUsage: $(basename $0) [-i] [-d domainname] [-n nodename] [-p proxy-url] [-s preseed-url] [-u user] [-w admin-user-passwd] \
- [-I static-ip -N netmask -G gateway -D dns-servers] \
+ [-I static-ip -N netmask -G gateway -D dns-servers] [-T ntp-servers] \
  [-F distro-flavor (ubuntu|centos)] [-R distro-release (xenial|trusty|7|6)] -<path>/<bootable-ISO>\n"
 	exit $1
 }
@@ -26,7 +26,7 @@ usage() {
 # A POSIX variable
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
-while getopts "d:D:F:G:h?iI:n:N:p:R:s:u:w:" opt; do
+while getopts "d:D:F:G:h?iI:n:N:p:R:s:T:u:w:" opt; do
     case "$opt" in
     d)  domainname=$OPTARG
         ;;
@@ -53,6 +53,8 @@ while getopts "d:D:F:G:h?iI:n:N:p:R:s:u:w:" opt; do
         ;;
     s)  preseed=$OPTARG
         ;;
+    T)  ntpservers=$OPTARG
+        ;;
     u)  username=$OPTARG
         ;;
     w)  passwd=$OPTARG
@@ -71,6 +73,7 @@ staticip=${staticip:-""}
 netmask=${netmask:-""}
 gateway=${gateway:-""}
 dnsservers=${dnsservers:-""}
+ntpservers=${ntpservers:-""}
 flavor=${flavor:-ubuntu}
 release=${release:-xenial}
 preseed=${preseed:-http://www.olivierbourdon.com/preseed_master-${release}.cfg}
@@ -89,6 +92,10 @@ if [ -n "$staticip" ] || [ -n "$netmask" ] || [ -n "$gateway" ] || [ -n "$dnsser
 	dns=$(echo ${dnsservers} | sed -e 's/,/ /g')
 	extras="$extras netcfg/confirm_static=true netcfg/get_gateway=${gateway} netcfg/get_nameservers=\"${dns}\""
 	extras="$extras netcfg/disable_autoconfig=true netcfg/get_netmask=${netmask} netcfg/get_ipaddress=${staticip}"
+fi
+if [ -n "$ntpservers" ]; then
+	ntp=$(echo ${ntpservers} | sed -e 's/,/ /g')
+	extras="$extras clock-setup/ntp-server=\"${ntp}\""
 fi
 
 case "$flavor" in
