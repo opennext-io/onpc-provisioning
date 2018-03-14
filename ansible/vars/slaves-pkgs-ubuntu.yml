@@ -1,0 +1,103 @@
+---
+# Bifrost master node IP mandatory packages for Ubuntu
+systempkgs: "{{
+  system +
+  dev +
+  disk +
+  monitoring +
+  network +
+  python +
+  user +
+  virtualization
+  }}"
+
+system:
+  - acl
+  - acpid
+  - ansible
+  - apport
+  - aptitude
+  - at
+  - debootstrap
+  - eatmydata
+  - linux-virtual
+  - overlayroot
+  - pollinate
+  - software-properties-common
+  - sosreport
+  - ubuntu-cloudimage-keyring
+  - ubuntu-core-launcher
+  - ubuntu-server
+  - unzip
+
+dev:
+  - autoconf
+  - build-essential
+  - libsystemd-dev
+
+disk:
+  - btrfs-tools
+  - cryptsetup
+  - gdisk
+  - mdadm
+  - squashfs-tools
+
+monitoring:
+  - arpwatch
+  - atop
+  - bwm-ng
+  - cbm
+  - ctop
+  - dstat
+  - htop
+  - iftop
+  - ioping
+  - iotop
+  - iptraf
+  - itop
+  - netdiag
+  - nethogs
+  - nload
+  - nmap
+  - nmon
+  - pktstat
+  - saidar
+  - slurm
+  - speedometer
+  - sysstat
+  - tcptrack
+  - tshark
+
+network:
+  - bridge-utils
+  - dnsmasq-base
+  - ifenslave
+  - ifenslave-2.6
+  - ifstat
+  - iputils-tracepath
+  - ntp
+  - ntpdate
+  - open-iscsi
+  - openssh-server
+  - vlan
+
+python:
+  - python-pip
+  - python-selinux
+  - python-virtualenv
+  - virtualenv
+
+user:
+  - byobu
+  - gawk
+  - pastebinit
+  - screen
+  - tmate
+  - tmux
+  - tree
+  - vim
+
+virtualization:
+  - lxd
+  - open-vm-tools
+  - virt-what

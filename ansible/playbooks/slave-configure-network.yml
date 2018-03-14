@@ -1,0 +1,81 @@
+---
+- hosts: localhost
+  connection: local
+
+  tasks:
+
+    - import_tasks: ../tasks/system_infos.yml
+
+- hosts: slaves
+  become: yes
+
+  vars_files:
+    - ../vars/slaves-pkgs-ubuntu.yml
+    - ../vars/slaves-briges-vlans_vars.yml
+
+  tasks:
+
+    - import_tasks: ../tasks/system_infos.yml
+
+    - name: Verifying all mandatory packages
+      package:
+        name: "{{ systempkgs | sort }}"
+        state: latest
+
+    - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
+      with_items:
+        - "bonding"
+        - "8021q"
+
+    - import_tasks: ../tasks/secondary_network_interface.yml
+
+    - import_tasks: ../tasks/select_secondary_network_interface.yml
+      vars:
+       itf_state: false
+
+    - name: Checking existence of interface file
+      stat:
+        path: "/etc/network/interfaces.d/{{ itf }}.cfg"
+      register: itf_config_file
+
+    - name: Determining target interface config file
+      set_fact:
+        itf_dest_file: "/etc/network/interfaces.d/{{ itf }}.cfg"
+      when: itf is defined and itf_config_file.stat.exists == True
+
+    - name: Determining target interface config file
+      set_fact:
+        itf_dest_file: "/etc/network/interfaces.d/{{ itf }}_bridges_vlans.cfg"
+      when: itf is defined and itf_config_file.stat.exists == False
+
+    - name: Configuring {{ itf }}
+      template:
+        src: ../templates/networking-single-nic-bridges.j2
+        dest: "{{ itf_dest_file }}"
+        owner: root
+        group: root
+        mode: 0644
+      when: itf is defined
+      vars:
+       physical_itf: "{{ itf }}"
+
+    - name: Configuring IP forwarding via sysctl
+      sysctl:
+        name: "net.ipv4.ip_forward"
+        value: 1
+        sysctl_set: yes
+        state: present
+        reload: yes
+      when: itf is defined
+
+    - name: Restarting network services
+      shell: echo "service networking restart" | at now + 0 min
+
+    - name: Wait for server come back
+      wait_for: >
+        host="{{ inventory_hostname }}"
+        port=22
+        delay=15
+        timeout=60
+      delegate_to: localhost
+      become: no

@@ -1,0 +1,112 @@
+# Directly derived from https://docs.openstack.org/project-deploy-guide/openstack-ansible/newton/app-config-test.html
+#
+# This is a single-NIC configuration to implement the required bridges
+# for OpenStack-Ansible. This illustrates the configuration of the first
+# Infrastructure host and the IP addresses assigned should be adapted
+# for implementation on the other hosts.
+#
+# After implementing this configuration, the host will need to be
+# rebooted.
+
+# Physical interface
+auto {{ physical_itf }}
+iface {{ physical_itf }} inet manual
+
+# Container/Host management VLAN interface
+auto {{ physical_itf }}.{{ mgmt_vlan_id }}
+iface {{ physical_itf }}.{{ mgmt_vlan_id }} inet manual
+    vlan-raw-device {{ physical_itf }}
+
+# OpenStack Networking VXLAN (tunnel/overlay) VLAN interface
+auto {{ physical_itf }}.{{ vxlan_vlan_id }}
+iface {{ physical_itf }}.{{ vxlan_vlan_id }} inet manual
+    vlan-raw-device {{ physical_itf }}
+
+# Storage network VLAN interface (optional)
+auto {{ physical_itf }}.{{ storage_vlan_id }}
+iface {{ physical_itf }}.{{ storage_vlan_id }} inet manual
+    vlan-raw-device {{ physical_itf }}
+
+# Container/Host management bridge
+auto br-mgmt
+iface br-mgmt inet static
+    bridge_stp off
+    bridge_waitport 0
+    bridge_fd 0
+    bridge_ports {{ physical_itf }}.{{ mgmt_vlan_id }}
+    address {{ mgmt_ip_prefix }}.{{ ip_suffix }}
+    netmask {{ netmask }}
+    gateway {{ gateway }}
+    dns-nameservers {{ dns_servers }}
+
+# OpenStack Networking VXLAN (tunnel/overlay) bridge
+#
+# Only the COMPUTE and NETWORK nodes must have an IP address
+# on this bridge. When used by infrastructure nodes, the
+# IP addresses are assigned to containers which use this
+# bridge.
+#
+auto br-vxlan
+{% if compute is defined %}
+iface br-vxlan inet static
+{% else %}
+iface br-vxlan inet manual
+{% endif %}
+    bridge_stp off
+    bridge_waitport 0
+    bridge_fd 0
+    bridge_ports {{ physical_itf }}.{{ vxlan_vlan_id }}
+{% if compute is defined %}
+    address {{ vxlan_ip_prefix }}.{{ ip_suffix }}
+    netmask {{ netmask }}
+{% endif %}
+
+# OpenStack Networking VLAN bridge
+auto br-vlan
+iface br-vlan inet manual
+    bridge_stp off
+    bridge_waitport 0
+    bridge_fd 0
+{% if compute is not defined %}
+    bridge_ports {{ physical_itf }}
+{% endif %}
+
+# For tenant vlan support, create a veth pair to be used when the neutron
+# agent is not containerized on the compute hosts. 'eth12' is the value used on
+# the host_bind_override parameter of the br-vlan network section of the
+# openstack_user_config example file. The veth peer name must match the value
+# specified on the host_bind_override parameter.
+#
+# When the neutron agent is containerized it will use the container_interface
+# value of the br-vlan network, which is also the same 'eth12' value.
+#
+# Create veth pair, do not abort if already exists
+#    pre-up ip link add br-vlan-veth type veth peer name eth12 || true
+# Set both ends UP
+#    pre-up ip link set br-vlan-veth up
+#    pre-up ip link set eth12 up
+# Delete veth pair on DOWN
+#    post-down ip link del br-vlan-veth || true
+#    bridge_ports {{ physical_itf }} br-vlan-veth
+
+# Storage bridge (optional)
+#
+# Only the COMPUTE and STORAGE nodes must have an IP address
+# on this bridge. When used by infrastructure nodes, the
+# IP addresses are assigned to containers which use this
+# bridge.
+#
+auto br-storage
+{% if compute is defined %}
+iface br-storage inet static
+{% else %}
+iface br-storage inet manual
+{% endif %}
+    bridge_stp off
+    bridge_waitport 0
+    bridge_fd 0
+    bridge_ports {{ physical_itf }}.{{ storage_vlan_id }}
+{% if compute is defined %}
+    address {{ storage_ip_prefix }}.{{ ip_suffix }}
+    netmask {{ netmask }}
+{% endif %}

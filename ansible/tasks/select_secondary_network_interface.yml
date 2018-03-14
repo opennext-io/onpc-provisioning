@@ -4,4 +4,5 @@
   set_fact:
     itf: "{{ itfs[0].device }}"
   when: (itfs|default([])|length>0 and
-         itfs[0].active == itf_state)
+         (itfs[0].active == itf_state or
+           itfs[0].ipv4 is undefined))
