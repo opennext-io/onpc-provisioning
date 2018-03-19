@@ -20,6 +20,7 @@ system:
   - at
   - debootstrap
   - eatmydata
+  - ebtables
   - linux-virtual
   - overlayroot
   - pollinate
@@ -79,6 +80,7 @@ network:
   - ntpdate
   - open-iscsi
   - openssh-server
+  - traceroute
   - vlan
 
 python:
