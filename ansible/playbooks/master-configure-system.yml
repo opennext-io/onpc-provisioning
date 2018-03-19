@@ -13,6 +13,7 @@
     - ../vars/master-configure-system_vars.yml
     - ../vars/master-deploy-bifrost_vars.yml
     - ../vars/master-pkgs-ubuntu.yml
+    - ../vars/master-kvm-pkgs-ubuntu.yml
 
   tasks:
 
@@ -30,6 +31,12 @@
       package:
         name: "{{ systempkgs | sort }}"
         state: latest
+
+    - name: Verifying all mandatory packages for running KVM/libvirt
+      package:
+        name: "{{ kvmsystempkgs | sort }}"
+        state: latest
+      when: master_running_kvm
 
     - name: Storing collision IP addresses list
       set_fact:

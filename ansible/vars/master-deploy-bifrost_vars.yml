@@ -9,3 +9,4 @@ os_flavor: "ubuntu-minimal"
 upstream_release: "stable-pike"
 root_part_size_gb: 60
 partitioning_scheme: "partitioning-lvm"
+master_running_kvm: false

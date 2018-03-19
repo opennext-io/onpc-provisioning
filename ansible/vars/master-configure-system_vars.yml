@@ -11,3 +11,4 @@ ip_netmask_broadcast: 255
 systemuser: "{{ ansible_user | default(vagrant) }}"
 systempasswd: "{{ ansible_user | default(vagrant) }}"
 dhcptimeout: "{{ dhcp_timeout | default(10) }}"
+libvirtgroup: "{{ libvirt_group | default('libvirtd') }}"
