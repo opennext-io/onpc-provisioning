@@ -35,7 +35,7 @@
     - name: Getting Setup Result
       set_fact:
         todo: "{{ setup_result.stdout.split('\n')[-3:-1] | join(' && ') | replace('source','.') | replace('env-vars','../env-vars') }}"
-        dib_std_options: " -e dib_image_type=bootloader -e extra_dib_elements=dracut-regenerate,devuser,cloud-init-nocloud,openssh-server -e dib_packages=python3-yaml,dracut"
+        dib_std_options: " -e dib_init_element=dhcp-all-interfaces -e dib_image_type=bootloader -e extra_dib_elements=dracut-regenerate,devuser,cloud-init-nocloud,openssh-server -e dib_packages=python3-yaml,dracut"
 
     - name: Set partitioning informations
       set_fact:
