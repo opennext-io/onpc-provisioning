@@ -202,7 +202,7 @@
       when: secondary_itf is defined
       vars:
         - prov_itf: "{{ secondary_itf.device }}"
-        - prov_bridge: "{{ provisioning_bridge | default('br-prov') }}"
+        - prov_bridge: "{{ kvm_bridge_itf }}"
         - vlans_list: "{{ osa_vlans | default([]) }}"
 
     - name: Set fact for conditional execution
@@ -221,17 +221,11 @@
       wait_for: >
         host="{{ inventory_hostname }}"
         port=22
-        delay=15
+        delay=10
         timeout=60
       delegate_to: localhost
       become: no
       when: network_reconfig is defined and network_reconfig
-
-    - fail:
-        msg: |
-          GOT inactive ethernet {{ inactive_ether_itfs | map(attribute='device') | list }}
-          active ethernet {{ active_ether_itfs | map(attribute='device') | list }}
-          active bridge {{ active_bridge_itfs | map(attribute='device') | list }}
 
     - name: Adding existing user {{ systemuser }} to group {{ libvirtgroup }}
       user:
@@ -240,27 +234,75 @@
         append=yes
       when: master_running_kvm
 
-    - name: Creating network bridge template
-      become: no
-      template:
-        src: ../templates/kvm-network-bridge.xml.y2
-        dest: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
-        owner: "{{ systemuser }}"
-        group: "{{ systemuser }}"
-        mode: 0644
+    - name: Getting filesystem informations about {{ libvirtvarpath }}
+      stat:
+        path: "{{ libvirtvarpath }}"
+        follow: yes
+      register: libvirt_stat
       when: master_running_kvm
-      vars:
-        bridge_name: "{{ provisioning_bridge | default('provisioning') }}"
-        bridge_interface: "{{ inactive_ether_itfs[0].device }}"
-        bridge_uuid_seed: "OpenNext"
 
-    - name: List available networks in KVM/libvirt
+    - name: Making sure libvirt service is running
+      service:
+        name: "{{ libvirtservice }}"
+        state: started
+
+    # Facts will be available as 'ansible_libvirt_networks'
+    - name: Gather facts about available networks in KVM/libvirt
       virt_net:
-        command: list_nets
-      register: kvm_networks
+        command: facts
       when: master_running_kvm
 
-    - fail: msg="GOT KVM NETS {{ kvm_networks | default('None') }}"
+    - name: Creating KVM/libvirt network bridge template & network
+      block:
+        - name: Creating KVM/libvirt network bridge template & network
+          become: no
+          template:
+            src: ../templates/kvm-network-bridge.xml.y2
+            dest: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
+            owner: "{{ systemuser }}"
+            group: "{{ systemuser }}"
+            mode: 0644
+          vars:
+            network_name: "{{ kvm_network_name }}"
+            bridge_interface: "{{ kvm_bridge_itf }}"
+            uuid_seed: "OpenNext"
+
+        - name: Getting XML definition of KVM/libvirt network
+          slurp:
+            src: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
+          register: xml_network
+
+        - name: Creating KVM/libvirt network
+          virt_net:
+            command: define
+            name: "{{ kvm_network_name }}"
+            xml: "{{ xml_network['content'] | b64decode }}"
+      when: master_running_kvm and kvm_network_name not in ansible_libvirt_networks
+
+    - name: Autostarting KVM/libvirt network
+      virt_net:
+        autostart: yes
+        name: "{{ kvm_network_name }}"
+
+    - name: Activating KVM/libvirt network
+      virt_net:
+        state: active
+        name: "{{ kvm_network_name }}"
+
+    - name: Retrieving max free space mount point
+      set_fact:
+        max_free_mount: "{{ ansible_mounts | sort('size_available' | int) | last }}"
+
+    - name: Setting {{ libvirtvarpath }} destination to max free space zone
+      set_fact:
+        virt_dest: "{{ max_free_mount['mount'] }}"
+
+    - name: Stopping libvirt service
+      service:
+        name: "{{ libvirtservice }}"
+        state: stopped
+
+    - fail: msg="GOT KVM NETS {{ ansible_libvirt_networks }} LIBVIRT {{ libvirt_stat }} MOUNTS {{ max_free_mount }} {{ virt_dest}}"
 
     - name: Configuring System Wide Proxy
       lineinfile:

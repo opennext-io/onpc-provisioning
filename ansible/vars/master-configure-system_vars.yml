@@ -17,6 +17,11 @@ dhcptimeout: "{{ dhcp_timeout | default(10) }}"
 
 # System group to control KVM/libvirt from
 libvirtgroup: "{{ libvirt_group | default('libvirtd') }}"
+# Location where KVM/libvirt stores VMs bits
+libvirtvarpath: "{{ libvirt_var_path | default('/var/lib/libvirt') }}"
+libvirtservice: "{{ libvirt_service | default('libvirtd') }}"
+kvm_network_name: "{{ provisioning_network_name | default('provisioning') }}"
+kvm_bridge_itf: "{{ provisioning_bridge_itf | default('br-prov') }}"
 
 # Current default scenario is to have a physical machine
 # acting as the master node and which will spawn KVM/libvirt
