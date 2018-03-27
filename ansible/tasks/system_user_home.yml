@@ -115,3 +115,4 @@
         - { regexp: '^DIB_DEV_USER_AUTHORIZED_KEYS=.*$', line: 'DIB_DEV_USER_AUTHORIZED_KEYS="{{ systemuserhome }}/.ssh/authorized_keys"' }
         - { regexp: '^DIB_DEV_USER_SHELL=.*$', line: 'DIB_DEV_USER_SHELL="/bin/bash"' }
         - { regexp: '^DIB_DHCP_TIMEOUT=.*$', line: 'DIB_DHCP_TIMEOUT={{ dhcptimeout }}' }
+        - { regexp: '^DIB_BLOCK_DEVICE=.*$', line: 'DIB_BLOCK_DEVICE={{ dibblockdevice | default("mbr") }}' }
