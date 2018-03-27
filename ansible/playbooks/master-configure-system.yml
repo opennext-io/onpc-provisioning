@@ -238,6 +238,7 @@
       service:
         name: "{{ libvirtservice }}"
         state: started
+      when: master_running_kvm
 
     # Facts will be available as 'ansible_libvirt_networks'
     - name: Gather facts about available networks in KVM/libvirt
@@ -276,19 +277,23 @@
       virt_net:
         autostart: yes
         name: "{{ kvm_network_name }}"
+      when: master_running_kvm
 
     - name: Activating KVM/libvirt network
       virt_net:
         state: active
         name: "{{ kvm_network_name }}"
+      when: master_running_kvm
 
     - name: Retrieving max free space mount point
       set_fact:
         max_free_mount: "{{ ansible_mounts | sort('size_available' | int) | last }}"
+      when: master_running_kvm
 
     - name: Setting {{ libvirtvarpath }} destination to max free space zone
       set_fact:
         virt_dest: "{{ max_free_mount['mount'] }}"
+      when: master_running_kvm
 
     - name: Getting filesystem informations about {{ libvirtvarpath }}
       stat:
