@@ -234,13 +234,6 @@
         append=yes
       when: master_running_kvm
 
-    - name: Getting filesystem informations about {{ libvirtvarpath }}
-      stat:
-        path: "{{ libvirtvarpath }}"
-        follow: yes
-      register: libvirt_stat
-      when: master_running_kvm
-
     - name: Making sure libvirt service is running
       service:
         name: "{{ libvirtservice }}"
@@ -297,12 +290,38 @@
       set_fact:
         virt_dest: "{{ max_free_mount['mount'] }}"
 
-    - name: Stopping libvirt service
-      service:
-        name: "{{ libvirtservice }}"
-        state: stopped
+    - name: Getting filesystem informations about {{ libvirtvarpath }}
+      stat:
+        path: "{{ item }}"
+        follow: yes
+      register: libvirt_stat
+      when: master_running_kvm
+      with_items:
+        - "{{ libvirtvarpath }}"
+        - "{{ virt_dest }}"
 
-    - fail: msg="GOT KVM NETS {{ ansible_libvirt_networks }} LIBVIRT {{ libvirt_stat }} MOUNTS {{ max_free_mount }} {{ virt_dest}}"
+    - name: Migrating {{ libvirtvarpath }} to {{ virt_dest }}
+      block:
+
+      - name: Stopping libvirt service
+        service:
+          name: "{{ libvirtservice }}"
+          state: stopped
+
+      - name: Moving over {{ libvirtvarpath }} to {{ virt_dest }}
+        command: "mv {{ libvirtvarpath }} {{ virt_dest }}"
+
+      - name: Creating symlink to {{ virt_dest }}
+        file:
+          src: "{{ virt_dest | regex_replace('/$', '') }}/{{ libvirtvarpath | basename }}"
+          dest: "{{ libvirtvarpath }}"
+          state: link
+
+      - name: Restarting libvirt service
+        service:
+          name: "{{ libvirtservice }}"
+          state: started
+      when: master_running_kvm and libvirt_stat['results'][0]['stat']['dev'] != libvirt_stat['results'][1]['stat']['dev']
 
     - name: Configuring System Wide Proxy
       lineinfile:
