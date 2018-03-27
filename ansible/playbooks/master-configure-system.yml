@@ -14,6 +14,7 @@
     - ../vars/master-deploy-bifrost_vars.yml
     - ../vars/master-pkgs-ubuntu.yml
     - ../vars/master-kvm-pkgs-ubuntu.yml
+    - ../vars/osa-briges-vlans_vars.yml
 
   tasks:
 
@@ -38,6 +39,36 @@
         state: latest
       when: master_running_kvm
 
+    - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
+      with_items:
+        - "bonding"
+        - "bridge"
+        - "br_netfilter"
+        - "8021q"
+
+    - name: Configuring IP forwarding via sysctl
+      sysctl:
+        name: "net.ipv4.ip_forward"
+        value: 1
+        sysctl_set: yes
+        state: present
+        reload: yes
+
+    - name: Configuring Bridges for proper VLAN support via sysctl
+      sysctl:
+        name: "{{ item }}"
+        value: 0
+        sysctl_set: yes
+        state: present
+        reload: yes
+      with_items:
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.bridge.bridge-nf-call-iptables
+        - net.bridge.bridge-nf-call-arptables
+        - net.bridge.bridge-nf-filter-pppoe-tagged
+        - net.bridge.bridge-nf-filter-vlan-tagged
+      when: master_running_kvm
+
     - name: Storing collision IP addresses list
       set_fact:
         collision_ips: "{{ hostvars['localhost']['local_ips'] | default([]) | intersect(local_ips) }}"
@@ -54,38 +85,182 @@
       fail: msg="ip_prefix and ip_suffix variables lead to {{ ip_prefix }}.{{ ip_suffix }} colliding with {{ hostvars['localhost']['local_ips'] }}"
       when: master_ip in hostvars['localhost']['local_ips']
 
-    - import_tasks: ../tasks/secondary_network_interface.yml
+    - import_tasks: ../tasks/select_network_interfaces_type.yml
+      vars:
+       itf_type: "ether"
 
-    - import_tasks: ../tasks/select_secondary_network_interface.yml
+    - import_tasks: ../tasks/filter_network_interfaces_name.yml
+      vars:
+        itf_reject_name: "virbr.*|.*\\.[1-9][0-9]*"
+
+    - import_tasks: ../tasks/select_network_interfaces_state.yml
       vars:
        itf_state: false
 
-    - name: Configuring {{ itfs[0].device }}
+    - name: Setting inactive ethernet network interfaces list
+      set_fact:
+        inactive_ether_itfs: "{{ itfs | list }}"
+        itfs: []
+
+    - import_tasks: ../tasks/select_network_interfaces_type.yml
+      vars:
+       itf_type: "ether"
+
+    - import_tasks: ../tasks/filter_network_interfaces_name.yml
+      vars:
+        itf_reject_name: "virbr.*|.*\\.[1-9][0-9]*"
+
+    - import_tasks: ../tasks/select_network_interfaces_state.yml
+      vars:
+       itf_state: true
+
+    - name: Setting active ethernet network interfaces list
+      set_fact:
+        active_ether_itfs: "{{ itfs | list }}"
+        itfs: []
+
+    - import_tasks: ../tasks/select_network_interfaces_type.yml
+      vars:
+       itf_type: "bridge"
+
+    - import_tasks: ../tasks/select_network_interfaces_state.yml
+      vars:
+       itf_state: true
+
+    - name: Setting active bridge network interfaces list
+      set_fact:
+        active_bridge_itfs: "{{ itfs | list }}"
+        itfs: []
+
+    - name: Checking if primary interface needs to migrate to bridge
+      set_fact:
+        primary: "{{ active_ether_itfs | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'defined') | selectattr('ipv4.address', 'match', ansible_default_ipv4.address) | list }}"
+
+    - name: Setting fact for primary ethernet interface for migration to bridge
+      set_fact:
+        primary_itf: "{{ primary[0] }}"
+      when: primary is defined and primary|length > 0
+
+    - name: Checking if secondary interface needs to migrate to bridge
+      set_fact:
+        secondary: "{{ inactive_ether_itfs | selectattr('ipv4', 'undefined') | list }}"
+
+    - name: Setting fact for secondary ethernet interface for migration to bridge
+      set_fact:
+        secondary_itf: "{{ secondary[0] }}"
+      when: secondary is defined and secondary|length > 0
+
+    - name: Getting interfaces infos
+      interfaces_file:
+      register: cur_interfaces
+
+    - name: Moving loopback interface to its own config file
+      interfaces_file:
+        src: /etc/network/interfaces
+        dest: /etc/network/interfaces.d/lo.cfg
+        iface: lo
+        state: move
+      register: lo_changed
+      when: "'lo' in cur_interfaces.get('ifaces', {})"
+
+    - name: Moving {{ primary_itf.get('device') }} interface to its own config file
+      interfaces_file:
+        src: /etc/network/interfaces
+        dest: "/etc/network/interfaces.d/{{ primary_itf.get('device') }}.cfg"
+        iface: "{{ primary_itf.get('device') }}"
+        state: move
+      register: primary_changed
+      when: "primary_itf is defined and primary_itf.get('device') in cur_interfaces.get('ifaces', {})"
+
+    - name: Migrating {{ primary_itf.get('device') }} ethernet interface to bridge
+      interfaces_file:
+        dest: "/etc/network/interfaces.d/{{ primary_itf.get('device') }}.cfg"
+        iface: "{{ primary_itf.get('device') }}"
+        state: bridge
+        bridge_options:
+          - { name: "br-host" }
+          - { bridge_maxwait: 5 }
+          - { bridge_stp: "off" }
+          - { bridge_fd: 0 }
+          - { bridge_waitport: 0 }
+      register: bridge_changed
+      when: primary_changed is defined and primary_changed.changed
+
+    - name: Bringing down interface and dhcpclient for proper bridging
+      set_fact:
+        itf_down: "pkill dhclient ; ip addr flush {{ primary_itf.get('device') }} ; "
+      when: bridge_changed is defined and bridge_changed.changed
+
+    - name: Configuring {{ secondary_itf.device }}
       template:
-        src: ../templates/itf_cfg.j2
-        dest: /etc/network/interfaces.d/{{ itf }}
+        src: ../templates/bridge_vlans_itf_cfg.j2
+        dest: "/etc/network/interfaces.d/{{ secondary_itf.device }}.cfg"
         owner: root
         group: root
         mode: 0644
-      when: itf is defined
+      register: secondary_changed
+      when: secondary_itf is defined
+      vars:
+        - prov_itf: "{{ secondary_itf.device }}"
+        - prov_bridge: "{{ provisioning_bridge | default('br-prov') }}"
+        - vlans_list: "{{ osa_vlans | default([]) }}"
 
-    - name: Starting interface {{ itfs[0].device }}
-      command: ifup {{ itf }}
-      when: itf is defined
+    - name: Set fact for conditional execution
+      set_fact:
+        network_reconfig: True
+      when: ((lo_changed is defined and lo_changed.changed) or
+             (primary_changed is defined and primary_changed.changed) or
+             (secondary_changed is defined and secondary_changed.changed) or
+             (bridge_changed is defined and bridge_changed.changed))
 
-    - name: Configuring IP forwarding via sysctl
-      sysctl:
-        name: "net.ipv4.ip_forward"
-        value: 1
-        sysctl_set: yes
-        state: present
-        reload: yes
-      when: itf is defined
+    - name: Restarting network services
+      shell: echo "{{ itf_down | default('') }}service networking restart" | at now + 0 min
+      when: network_reconfig is defined and network_reconfig
 
-    - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
-      with_items:
-        - "bonding"
-        - "8021q"
+    - name: Wait for server come back
+      wait_for: >
+        host="{{ inventory_hostname }}"
+        port=22
+        delay=15
+        timeout=60
+      delegate_to: localhost
+      become: no
+      when: network_reconfig is defined and network_reconfig
+
+    - fail:
+        msg: |
+          GOT inactive ethernet {{ inactive_ether_itfs | map(attribute='device') | list }}
+          active ethernet {{ active_ether_itfs | map(attribute='device') | list }}
+          active bridge {{ active_bridge_itfs | map(attribute='device') | list }}
+
+    - name: Adding existing user {{ systemuser }} to group {{ libvirtgroup }}
+      user:
+        name="{{ systemuser }}"
+        groups="{{ libvirtgroup }}"
+        append=yes
+      when: master_running_kvm
+
+    - name: Creating network bridge template
+      become: no
+      template:
+        src: ../templates/kvm-network-bridge.xml.y2
+        dest: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        mode: 0644
+      when: master_running_kvm
+      vars:
+        bridge_name: "{{ provisioning_bridge | default('provisioning') }}"
+        bridge_interface: "{{ inactive_ether_itfs[0].device }}"
+        bridge_uuid_seed: "OpenNext"
+
+    - name: List available networks in KVM/libvirt
+      virt_net:
+        command: list_nets
+      register: kvm_networks
+      when: master_running_kvm
+
+    - fail: msg="GOT KVM NETS {{ kvm_networks | default('None') }}"
 
     - name: Configuring System Wide Proxy
       lineinfile:

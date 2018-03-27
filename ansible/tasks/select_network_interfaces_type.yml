@@ -1,0 +1,7 @@
+# Network Interface retrieval task
+---
+- name: Selecting IPv4 interface with {{ itf_type }} type
+  set_fact:
+    itfs: "{% set itfs = itfs | default([]) + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ itfs | list }}"
+  when: hostvars[inventory_hostname]['ansible_' + item]['type'] is match(itf_type)
+  with_items: "{{ hostvars[inventory_hostname]['ansible_interfaces'] | map('replace', '-', '_') | list }}"

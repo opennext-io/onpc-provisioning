@@ -5,10 +5,20 @@ ip_suffix: 1
 ip_netmask: 255.255.255.0
 ip_netmask_bits: 24
 ip_netmask_broadcast: 255
+
 # User which will be used for Ansible communication
 # and whose home will be retrieving and storing the
 # various Git repos
 systemuser: "{{ ansible_user | default(vagrant) }}"
 systempasswd: "{{ ansible_user | default(vagrant) }}"
+
+# Parameter to override the default 5mn DHCP timeout
 dhcptimeout: "{{ dhcp_timeout | default(10) }}"
+
+# System group to control KVM/libvirt from
 libvirtgroup: "{{ libvirt_group | default('libvirtd') }}"
+
+# Current default scenario is to have a physical machine
+# acting as the master node and which will spawn KVM/libvirt
+# VMs which will host OSA deployment
+master_running_kvm: true

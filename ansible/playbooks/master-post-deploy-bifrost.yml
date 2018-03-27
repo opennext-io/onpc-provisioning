@@ -18,27 +18,6 @@
       set_fact:
         deploy_params: "{{ deploy_info['content'] | b64decode | from_yaml }}"
 
-    - name: Adding existing user {{ systemuser }} to group {{ libvirtgroup }}
-      user:
-        name="{{ systemuser }}"
-        groups="{{ libvirtgroup }}"
-        append=yes
-      when: master_running_kvm
-
-    - name: Creating network bridge template
-      become: no
-      template:
-        src: ../templates/kvm-network-bridge.xml.y2
-        dest: "{{ systemuserhome }}/kvm-network-bridge.xml"
-        owner: "{{ systemuser }}"
-        group: "{{ systemuser }}"
-        mode: 0644
-      when: master_running_kvm
-      vars:
-        bridge_name: "{{ provisioning_bridge | default('provisioning') }}"
-        bridge_interface: "{{ deploy_params.get('network_interface') }}"
-        bridge_uuid_seed: "OpenNext"
-
     - name: Retrieving Remote Ironic Informations
       slurp:
         src: "/etc/ironic/ironic.conf"

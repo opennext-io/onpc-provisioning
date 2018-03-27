@@ -36,10 +36,10 @@ you are now able to launch the master configuration via:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-system.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you also want master node to use KVM/libvirt for running VMs you can add and extra flag
+If you don't want master node to use KVM/libvirt for running VMs you can add and extra flag
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-system.yml --extra-vars "master_running_kvm=true"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-system.yml --extra-vars "master_running_kvm=false"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can customize the IP settings of the secondary network interface using:
@@ -94,13 +94,15 @@ ansible-playbook --private-key ~/.ssh/my-key -K -i ansible/inventory/min-ubu-mas
 You can now prepare Bifrost environment properly:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml --extra-vars "keystone=true"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Do not forget to add `master_running_kvm=true` if you added this option in step 1 above
+Note that right now the only way Bifrost deployment is supported is with keystone=true
+
+Do not forget to add `master_running_kvm=false` if you added this option in step 1 above
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml --extra-vars "keystone=true master_running_kvm=true"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml --extra-vars "master_running_kvm=false"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At the very end of this Ansible deployment, you'll see a debug message which
@@ -115,12 +117,14 @@ will be configured and installed.
 
 ### Step 3: Launch Bifrost deployment using command returned by last debug message of step 2
 
-You can remove the last 2 options `-e enable_keystone=true -e noauth_mode=false` if you
+You could remove the last 2 options `-e enable_keystone=true -e noauth_mode=false` if you
 do not want to use keystone service:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ssh user@192.168.0.131 -t 'cd ~vagrant/bifrost/playbooks && . ~vagrant/.venv/bifrost/bin/activate && .  ../env-vars && https_proxy= ansible-playbook -i inventory/target install.yaml -e extra_dib_elements=devuser,cloud-init-nocloud -e ipa_upstream_release=stable-pike -e dib_os_release=xenial -e dib_os_element=ubuntu-minimal -e network_interface=enp0s8'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+but again this is not supported at this point in time
 
 ### Step 4: Launch post-deployment
 

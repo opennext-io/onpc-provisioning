@@ -1,12 +1,18 @@
 ---
+# Path where bifrost Git repo code will land
 systemuserhome: "/home/{{ systemuser }}"
 git: "{{ systemuserhome }}/bifrost"
+
+# Venv path ito populate for Bifrost operation
 venv: "{{ systemuserhome }}/.venv/bifrost"
-keystone: false
+
+# Keystone is on by default
+keystone: true
 keystone_opts: ""
+
+# DIB golden image parameters
 os_release: "xenial"
 os_flavor: "ubuntu-minimal"
 upstream_release: "stable-pike"
 root_part_size_gb: 60
 partitioning_scheme: "partitioning-lvm"
-master_running_kvm: false

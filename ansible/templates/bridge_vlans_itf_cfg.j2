@@ -1,0 +1,37 @@
+# The secondary network interface (ethernet)
+auto {{ prov_itf }}
+iface {{ prov_itf }} inet manual
+
+# The secondary network interface (bridge)
+auto {{ prov_bridge }}
+iface {{ prov_bridge }} inet static
+        address {{ ip_prefix | default('20.20.20') }}.{{ ip_suffix | default('1') }}
+        netmask {{ ip_netmask | default('255.255.255.0') }}
+        bridge_ports {{ prov_itf }}
+        bridge_maxwait 5
+        bridge_stp off
+        bridge_fd 0
+{% if vlans_list is defined %}
+
+# VLANS
+{% for vlan in vlans_list %}
+{% if vlan.get('id') %}
+
+# {{ vlan.get('vlan_comment', '') }}
+auto {{ prov_itf }}.{{ vlan.get('id') }}
+iface {{ prov_itf }}.{{ vlan.get('id') }} inet manual
+        vlan_raw_device {{ prov_itf }}
+
+# {{ vlan.get('bridge_comment', '') }}
+auto br-{{ vlan.get('name') }}
+iface br-{{ vlan.get('name') }} inet static
+        address {{ vlan.get('prefix') }}.{{ ip_suffix | default('1') }}
+        netmask {{ vlan.get('netmask') }}
+        network {{ vlan.get('prefix') }}.0
+        bridge_ports {{ prov_itf }}.{{ vlan.get('id') }}
+        bridge_maxwait 5
+        bridge_stp off
+        bridge_fd 0
+{% endif %}
+{%- endfor %}
+{%- endif %}

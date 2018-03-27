@@ -25,6 +25,7 @@
     - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
       with_items:
         - "bonding"
+        - "bridge"
         - "8021q"
 
     - import_tasks: ../tasks/secondary_network_interface.yml

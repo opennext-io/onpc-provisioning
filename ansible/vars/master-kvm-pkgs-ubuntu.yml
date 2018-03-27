@@ -16,3 +16,4 @@ virtualization:
   - libvirt-bin
   - libvirt-dev
   - virtinst
+  - virt-top

@@ -1,0 +1,5 @@
+# Network Interface name filtering task
+---
+- name: Filtering {{ itf_reject_name }} IPv4 interface
+  set_fact:
+    itfs: "{{ itfs | default([]) | selectattr('device', 'defined') | rejectattr('device', 'match', itf_reject_name) | list }}"
