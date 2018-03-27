@@ -26,16 +26,12 @@
         ssh_key_bits: 2048
         ssh_key_file: .ssh/id_rsa
 
-    - name: Retrieving host FQDN
-      command: /bin/hostname -f
-      register: fqdn
-
     - name: Modifying public SSH key comment
       lineinfile:
         path: "{{ systemuserhome }}/.ssh/id_rsa.pub"
         backrefs: yes
         regexp: '^ssh-rsa (.*) ansible-generated on .*$'
-        line: 'ssh-rsa \1 ansible-generated on {{ fqdn.stdout }}'
+        line: 'ssh-rsa \1 ansible-generated on {{ ansible_fqdn }}'
         state: present
         owner: root
         group: root
