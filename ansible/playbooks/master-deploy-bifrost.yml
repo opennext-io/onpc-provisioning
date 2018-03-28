@@ -35,13 +35,16 @@
     - name: Getting Public IP
       ipify_facts:
       register: ipify_results
+      environment:
+        LC_ALL: C
+        https_proxy: ""
 
     - name: Getting Setup Result
       set_fact:
         todo: "{{ setup_result.stdout.split('\n')[-3:-1] | join(' && ') | replace('source','.') | replace('env-vars','../env-vars') }}"
         dib_std_options: " -e dib_init_element=dhcp-all-interfaces -e dib_image_type=bootloader -e extra_dib_elements=dracut-regenerate,devuser,cloud-init-nocloud,openssh-server -e dib_packages=python,python3-yaml,dracut,dnsutils,net-tools,netcat,dnsutils,iputils-ping,traceroute"
 
-    - name: Set partitioning informations
+    - name: Setting partitioning informations
       set_fact:
         dib_partitioning_infos: " -e partitioning_file={{ systemuserhome }}/{{ partitioning_scheme }}.yml"
       when: partitioning_scheme is defined and partitioning_scheme | length > 0
@@ -56,11 +59,21 @@
         keystone_opts: " -e enable_keystone=true -e noauth_mode=false"
       when: keystone
 
-    - import_tasks: ../tasks/secondary_network_interface.yml
+    - name: Making sure libvirt service is running
+      service:
+        name: "{{ libvirtservice }}"
+        state: started
 
-    - import_tasks: ../tasks/select_secondary_network_interface.yml
-      vars:
-       itf_state: true
+    # Facts will be available as 'ansible_libvirt_networks'
+    - name: Gathering facts about available networks in KVM/libvirt
+      virt_net:
+        command: facts
+      when: master_running_kvm
+
+    - name: Retrieving provisioning interface from KVM/libvirt network infos
+      set_fact:
+        itf: "{{ ansible_libvirt_networks.get('provisioning', {}).get('bridge') }}"
+      when: master_running_kvm
 
     - name: Retrieving all deploy options
       set_fact:
