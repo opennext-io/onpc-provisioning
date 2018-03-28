@@ -317,11 +317,21 @@
       - name: Moving over {{ libvirtvarpath }} to {{ virt_dest }}
         command: "mv {{ libvirtvarpath }} {{ virt_dest }}"
 
-      - name: Creating symlink to {{ virt_dest }}
+      - name: Re-creating {{ libvirtvarpath }} directory
         file:
+          path: "{{ libvirtvarpath }}"
+          state: directory
+          owner: root
+          group: root
+          mode: 0755
+
+      - name: Bindmounting {{ virt_dest | regex_replace('/$', '') }}/{{ libvirtvarpath | basename }} onto {{ libvirtvarpath }}
+        mount:
+          path: "{{ libvirtvarpath }}"
           src: "{{ virt_dest | regex_replace('/$', '') }}/{{ libvirtvarpath | basename }}"
-          dest: "{{ libvirtvarpath }}"
-          state: link
+          opts: bind
+          fstype: none
+          state: mounted
 
       - name: Restarting libvirt service
         service:
