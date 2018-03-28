@@ -82,7 +82,7 @@
       when: collision_ips | length > 0
 
     - name: Checking duplicate IPs
-      fail: msg="ip_prefix and ip_suffix variables lead to {{ ip_prefix }}.{{ ip_suffix }} colliding with {{ hostvars['localhost']['local_ips'] }}"
+      fail: msg="ip_prefix and ip_suffix variables lead to {{ master_ip }} colliding with {{ hostvars['localhost']['local_ips'] }}"
       when: master_ip in hostvars['localhost']['local_ips']
 
     - import_tasks: ../tasks/select_network_interfaces_type.yml
@@ -248,6 +248,7 @@
 
     - name: Creating KVM/libvirt network bridge template & network
       block:
+
         - name: Creating KVM/libvirt network bridge template & network
           become: no
           template:

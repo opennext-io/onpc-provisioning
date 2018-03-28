@@ -34,7 +34,7 @@ iface br-mgmt inet static
     bridge_waitport 0
     bridge_fd 0
     bridge_ports {{ physical_itf }}.{{ mgmt_vlan_id }}
-    address {{ mgmt_ip_prefix }}.{{ ip_suffix }}
+    address {{ mgmt_ip_prefix }}.{{ ip_suffix | default('1') }}
     netmask {{ netmask }}
     gateway {{ gateway }}
     dns-nameservers {{ dns_servers }}
@@ -57,7 +57,7 @@ iface br-vxlan inet manual
     bridge_fd 0
     bridge_ports {{ physical_itf }}.{{ vxlan_vlan_id }}
 {% if compute is defined %}
-    address {{ vxlan_ip_prefix }}.{{ ip_suffix }}
+    address {{ vxlan_ip_prefix }}.{{ ip_suffix | default('1') }}
     netmask {{ netmask }}
 {% endif %}
 
@@ -107,6 +107,6 @@ iface br-storage inet manual
     bridge_fd 0
     bridge_ports {{ physical_itf }}.{{ storage_vlan_id }}
 {% if compute is defined %}
-    address {{ storage_ip_prefix }}.{{ ip_suffix }}
+    address {{ storage_ip_prefix }}.{{ ip_suffix | default('1') }}
     netmask {{ netmask }}
 {% endif %}
