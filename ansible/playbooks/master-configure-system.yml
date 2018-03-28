@@ -100,7 +100,6 @@
     - name: Setting inactive ethernet network interfaces list
       set_fact:
         inactive_ether_itfs: "{{ itfs | list }}"
-        itfs: []
 
     - import_tasks: ../tasks/select_network_interfaces_type.yml
       vars:
@@ -117,7 +116,6 @@
     - name: Setting active ethernet network interfaces list
       set_fact:
         active_ether_itfs: "{{ itfs | list }}"
-        itfs: []
 
     - import_tasks: ../tasks/select_network_interfaces_type.yml
       vars:
@@ -129,8 +127,8 @@
 
     - name: Setting active bridge network interfaces list
       set_fact:
-        active_bridge_itfs: "{{ itfs | list }}"
-        itfs: []
+        active_bridges: "{{ itfs | list }}"
+        active_bridges_itfs: "{{ itfs | map(attribute='interfaces') | flatten | list }}"
 
     - name: Checking if primary interface needs to migrate to bridge
       set_fact:
@@ -143,12 +141,12 @@
 
     - name: Checking if secondary interface needs to migrate to bridge
       set_fact:
-        secondary: "{{ inactive_ether_itfs | selectattr('ipv4', 'undefined') | list }}"
+        secondary: "{{ inactive_ether_itfs | selectattr('ipv4', 'undefined') | rejectattr('device', 'in', active_bridges_itfs) | list }}"
 
     - name: Setting fact for secondary ethernet interface for migration to bridge
       set_fact:
         secondary_itf: "{{ secondary[0] }}"
-      when: secondary is defined and secondary|length > 0
+      when: (secondary is defined and secondary|length > 0)
 
     - name: Getting interfaces infos
       interfaces_file:
