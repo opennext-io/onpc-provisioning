@@ -1,0 +1,12 @@
+---
+# OpenNext nodes bridges and VLANs configuration
+opennext_vlans: [
+  {
+    name: "prov",
+    vlan_comment: "vlan 111 - infrastructure provisioning network",
+    id: 111,
+    bridge_comment: "bridge br-prov - infrastructure provisioning network",
+    prefix: "{{ip_prefix | default('20.20.20') }}",
+    netmask: "{{ ip_netmask | default('255.255.255.0') }}",
+  },
+]

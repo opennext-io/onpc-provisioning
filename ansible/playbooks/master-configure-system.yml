@@ -15,6 +15,7 @@
     - ../vars/master-pkgs-ubuntu.yml
     - ../vars/master-kvm-pkgs-ubuntu.yml
     - ../vars/osa-briges-vlans_vars.yml
+    - ../vars/opennext-briges-vlans_vars.yml
 
   tasks:
 
@@ -161,7 +162,7 @@
       register: lo_changed
       when: "'lo' in cur_interfaces.get('ifaces', {})"
 
-    - name: Moving {{ primary_itf.get('device') }} interface to its own config file
+    - name: Moving {{ primary_itf.get('device') }} primary ethernet interface to its own config file
       interfaces_file:
         src: /etc/network/interfaces
         dest: "/etc/network/interfaces.d/{{ primary_itf.get('device') }}.cfg"
@@ -170,7 +171,7 @@
       register: primary_changed
       when: "primary_itf is defined and primary_itf.get('device') in cur_interfaces.get('ifaces', {})"
 
-    - name: Migrating {{ primary_itf.get('device') }} ethernet interface to bridge
+    - name: Migrating {{ primary_itf.get('device') }} primary ethernet interface to bridge
       interfaces_file:
         dest: "/etc/network/interfaces.d/{{ primary_itf.get('device') }}.cfg"
         iface: "{{ primary_itf.get('device') }}"
@@ -187,7 +188,7 @@
     - name: Bringing down interface and dhcpclient for proper bridging
       set_fact:
         itf_down: "pkill dhclient ; ip addr flush {{ primary_itf.get('device') }} ; "
-      when: bridge_changed is defined and bridge_changed.changed
+      when: primary_itf is defined and primary_itf.get('device')
 
     - name: Configuring {{ secondary_itf.device }}
       template:
@@ -201,7 +202,7 @@
       vars:
         - prov_itf: "{{ secondary_itf.device }}"
         - prov_bridge: "{{ kvm_bridge_itf }}"
-        - vlans_list: "{{ osa_vlans | default([]) }}"
+        - vlans_list: "{{ osa_vlans | default([]) + opennext_vlans | default([]) }}"
 
     - name: Set fact for conditional execution
       set_fact:
@@ -250,7 +251,7 @@
         - name: Creating KVM/libvirt network bridge template & network
           become: no
           template:
-            src: ../templates/kvm-network-bridge.xml.y2
+            src: ../templates/kvm-network-bridge.xml.j2
             dest: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
             owner: "{{ systemuser }}"
             group: "{{ systemuser }}"
