@@ -35,7 +35,8 @@
         clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
         ironic: "{{ ironic_info['content'] | b64decode | regex_search('http_url *= .*') }}"
 
-    - set_fact:
+    - name: Setting Fact For Ironic URL
+      set_fact:
         ironic_http_url: "{{ ironic.split(' ')[-1] }}"
 
     - name: Retrieving IPA informations
@@ -46,7 +47,7 @@
         use_regex: yes
       register: ipa_infos
 
-    - name: Retrieving Deployment Image informations
+    - name: Retrieving Deployment Image Informations
       find:
         paths: /httpboot
         follow: yes
@@ -54,15 +55,17 @@
         use_regex: yes
       register: di_infos
 
-    - name: Setting IPA and Deployment Image informations
+    - name: Setting IPA and Deployment Image Informations
       set_fact:
         ipa_files: "{{ ipa_infos.get('files', {}) | selectattr('path', 'defined') | map(attribute='path') | list }}"
         deploy_files: "{{ di_infos.get('files', {}) | selectattr('path', 'defined') | map(attribute='path') | list }}"
 
-    - fail: msg="Bad number of IPA files {{ ipa_files | length }}"
+    - name: Checking Number Of IPA Files
+      fail: msg="Bad number of IPA files {{ ipa_files | length }}"
       when: ipa_files | length != 2
 
-    - fail: msg="Bad number of Deployment Image files {{ deploy_files | length }}"
+    - name: Checking Number Of Deployment Image Files
+      fail: msg="Bad number of Deployment Image Files {{ deploy_files | length }}"
       when: deploy_files | length != 1
 
     - name: Retrieving QCOW2 Image File Informations
@@ -72,7 +75,8 @@
         checksum_algorithm: "md5"
       register: qcow2_infos
 
-    - set_fact:
+    - name: Setting Facts For Ironic Informations
+      set_fact:
         ironic_deploy_kernel: "{{ ironic_http_url }}/ipa.vmlinuz"
         ironic_deploy_ramdisk: "{{ ironic_http_url }}/ipa.initramfs"
         ironic_image_qcow2: "{{ ironic_http_url }}/deployment_image.qcow2"
@@ -83,8 +87,6 @@
     - set_fact:
         auth: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}) }}"
         auth_type: "password"
-
-    - debug: msg="{{ auth_type }} => {{ auth }}"
 
     - include_tasks: ../tasks/ironic_introspection_rule.yml name={{ item.name }} template={{ item.template }} description={{ item.description }}
       with_items:
