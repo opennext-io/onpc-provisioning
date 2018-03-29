@@ -60,12 +60,14 @@
       when: keystone
 
     - name: Making sure libvirt service is running
+      become: yes
       service:
         name: "{{ libvirtservice }}"
         state: started
 
     # Facts will be available as 'ansible_libvirt_networks'
     - name: Gathering facts about available networks in KVM/libvirt
+      become: yes
       virt_net:
         command: facts
       when: master_running_kvm
