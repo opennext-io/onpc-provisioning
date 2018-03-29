@@ -86,11 +86,23 @@
 
     - debug: msg="{{ auth_type }} => {{ auth }}"
 
-    - include_tasks: ../tasks/ironic_introspection_rule.yml name={{ item.name }} template={{ item.template }}
+    - include_tasks: ../tasks/ironic_introspection_rule.yml name={{ item.name }} template={{ item.template }} description={{ item.description }}
       with_items:
-        - { name: "Generic Introspection Rule", template: "../templates/ironic_additional_rule.yaml.j2" }
-        - { name: "Driver Rule", template: "../templates/ironic_driver_rule.yaml.j2" }
-        - { name: "Deploy Image Rule", template: "../templates/ironic_deploy_image_rule.yaml.j2" }
+        - {
+          name: "Generic Introspection Rule",
+          template: "../templates/ironic_additional_rule.yaml.j2",
+          description: "Add all discovery hardware informations to extra field"
+        }
+        - {
+          name: "Driver Rule",
+          template: "../templates/ironic_driver_rule.yaml.j2",
+          description: "Set initial driver_info if not defined on node"
+        }
+        - {
+          name: "Deploy Image Rule",
+          template: "../templates/ironic_deploy_image_rule.yaml.j2",
+          description: "Set initial instance_info if not defined on node"
+        }
 
     - name: Setting up VirtualBMC in virtualenv
       become: no
