@@ -68,14 +68,17 @@
     - name: Retrieving QCOW2 Image File Informations
       stat:
         path: /httpboot/deployment_image.qcow2
+        get_checksum: yes
+        checksum_algorithm: "md5"
       register: qcow2_infos
 
     - set_fact:
         ironic_deploy_kernel: "{{ ironic_http_url }}/ipa.vmlinuz"
         ironic_deploy_ramdisk: "{{ ironic_http_url }}/ipa.initramfs"
         ironic_image_qcow2: "{{ ironic_http_url }}/deployment_image.qcow2"
-        ironic_image_checksum: "{{ qcow2_infos.get('stat', {}).get('md5', '')}}"
+        ironic_image_checksum: "{{ qcow2_infos.get('stat', {}).get('checksum', '')}}"
         ironic_root_size: 20
+#        ironic_root_size: "{{ root_part_size_gb | default(60) }}"
 
     - set_fact:
         auth: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}) }}"
