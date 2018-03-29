@@ -10,9 +10,9 @@ CMDDIR=$(dirname $(dirname $($linkcmd -f $0)))
 
 # VM parameters
 vmname=${SLAVE_VM_NAME:-"slave"}
-vmmem=${SLAVE_VM_MEM:-1024}
-vmcpus=${SLAVE_VM_CPUS:-1}
-vmdisk=${SLAVE_VM_DISK:-4096}
+vmmem=${SLAVE_VM_MEM:-8192}
+vmcpus=${SLAVE_VM_CPUS:-4}
+vmdisk=${SLAVE_VM_DISK:-61440}
 maxvms=${MAX_SLAVES:-5}
 startingvmid=${START:-0}
 vmvncbindip=${SLAVE_VM_VNC_IP:-"0.0.0.0"}
@@ -24,8 +24,8 @@ masterip=${MASTER_VM_IP:-"127.0.0.1"}
 masterport=${MASTER_VM_PORT:-7777}
 register=${REGISTER_URI:-"register"}
 unregister=${UNREGISTER_URI:-"unregister"}
-authuser=${KEYSTONE_USER:-""}
-authpasswd=${KEYSTONE_PASSWORD:-""}
+authuser=${KEYSTONE_USER:-${OS_USERNAME:-""}}
+authpasswd=${KEYSTONE_PASSWORD:-${OS_PASSWORD:-""}}
 
 authcreds=""
 if [ -n "$authuser" ] && [ -n "$authpasswd" ]; then
@@ -126,8 +126,7 @@ for i in $(seq 1 $1); do
 		$virtinstallcmd -v --virt-type kvm --name $lvmname --ram $vmmem --vcpus $vmcpus --os-type linux --os-variant ubuntu16.04 \
 			--disk path=/var/lib/libvirt/images/${lvmname}-1.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
 			--disk path=/var/lib/libvirt/images/${lvmname}-2.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
-			--network bridge=virbr1,model=virtio \
-			--network bridge=virbr2,model=virtio \
+			--network bridge=br-prov,model=virtio \
 			--pxe --boot network,hd --noautoconsole \
 			--graphics vnc,listen=$vmvncbindip,port=$lvmvncport
 		sleep 2
