@@ -20,6 +20,7 @@ vmvncport=${SLAVE_VM_VNC_PORT:-5900}
 vbmcport=${SLAVE_VM_VBMC_PORT:-6000}
 vbmcuser=${VBMC_USER:-"admin"}
 vbmcpasswd=${VBMC_PASSWORD:-"password"}
+vbmcip=${VBMC_IP:-""}
 masterip=${MASTER_VM_IP:-"127.0.0.1"}
 masterport=${MASTER_VM_PORT:-7777}
 register=${REGISTER_URI:-"register"}
@@ -139,7 +140,7 @@ for i in $(seq 1 $1); do
 			\"mac_addr\": \"${macaddr}\", \
 			\"virt-uuid\": \"${uuid}\", \
 			\"bmc_port\": ${lvbmcport}, \
-			\"bmc_host\": \"${localip}\", \
+			\"bmc_host\": \"${vbmcip:-localip}\", \
 			\"bmc_user\": \"${vbmcuser}\", \
 			\"bmc_password\": \"${vbmcpasswd}\", \
 			\"vnc_host\": \"${localip}\", \
