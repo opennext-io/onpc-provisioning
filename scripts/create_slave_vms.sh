@@ -91,7 +91,7 @@ for i in $(seq 1 $1); do
 				\"mac_addr\": \"${macaddr}\", \
 				\"virt-uuid\": \"${uuid}\" \
 			}"
-			if  curl -s $authcreds -H 'Content-Type: application/json' -X DELETE -d "$jsoninfos" http://${masterip}:${masterport}/${unregister}/${uuid}; then
+			if curl -s $authcreds -H 'Content-Type: application/json' -X DELETE -d "$jsoninfos" http://${masterip}:${masterport}/${unregister}/${uuid}; then
 				echo "VM unregistration infos sent successfully"
 			else
 				echo "Failed to send VM unregistration infos"
@@ -128,6 +128,9 @@ for i in $(seq 1 $1); do
 			--disk path=/var/lib/libvirt/images/${lvmname}-1.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
 			--disk path=/var/lib/libvirt/images/${lvmname}-2.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
 			--network bridge=br-prov,model=virtio \
+			--network bridge=br-mgmt,model=virtio \
+			--network bridge=br-storage,model=virtio \
+			--network bridge=br-vxlan,model=virtio \
 			--pxe --boot network,hd --noautoconsole \
 			--graphics vnc,listen=$vmvncbindip,port=$lvmvncport
 		sleep 2
@@ -146,7 +149,7 @@ for i in $(seq 1 $1); do
 			\"vnc_host\": \"${localip}\", \
 			\"vnc_port\": ${lvmvncport} \
 		}"
-		if  curl -s $authcreds -H 'Content-Type: application/json' -X POST -d "$jsoninfos" http://${masterip}:${masterport}/${register}; then
+		if curl -s $authcreds -H 'Content-Type: application/json' -X POST -d "$jsoninfos" http://${masterip}:${masterport}/${register}; then
 			echo "VM registration infos sent successfully"
 		else
 			echo "Failed to send VM registration infos"
