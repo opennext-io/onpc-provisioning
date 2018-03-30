@@ -1,0 +1,46 @@
+---
+- hosts: master
+  become: yes
+
+  vars_files:
+    - ../vars/master-configure-system_vars.yml
+    - ../vars/master-deploy-bifrost_vars.yml
+
+  tasks:
+
+    - name: Setting Facts
+      set_fact:
+        root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
+        dest_repo_dir: "{{ dest_github_repo_dir | default('/opt') }}"
+
+    - name: Creating root .ssh
+      file:
+            path: "{{ root_ssh_dir }}"
+            mode: 0700
+            owner: "root"
+            group: "root"
+            state: directory
+
+    - include_tasks: ../tasks/clone_private_git_repo.yml
+      vars:
+        repo: "{{ item.repo }}"
+        repodst: "{{ item.get('repodst', '') }}"
+        sshdir: "{{ root_ssh_dir }}"
+        destdir: "{{ dest_repo_dir }}"
+      with_items:
+        - { repo: "openstack-ansible-bootstrap", repodst: "onpc-bootstrap"}
+        - { repo: "onpc-basic-model" }
+        - { repo: "onpc-collectd" }
+        - { repo: "onpc-grafana" }
+        - { repo: "onpc-logging" }
+        - { repo: "onpc-monitoring" }
+        - { repo: "onpc-telegraf" }
+
+    - name: Retrieving OSA GitHub Repository
+      git:
+        repo: "https://github.com/obourdon/openstack-ansible"
+        dest: "{{ dest_repo_dir }}/openstack-ansible"
+        accept_hostkey: yes
+        force: yes
+        recursive: no
+        version: stable/pike
