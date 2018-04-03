@@ -6,7 +6,7 @@ opennext_vlans: [
     vlan_comment: "vlan {{ prov_vlan_id | default('111') }} - infrastructure provisioning network",
     id: "{{ prov_vlan_id | default('111') }}",
     bridge_comment: "bridge br-prov - infrastructure provisioning network",
-    prefix: "{{ip_prefix | default('20.20.20') }}",
+    prefix: "{{ ip_prefix | default('20.20.20') }}",
     netmask: "{{ ip_netmask | default('255.255.255.0') }}",
   },
 ]

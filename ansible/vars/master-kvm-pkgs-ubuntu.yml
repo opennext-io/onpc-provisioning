@@ -2,14 +2,14 @@
 # Bifrost master node IP mandatory packages for Ubuntu
 # when master is also running KVM/libvirt
 kvmsystempkgs: "{{
-  python +
-  virtualization
+  kvmpython +
+  kvmvirtualization
   }}"
 
-python:
+kvmpython:
   - python-libvirt
 
-virtualization:
+kvmvirtualization:
   - qemu-utils
   - qemu-kvm
   - qemu-user
