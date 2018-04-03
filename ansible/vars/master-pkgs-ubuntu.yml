@@ -82,6 +82,7 @@ network:
   - openssh-server
   - traceroute
   - vlan
+  - squid
 
 python:
   - python-pip
