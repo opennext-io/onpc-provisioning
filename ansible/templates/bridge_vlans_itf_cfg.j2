@@ -7,11 +7,15 @@ iface {{ prov_itf }} inet manual
 # VLANS
 {% for vlan in vlans_list %}
 {% if vlan.get('id') %}
+{%- set vitf = prov_itf ~ '.' ~ vlan.get('id') %}
 
 # {{ vlan.get('vlan_comment', '') }}
-auto {{ prov_itf }}.{{ vlan.get('id') }}
-iface {{ prov_itf }}.{{ vlan.get('id') }} inet manual
+auto {{ vitf }}
+iface {{ vitf }} inet manual
         vlan_raw_device {{ prov_itf }}
+{% else %}
+{%- set vitf = prov_itf %}
+{% endif %}
 
 {% if vlan.get('prefix') and vlan.get('netmask') %}
 # {{ vlan.get('bridge_comment', '') }}
@@ -20,13 +24,12 @@ iface br-{{ vlan.get('name') }} inet static
         address {{ vlan.get('prefix') }}.{{ ip_suffix | default("1") }}
         netmask {{ vlan.get('netmask') }}
         network {{ vlan.get('prefix') }}.0
-        bridge_ports {{ prov_itf }}.{{ vlan.get('id') }}
+        bridge_ports {{ vitf }}
         bridge_maxwait 5
         bridge_stp off
         bridge_fd 0
         bridge_waitport 0
         offload-sg off
-{% endif %}
 {% endif %}
 {%- endfor %}
 {%- endif %}

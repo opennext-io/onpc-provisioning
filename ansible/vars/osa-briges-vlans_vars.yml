@@ -25,5 +25,11 @@ osa_vlans: [
     prefix: "172.29.240",
     netmask: "255.255.252.0",
   },
+  {
+    name: "vlan",
+    bridge_comment: "bridge br-vlan - vlan network",
+    prefix: "172.29.248",
+    netmask: "255.255.252.0",
+  },
 ]
 # gateway: "{{ mgmt_ip_prefix }}.1"
