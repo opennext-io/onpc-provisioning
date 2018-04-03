@@ -24,6 +24,8 @@ iface br-{{ vlan.get('name') }} inet static
         bridge_maxwait 5
         bridge_stp off
         bridge_fd 0
+        bridge_waitport 0
+        offload-sg off
 {% endif %}
 {% endif %}
 {%- endfor %}
