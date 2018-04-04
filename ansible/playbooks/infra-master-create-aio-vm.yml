@@ -1,0 +1,17 @@
+---
+- hosts: infra-master
+  become: no
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars//infra-master-deploy-bifrost_vars.yml
+
+  tasks:
+
+    - import_tasks: ../tasks/kvm_vm_create.yml
+      vars:
+        vmname: osa-aio
+        vmcpus: 10
+        vmmemory: 50331648
+        vmdisksizegb: 120
+        vmdisksnb: 2
