@@ -1,10 +1,10 @@
 ---
-- hosts: master
+- hosts: infra-master
   become: yes
 
   vars_files:
-    - ../vars/master-configure-system_vars.yml
-    - ../vars//master-deploy-bifrost_vars.yml
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars//infra-master-deploy-bifrost_vars.yml
 
   tasks:
 

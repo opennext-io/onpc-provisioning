@@ -6,14 +6,14 @@
 
     - import_tasks: ../tasks/system_infos.yml
 
-- hosts: master
+- hosts: infra-master
   become: yes
 
   vars_files:
-    - ../vars/master-configure-system_vars.yml
-    - ../vars/master-deploy-bifrost_vars.yml
-    - ../vars/master-pkgs-ubuntu.yml
-    - ../vars/master-kvm-pkgs-ubuntu.yml
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars/infra-master-deploy-bifrost_vars.yml
+    - ../vars/infra-master-pkgs-ubuntu.yml
+    - ../vars/infra-master-kvm-pkgs-ubuntu.yml
     - ../vars/osa-briges-vlans_vars.yml
     - ../vars/opennext-briges-vlans_vars.yml
 

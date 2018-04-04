@@ -4,11 +4,11 @@ openstack-ansible-bootstrap
 Node provisioning automation to get hosts and network ready to install OpenStack
 with OSA
 
-`create_master_vm.sh` is a script used to bootstrap the master/config node as a
+`create_infra_master_vm.sh` is a script used to bootstrap the infra-master/config node as a
 VirtualBox or KVM VM:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PROXY=http://192.168.0.116:8080/ ./scripts/create_master_vm.sh
+PROXY=http://192.168.0.116:8080/ ./scripts/create_infra_master_vm.sh
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Look at the first lines of the file to have an idea on which parameters can be
@@ -21,7 +21,7 @@ address(es) will not be identical):
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ansible/inventory/master
 
-[master]
+[infra-master]
 192.168.0.131
 
 [all:vars]
@@ -30,25 +30,25 @@ ansible_user=vagrant
 
 ### Step 1: System configuration
 
-you are now able to launch the master configuration via:
+you are now able to launch the infra-master configuration via:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-system.yml
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you don't want master node to use KVM/libvirt for running VMs you can add and extra flag
+If you don't want infra-master node to use KVM/libvirt for running VMs you can add and extra flag
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-system.yml --extra-vars "master_running_kvm=false"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml --extra-vars "master_running_kvm=false"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can customize the IP settings of the secondary network interface using:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-configure-system.yml --extra-vars "ip_prefix=192.168.1 ip_suffix=123 ip_netmask_bits=20"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml --extra-vars "ip_prefix=192.168.1 ip_suffix=123 ip_netmask_bits=20"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Look into `ansible/vars/master-configure-system_vars.yml` to see what can be
+Look into `ansible/vars/infra-master-configure-system_vars.yml` to see what can be
 configured and the associated default values.
 
 Note that you may need to add **-K** option for running this playbook so that
@@ -86,7 +86,7 @@ ssh -t -i ~/.ssh/my-key ubuntu@192.168.0.131 'sudo apt-get update && sudo apt-ge
 You can now rerun the playbook with proper options:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook --private-key ~/.ssh/my-key -K -i ansible/inventory/min-ubu-master-meylan ansible/playbooks/master-configure-system.yml
+ansible-playbook --private-key ~/.ssh/my-key -K -i ansible/inventory/min-ubu-master-meylan ansible/playbooks/infra-master-configure-system.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### Step 2: Bifrost environment configuration & pre-deployment
@@ -94,7 +94,7 @@ ansible-playbook --private-key ~/.ssh/my-key -K -i ansible/inventory/min-ubu-mas
 You can now prepare Bifrost environment properly:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-deploy-bifrost.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Note that right now the only way Bifrost deployment is supported is with keystone=true
@@ -102,7 +102,7 @@ Note that right now the only way Bifrost deployment is supported is with keyston
 Do not forget to add `master_running_kvm=false` if you added this option in step 1 above
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-deploy-bifrost.yml --extra-vars "master_running_kvm=false"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-deploy-bifrost.yml --extra-vars "master_running_kvm=false"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At the very end of this Ansible deployment, you'll see a debug message which
@@ -129,7 +129,7 @@ but again this is not supported at this point in time
 ### Step 4: Launch post-deployment
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/master-post-deploy-bifrost.yml
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post-deploy-bifrost.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ### Step 5: Launch VMs to be provisioned
