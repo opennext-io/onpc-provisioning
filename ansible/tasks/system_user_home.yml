@@ -116,3 +116,4 @@
         - { regexp: '^DIB_DEV_USER_SHELL=.*$', line: 'DIB_DEV_USER_SHELL="/bin/bash"' }
         - { regexp: '^DIB_DHCP_TIMEOUT=.*$', line: 'DIB_DHCP_TIMEOUT={{ dhcptimeout }}' }
         - { regexp: '^DIB_BLOCK_DEVICE=.*$', line: 'DIB_BLOCK_DEVICE={{ dibblockdevice | default("mbr") }}' }
+        - { regexp: '^export DIB_DISTRIBUTION_MIRROR=.*$', line: 'DIB_DISTRIBUTION_MIRROR={{ dibdistribmirror| default("http://fr.archive.ubuntu.com/ubuntu") }}' }
