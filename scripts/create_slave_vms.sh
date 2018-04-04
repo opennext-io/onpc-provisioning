@@ -143,7 +143,7 @@ for i in $(seq 1 $1); do
 			\"mac_addr\": \"${macaddr}\", \
 			\"virt-uuid\": \"${uuid}\", \
 			\"bmc_port\": ${lvbmcport}, \
-			\"bmc_host\": \"${vbmcip:-localip}\", \
+			\"bmc_host\": \"${vbmcip:-${localip}}\", \
 			\"bmc_user\": \"${vbmcuser}\", \
 			\"bmc_password\": \"${vbmcpasswd}\", \
 			\"vnc_host\": \"${localip}\", \
