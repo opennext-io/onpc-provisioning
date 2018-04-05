@@ -124,7 +124,7 @@ do not want to use keystone service:
 ssh user@192.168.0.131 -t 'cd ~vagrant/bifrost/playbooks && . ~vagrant/.venv/bifrost/bin/activate && .  ../env-vars && https_proxy= ansible-playbook -i inventory/target install.yaml -e extra_dib_elements=devuser,cloud-init-nocloud -e ipa_upstream_release=stable-pike -e dib_os_release=xenial -e dib_os_element=ubuntu-minimal -e network_interface=enp0s8'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-but again this is not supported at this point in time
+but again this is not supported at this point in time.
 
 ### Step 4: Launch post-deployment
 
@@ -134,11 +134,19 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post
 
 ### Step 5: Launch VMs to be provisioned
 
-Once everything is deployed successfully, you can start 3 slave VMs using:
+Once everything is deployed successfully, you can start a huge slave VM using:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-aio-vm.yml
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This will provide ground for a proper AIO OSA deployment.
+
+You can also still use the formerly available script and start 3 slave VMs using:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ./scripts/create_slave_vms.sh 3
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-which will get provisioned with IPA image (Ironic Python Agent) and register
-automatically into ironic to wait for proper provisioning
+Anyhow, all VMs will get provisioned with IPA image (Ironic Python Agent) and register
+automatically into ironic to wait for proper provisioning.
