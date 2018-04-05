@@ -90,6 +90,7 @@
     registration_port: "{{ infra_master_port | default('7777') }}"
     registration_uri: "{{ infra_registration_uri | default('register') }}"
     unregistration_uri: "{{ infra_unregistration_uri | default('unregister') }}"
+    status_uri: "{{ infra_status_uri | default('status') }}"
     clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
     vbmc_venv:
       VIRTUAL_ENV: "{{ systemuserhome }}/.venv/vbmc"
@@ -107,12 +108,35 @@
       vnc_host: "{{ vm_vnc_ip }}",
       vnc_port: "{{ vm_vnc_port }}",
     }
+- name: Checking handling of {{ vmname }} VM by VBMC IPMI agent
+  command: "vbmc show {{ vmname }}"
+  environment: "{{ vbmc_venv }}"
+  ignore_errors: yes
+  register: vm_already_running
 - name: Registering {{ vmname }} VM to VBMC IPMI agent
   command: "vbmc add {{ vmname }} --port {{ registration_infos.bmc_port }}"
-  environment: "{{ vbmc_venv  }}"
+  environment: "{{ vbmc_venv }}"
+  when: vm_already_running.failed
+- name: Setting VBMC status string for {{ vmname }} VM
+  set_fact:
+    vbmc_vm_status_str: "{{ vm_already_running.stdout_lines | select('match', '\\|\\s\\s*status\\s\\s*\\|.*') | list }}"
+  when: not vm_already_running.failed
+- name: Setting VBMC status for {{ vmname }} VM
+  set_fact:
+    vbmc_vm_status: "{{ vbmc_vm_status_str[0].split('|')[-2] | replace(' ', '') }}"
+  when: vbmc_vm_status_str is defined
 - name: Starting VBMC IPMI agent for {{ vmname }} VM
   command: "vbmc start {{ vmname }}"
-  environment: "{{ vbmc_venv  }}"
+  environment: "{{ vbmc_venv }}"
+  when: vm_already_running.failed or ( vbmc_vm_status is defined and vbmc_vm_status == 'down')
+- name: Checking {{ vmname }} VM status in register-helper utility agent
+  uri:
+    url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+    force_basic_auth: yes
+    user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+    password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+    status_code: 200
+  register: vm_register_status
 - name: Registering {{ vmname }} VM to register-helper utility agent
   uri:
     url: "http://{{ registration_ip }}:{{ registration_port }}/{{ registration_uri }}"
@@ -123,3 +147,4 @@
     status_code: 201
     body_format: json
     body: "{{ registration_infos }}"
+  when: vm_register_status is defined and vmname not in vm_register_status.json
