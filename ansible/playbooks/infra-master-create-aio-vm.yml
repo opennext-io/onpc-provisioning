@@ -15,3 +15,4 @@
         vmmemory: 50331648
         vmdisksizegb: 120
         vmdisksnb: 2
+        vmmacprefix: "52:54:00"

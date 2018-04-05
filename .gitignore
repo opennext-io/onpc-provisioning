@@ -3,3 +3,4 @@
 *.bak
 *.iso
 *.retry
+*.pyc
