@@ -120,6 +120,6 @@
     force_basic_auth: yes
     user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
     password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
-    status_code: 204
+    status_code: 201
     body_format: json
     body: "{{ registration_infos }}"

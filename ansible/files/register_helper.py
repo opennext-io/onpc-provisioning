@@ -331,7 +331,7 @@ def add_machine():
     newm = request.get_json()
     app.logger.error("adding machine: {}".format(newm))
     todo_machines[newm['virt-uuid']] = newm
-    return '', 204
+    return '', 201
 
 # DELETE request handler to unregister machines
 @app.route('/unregister/<machineid>', methods=['DELETE'])
