@@ -3,7 +3,6 @@ auto {{ prov_itf }}
 iface {{ prov_itf }} inet manual
 
 {% if vlans_list is defined %}
-
 # VLANS
 {% for vlan in vlans_list %}
 {% if vlan.get('id') %}
