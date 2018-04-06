@@ -7,6 +7,7 @@
   become: yes
   stat:
     path: "{{ vmdiskpath }}"
+    get_checksum: false
   register: disk_exists
 - name: Creating {{ diskname }} for {{ vmname }}
   become: yes
