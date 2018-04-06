@@ -17,6 +17,8 @@ vmvncbindip=${MASTER_VM_VNC_IP:-"0.0.0.0"}
 vmvncport=${MASTER_VM_VNC_PORT:-5900}
 
 # ISO parameters
+isoonly=${ISO_ONLY:-""}
+forceiso=${FORCE_ISO:-""}
 distribution=${DISTRO:-ubuntu}
 release=${RELEASE:-xenial}
 preseed=${PRESEED_URL:-http://www.olivierbourdon.com/preseed_master-${release}.cfg}
@@ -50,6 +52,9 @@ checknumber MASTER_VM_VNC_PORT $vmvncport 5900 "" 1
 
 # Check existence of ISO
 iso=$CMDDIR/isos/${distribution}-${release}-custom.iso
+if [ -n "${forceiso}" ]; then
+	rm -f $iso
+fi
 if [ ! -r $iso ]; then
 	echo "Using docker to build custom ISO ..."
 	# Fetch some required commands
@@ -115,6 +120,10 @@ if [ ! -r $iso ]; then
 		echo -e "\nERROR $(basename $0): can not built iso\n"
 		exit 1
 	fi
+fi
+if [ -n "${isoonly}" ]; then
+	echo "ISO available: $iso"
+	exit 0
 fi
 
 # Launch VM according to provider
