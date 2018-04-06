@@ -19,6 +19,11 @@
       set_fact:
         vmdisk2: "{{ vmdiskpath }}"
       when: vmdisksnb | default(1) > 1
+- name: Templating {{ vmname }} VM
+  template:
+    src: ../templates/kvm-vm-xml.j2
+    dest: "/tmp/{{ vmname }}.xml"
+  when: create_xml_vm_template is defined
 - name: Creating {{ vmname }} VM
   virt:
     name: "{{ vmname }}"

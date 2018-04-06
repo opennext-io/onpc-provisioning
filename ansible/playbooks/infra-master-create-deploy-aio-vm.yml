@@ -12,7 +12,7 @@
       vars:
         vmname: osa-aio
         vmcpus: 10
-        vmmemory: 50331648
+        vmmemorysizegb: 48
         vmdisksizegb: 120
         vmdisksnb: 2
         vmmacprefix: "52:54:00"

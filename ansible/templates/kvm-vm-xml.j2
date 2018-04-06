@@ -1,7 +1,7 @@
 <domain type='kvm' id='11'>
   <name>{{ vmname }}</name>
   <uuid>{{ vmuuid }}</uuid>
-  <memory unit='KiB'>{{ vmmemory }}</memory>
+  <memory unit='KiB'>{{ vmmemorysizegb * 1024**2 }}</memory>
   <vcpu placement='static'>{{ vmcpus }}</vcpu>
   <resource>
     <partition>/machine</partition>
@@ -38,7 +38,7 @@
       <backingStore/>
       <target dev='vda' bus='virtio'/>
       <alias name='virtio-disk0'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
     </disk>
 {% if vmdisk2 is defined %}
     <disk type='file' device='disk'>
@@ -47,27 +47,27 @@
       <backingStore/>
       <target dev='vdb' bus='virtio'/>
       <alias name='virtio-disk1'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
     </disk>
 {% endif %}
     <controller type='usb' index='0' model='ich9-ehci1'>
       <alias name='usb'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x7'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x7'/>
     </controller>
     <controller type='usb' index='0' model='ich9-uhci1'>
       <alias name='usb'/>
       <master startport='0'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0' multifunction='on'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0' multifunction='on'/>
     </controller>
     <controller type='usb' index='0' model='ich9-uhci2'>
       <alias name='usb'/>
       <master startport='2'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x1'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x1'/>
     </controller>
     <controller type='usb' index='0' model='ich9-uhci3'>
       <alias name='usb'/>
       <master startport='4'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x2'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x2'/>
     </controller>
     <controller type='pci' index='0' model='pci-root'>
       <alias name='pci.0'/>
@@ -82,27 +82,11 @@
     </interface>
     <interface type='bridge'>
       <mac address='{{ vmmacprefix | random_mac }}'/>
-      <source bridge='br-mgmt'/>
+      <source bridge='br-vlan'/>
       <target dev='vnet1'/>
       <model type='virtio'/>
       <alias name='net1'/>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x04' function='0x0'/>
-    </interface>
-    <interface type='bridge'>
-      <mac address='{{ vmmacprefix | random_mac }}'/>
-      <source bridge='br-storage'/>
-      <target dev='vnet2'/>
-      <model type='virtio'/>
-      <alias name='net2'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
-    </interface>
-    <interface type='bridge'>
-      <mac address='{{ vmmacprefix | random_mac }}'/>
-      <source bridge='br-vxlan'/>
-      <target dev='vnet3'/>
-      <model type='virtio'/>
-      <alias name='net3'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
     </interface>
     <serial type='pty'>
       <target port='0'/>
@@ -124,7 +108,7 @@
     </video>
     <memballoon model='virtio'>
       <alias name='balloon0'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x0a' function='0x0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
     </memballoon>
   </devices>
   <seclabel type='dynamic' model='apparmor' relabel='yes'>
