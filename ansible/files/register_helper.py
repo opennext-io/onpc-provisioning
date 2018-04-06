@@ -282,7 +282,14 @@ scheduler.start()
 @app.route('/machines')
 @requires_auth
 def get_machines():
-    return jsonify(registered_machines)
+    # Copy dictionnary
+    ret = {}
+    for k,v in registered_machines.items():
+        vname = v.get('kvm-name')
+        if not vname:
+            continue
+        ret[vname] = v
+    return jsonify(ret)
 
 # GET request handler to get current status of machines
 @app.route('/status')
