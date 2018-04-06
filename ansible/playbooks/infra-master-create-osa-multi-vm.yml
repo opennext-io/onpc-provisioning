@@ -1,0 +1,47 @@
+---
+- hosts: infra-master
+  become: no
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars//infra-master-deploy-bifrost_vars.yml
+
+  tasks:
+
+    - import_tasks: ../tasks/operational_informations.yml
+
+    - include_tasks: ../tasks/kvm_vm_create.yml
+      vars:
+        vmname: "{{ vm_item.name }}"
+        vmcpus: "{{ vm_item.cpus }}"
+        vmmemorysizegb: "{{ vm_item.mem }}"
+        vmdisksizegb: "{{ vm_item.hdd }}"
+        vncport: "{{ vm_item.vnc }}"
+        vbmc_port: "{{ vm_item.bmc }}"
+        vmmacprefix: "52:54:01"
+      with_items:
+        - { name: "slave-1", cpus: 4, mem: 16, hdd: 60, vnc: 5901, bmc: 6001}
+        - { name: "slave-2", cpus: 4, mem: 16, hdd: 60, vnc: 5902, bmc: 6002}
+        - { name: "slave-3", cpus: 4, mem: 16, hdd: 60, vnc: 5903, bmc: 6003}
+      loop_control:
+        loop_var: vm_item
+
+    - name: Getting status from register-helper utility agent
+      uri:
+        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+        force_basic_auth: yes
+        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+        status_code: 200
+      register: registered_status
+
+    - name: Fetching detailed informations from register-helper utility agent
+      uri:
+        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ details_uri }}"
+        force_basic_auth: yes
+        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+        status_code: 200
+      register: registered_machines
+
+    - debug: msg="{{ hostvars }}"

@@ -1,7 +1,7 @@
 <domain type='kvm' id='11'>
   <name>{{ vmname }}</name>
   <uuid>{{ vmuuid }}</uuid>
-  <memory unit='KiB'>{{ vmmemorysizegb * 1024**2 }}</memory>
+  <memory unit='KiB'>{{ vmmemorysizegb | int * 1024**2 }}</memory>
   <vcpu placement='static'>{{ vmcpus }}</vcpu>
   <resource>
     <partition>/machine</partition>

@@ -137,10 +137,18 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post
 Once everything is deployed successfully, you can start a huge slave VM using:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-aio-vm.yml
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-aio-vm.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This will provide ground for a proper AIO OSA deployment.
+This will provide ground for a proper single box aka all-in-one aka AIO OSA deployment.
+
+You can also choose to have a multi-vm deployment using:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This will provide ground for a proper single box aka all-in-one aka AIO OSA deployment.
 
 You can also still use the formerly available script and start 3 slave VMs using:
 

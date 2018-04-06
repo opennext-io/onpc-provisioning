@@ -1,0 +1,40 @@
+---
+- hosts: infra-master
+  become: no
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars//infra-master-deploy-bifrost_vars.yml
+
+  tasks:
+
+    - import_tasks: ../tasks/operational_informations.yml
+
+    - include_tasks: ../tasks/kvm_vm_create.yml
+      vars:
+        vmname: osa-aio
+        vmcpus: 10
+        vmmemorysizegb: 48
+        vmdisksizegb: 120
+        vmdisksnb: 2
+        vmmacprefix: "52:54:00"
+
+    - name: Getting status from register-helper utility agent
+      uri:
+        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+        force_basic_auth: yes
+        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+        status_code: 200
+      register: registered_status
+
+    - name: Fetching detailed informations from register-helper utility agent
+      uri:
+        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ details_uri }}"
+        force_basic_auth: yes
+        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+        status_code: 200
+      register: registered_machines
+
+    - debug: msg="{{ hostvars }}"
