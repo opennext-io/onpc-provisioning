@@ -51,7 +51,7 @@
       find:
         paths: /httpboot
         follow: yes
-        patterns: '^deployment_image\..*'
+        patterns: "^{{ deployimagefilename }}$"
         use_regex: yes
       register: di_infos
 
@@ -70,7 +70,7 @@
 
     - name: Retrieving QCOW2 Image File Informations
       stat:
-        path: /httpboot/deployment_image.qcow2
+        path: "{{ deploy_files[0] }}"
         get_checksum: yes
         checksum_algorithm: "md5"
       register: qcow2_infos
@@ -79,7 +79,7 @@
       set_fact:
         ironic_deploy_kernel: "{{ ironic_http_url }}/ipa.vmlinuz"
         ironic_deploy_ramdisk: "{{ ironic_http_url }}/ipa.initramfs"
-        ironic_image_qcow2: "{{ ironic_http_url }}/deployment_image.qcow2"
+        ironic_image_qcow2: "{{ ironic_http_url }}/{{ deploy_files[0] | basename }}"
         ironic_image_checksum: "{{ qcow2_infos.get('stat', {}).get('checksum', '')}}"
         ironic_root_size: 20
 #        ironic_root_size: "{{ root_part_size_gb | default(60) }}"

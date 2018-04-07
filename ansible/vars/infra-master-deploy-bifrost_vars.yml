@@ -18,3 +18,4 @@ root_part_size_gb: 60
 partitioning_scheme: "partitioning-lvm"
 dibblockdevice: "{{ dib_block_device | default('mbr') }}"
 dibdistribmirror: "{{ dib_distrib_mirror | default('http://fr.archive.ubuntu.com/ubuntu') }}"
+deployimagefilename: on-os-ubuntu-xenial.qcow2
