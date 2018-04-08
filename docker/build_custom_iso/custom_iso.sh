@@ -161,6 +161,7 @@ fi
 # Retrieve official ISO from net
 if [ "$flavor" == "ubuntu" ]; then
 	isourl=http://archive.ubuntu.com/ubuntu/dists/${release}/main/installer-amd64/current/images/netboot/mini.iso
+	echo "Downloading from $isourl"
 fi
 http_proxy=$httpproxy wget -c -q --show-progress $isourl -O $tmpiso
 # Cleanup
