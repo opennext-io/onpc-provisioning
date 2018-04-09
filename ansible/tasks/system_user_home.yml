@@ -62,7 +62,7 @@
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
         mode: 0644
-      when: itf is defined
+      when: ip_prefix is defined
 
     - name: Creating .cache directory
       file:
