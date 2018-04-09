@@ -2,6 +2,9 @@
 - hosts: infra-master
   become: yes
 
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+
   tasks:
 
     - name: Setting Facts
@@ -25,3 +28,17 @@
         destdir: "{{ dest_repo_dir }}"
       with_items:
         - { repo: "openstack-ansible-bootstrap", repodst: "onpc-bootstrap"}
+
+    - name: Verifying Squid proxy package
+      package:
+        name: squid
+        state: latest
+
+  roles:
+    - role: kbrebanov.squid
+      squid_tcp_outgoing_address: "{{ ansible_default_ipv4.address }}"
+      squid_acls:
+        - { name: "allowed_ips", type: "src", argument: "{{ ip_prefix | default('20.20.20') }}.0/{{ ip_netmask_bits | default(24) }}" }
+      squid_http_access_allow_clients:
+        - localhost
+        - allowed_ips
