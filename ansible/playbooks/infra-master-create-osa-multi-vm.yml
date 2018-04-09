@@ -10,6 +10,11 @@
 
     - import_tasks: ../tasks/operational_informations.yml
 
+- hosts: kvm-master
+  become: no
+
+  tasks:
+
     - include_tasks: ../tasks/kvm_vm_create.yml
       vars:
         vmname: "{{ vm_item.name }}"
@@ -25,6 +30,15 @@
         - { name: "slave-3", cpus: 4, mem: 16, hdd: 60, vnc: 5903, bmc: 6003}
       loop_control:
         loop_var: vm_item
+
+- hosts: infra-master
+  become: no
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars//infra-master-deploy-bifrost_vars.yml
+
+  tasks:
 
     - import_tasks: ../tasks/vm_get_status.yml
 

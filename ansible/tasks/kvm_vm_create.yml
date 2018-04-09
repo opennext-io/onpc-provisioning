@@ -3,6 +3,8 @@
 - name: Setting VM uuid
   set_fact:
     vmuuid: "{{ vmname | to_uuid }}"
+    provbridge: "{{ prov_bridge | default('br-prov') }}"
+    vlanbridge: "{{ vlan_bridge | default('br-vlan') }}"
 - name: Creating disks for {{ vmname }}
   block:
     - import_tasks: kvm_disk_create.yml
@@ -49,38 +51,38 @@
     name: "{{ vmname }}"
     command: get_xml
   register: vm_xml_infos
-- name: Getting br-prov MAC address for {{ vmname }} VM
+- name: Getting {{ provbridge }} MAC address for {{ vmname }} VM
   block:
-    - name: Parsing XML using XPATH
+    - name: Parsing XML using XPATH to get {{ provbridge }} MAC address for {{ vmname }} VM
       xml:
         xmlstring: "{{ vm_xml_infos.get('get_xml', '') }}"
-        xpath: //interface[@type="bridge"]/source[@bridge="br-prov"]/../mac
+        xpath: '//interface[@type="bridge"]/source[@bridge="{{ provbridge }}"]/../mac'
         content: attribute
       register: mac_address_infos
-    - name: Storing XML parsing result in fact
+    - name: Storing XML parsing result in fact for {{ provbridge }} MAC address for {{ vmname }} VM
       set_fact:
         vm_mac_address: "{{ mac_address_infos.get('matches', [])[0].get('mac', {}).get('address','') }}"
 - name: Getting KVM UUID for {{ vmname }} VM
   block:
-    - name: Parsing XML using XPATH
+    - name: Parsing XML using XPATH to get KVM UUID for {{ vmname }} VM
       xml:
         xmlstring: "{{ vm_xml_infos.get('get_xml', '') }}"
         xpath: //uuid
         content: text
       register: uuid_infos
-    - name: Storing XML parsing result in fact
+    - name: Storing XML parsing result in fact for KVM UUID for {{ vmname }} VM
       set_fact:
         vm_kvm_uuid: "{{ uuid_infos.get('matches', [])[0].get('uuid', '') }}"
 - name: Getting VNC port for {{ vmname }} VM
   block:
-    - name: Parsing XML using XPATH
+    - name: Parsing XML using XPATH to get VNC port for {{ vmname }} VM
       xml:
         xmlstring: "{{ vm_xml_infos.get('get_xml', '') }}"
         xpath: //graphics[@type="vnc"]
         content: attribute
         attribute: port
       register: vnc_port_infos
-    - name: Storing XML parsing result in facts
+    - name: Storing XML parsing result in facts for VNC port for {{ vmname }} VM
       set_fact:
         vm_vnc_ip: "{{ vnc_port_infos.get('matches', [])[0].get('graphics', {}).get('listen', '') | replace('0.0.0.0', ansible_default_ipv4.address) }}"
         vm_vnc_port: "{{ vnc_port_infos.get('matches', [])[0].get('graphics', {}).get('port', '') }}"
