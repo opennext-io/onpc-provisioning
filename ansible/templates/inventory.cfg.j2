@@ -1,0 +1,11 @@
+infra-master ansible_host={{ infra_master_ip }}
+
+osa-master ansible_host={{ osa_master_ip }}
+
+[osa-vms]
+{% for name in osa_vms %}
+{{ name }} ansible_host={{ hostvars[inventory_hostname].registered_status.json.get(name).get('extra/all/interfaces/eth0/ip') }}
+{% endfor %}
+
+[all:vars]
+ansible_user=vagrant

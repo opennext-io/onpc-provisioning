@@ -26,22 +26,27 @@
       loop_control:
         loop_var: vm_item
 
-    - name: Getting status from register-helper utility agent
-      uri:
-        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
-        force_basic_auth: yes
-        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
-        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
-        status_code: 200
-      register: registered_status
+    - import_tasks: ../tasks/vm_get_status.yml
 
-    - name: Fetching detailed informations from register-helper utility agent
-      uri:
-        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ details_uri }}"
-        force_basic_auth: yes
-        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
-        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
-        status_code: 200
-      register: registered_machines
+    - name: Extracting VMs names from facts
+      set_fact:
+        vm_names: "{{ hostvars[inventory_hostname].registered_status.json | json_query('keys(@)') }}"
+        vm_ips: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/all/interfaces/eth0/ip') | list }}"
 
-    - debug: msg="{{ hostvars }}"
+    - name: Waiting for VMs to be reachable by SSH
+      wait_for:
+        sleep: 60
+        timeout: 3600
+        port: 22
+        host: '{{ item }}'
+        search_regex: OpenSSH
+      with_items: "{{ vm_ips }}"
+
+    - name: Creating OSA inventory file
+      template:
+        src: ../templates/inventory.cfg.j2
+        dest: "{{ systemuserhome }}/osa-inventory"
+      vars:
+        infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
+        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(vm_names[0]).get('extra/all/interfaces/eth0/ip') }}"
+        osa_vms: "{{ vm_names }}"
