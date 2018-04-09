@@ -3,6 +3,7 @@
 - name: Initializing search for IPv4 interface with {{ itf_type }} type
   set_fact:
     itfs: []
+
 - name: Selecting IPv4 interface with {{ itf_type }} type
   set_fact:
     itfs: "{% set itfs = itfs + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ itfs | list }}"

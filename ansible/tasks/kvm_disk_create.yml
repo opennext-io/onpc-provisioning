@@ -3,16 +3,19 @@
 - name: Setting full path of {{ diskname }} for {{ vmname }}
   set_fact:
     vmdiskpath: "{{ kvm_vms_disks_path | default('/var/lib/libvirt/images') }}/{{ vmname }}-{{ diskname }}.qcow2"
+
 - name: Checking existence of {{ diskname }} for {{ vmname }}
   become: yes
   stat:
     path: "{{ vmdiskpath }}"
     get_checksum: false
   register: disk_exists
+
 - name: Creating {{ diskname }} for {{ vmname }}
   become: yes
   command: "qemu-img create -f qcow2 {{ vmdiskpath }} {{ vmdisksizegb }}G"
   when: not disk_exists.get('stat', dict(exists=False)).get('exists')
+
 - name: Setting owner group and permissions of {{ diskname }} for {{ vmname }}
   become: yes
   file:

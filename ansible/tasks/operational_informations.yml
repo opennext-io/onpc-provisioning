@@ -4,6 +4,7 @@
   slurp:
     src: "{{ systemuserhome }}/.config/openstack/clouds.yaml"
   register: cloud_info
+
 - name: Retrieving default IP addresses, ports and credentials
   set_fact:
     registration_port: "{{ infra_master_port | default('7777') }}"
@@ -12,6 +13,7 @@
     status_uri: "{{ infra_status_uri | default('status') }}"
     details_uri: "{{ infra_details_uri | default('machines') }}"
     clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
+
 - name: Setting IP adresses and VBMC environment for master running kvm {{ master_running_kvm }}
   set_fact:
     br_prov_ip: "{{ ansible_br_prov.ipv4.address }}"
@@ -20,6 +22,7 @@
       VIRTUAL_ENV: "{{ systemuserhome }}/.venv/vbmc"
       PATH: "{{ systemuserhome }}/.venv/vbmc/bin:{{ ansible_env.PATH }}" # include regular path via lookup env
   when: master_running_kvm
+
 - name: Setting IP adresses and VBMC environment for master running kvm {{ master_running_kvm }}
   set_fact:
     vbmc_venv: {}

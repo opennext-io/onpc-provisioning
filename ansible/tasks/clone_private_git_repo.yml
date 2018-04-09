@@ -4,10 +4,12 @@
   set_fact:
     repo_key_filename: "opennext_{{ repo }}_git_deploykey"
     final_dst: "{{ repodst | default(repo) }}"
+
 - name: Preventing empty destination path
   set_fact:
     final_dst: "{{ repo }}"
   when: final_dst | length == 0
+
 - name: Uploading Github DeployKey for {{ repo }}
   copy:
     src: "../files/ssh-keys/{{ key_item.filename }}"
@@ -20,6 +22,7 @@
     - { filename: "{{ repo_key_filename }}", mode: '0600' }
   loop_control:
     loop_var: key_item
+
 - name: Retrieving OpenNext {{ repo }} GitHub Repository
   git:
     repo: "git@github.com:opennext-io/{{ repo }}"

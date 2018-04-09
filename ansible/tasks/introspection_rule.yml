@@ -5,13 +5,16 @@
     state: file
     suffix: .json
   register: tempfile
+
 - name: Creating Introspection Rule File for {{ name }}
   copy:
     content: "{{ lookup('template', template) | from_yaml | to_json }}"
     dest: "{{ tempfile['path'] }}"
+
 - name: Registering Introspection Rule for {{ name }}
   command: "bash -c '. ~{{ systemuser }}/.venv/bifrost/bin/activate && . ~{{ systemuser }}/openrc bifrost-admin && openstack baremetal introspection rule import {{ tempfile['path'] }} -f value'"
   register: cmd_res
+
 - name: Cleaning up {{ name }}
   file:
     path: "{{ tempfile['path'] }}"

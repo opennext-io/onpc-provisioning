@@ -5,6 +5,7 @@
     vmuuid: "{{ vmname | to_uuid }}"
     provbridge: "{{ prov_bridge | default('br-prov') }}"
     vlanbridge: "{{ vlan_bridge | default('br-vlan') }}"
+
 - name: Creating disks for {{ vmname }}
   block:
     - import_tasks: kvm_disk_create.yml
@@ -21,60 +22,74 @@
       set_fact:
         vmdisk2: "{{ vmdiskpath }}"
       when: vmdisksnb | default(1) > 1
+
 - name: Templating {{ vmname }} VM
   template:
     src: ../templates/kvm-vm-xml.j2
     dest: "/tmp/{{ vmname }}.xml"
   when: create_xml_vm_template is defined
+
 - name: Creating {{ vmname }} VM
   virt:
     name: "{{ vmname }}"
     command: define
     xml: "{{ lookup('template', '../templates/kvm-vm-xml.j2') }}"
+
 - name: Getting status of {{ vmname }} VM
   virt:
     name: "{{ vmname }}"
     command: status
   register: vm_status
+
 - name: Starting {{ vmname }} VM
   virt:
     name: "{{ vmname }}"
     command: start
   when: vm_status.get('status', '') != 'running'
+
 - name: Getting informations on {{ vmname }} VM
   virt:
     name: "{{ vmname }}"
     command: info
   register: vm_infos
+
 - name: Getting XML informations on {{ vmname }} VM
   virt:
     name: "{{ vmname }}"
     command: get_xml
   register: vm_xml_infos
+
 - name: Getting {{ provbridge }} MAC address for {{ vmname }} VM
   block:
+
     - name: Parsing XML using XPATH to get {{ provbridge }} MAC address for {{ vmname }} VM
       xml:
         xmlstring: "{{ vm_xml_infos.get('get_xml', '') }}"
         xpath: '//interface[@type="bridge"]/source[@bridge="{{ provbridge }}"]/../mac'
         content: attribute
       register: mac_address_infos
+
     - name: Storing XML parsing result in fact for {{ provbridge }} MAC address for {{ vmname }} VM
       set_fact:
         vm_mac_address: "{{ mac_address_infos.get('matches', [])[0].get('mac', {}).get('address','') }}"
+
 - name: Getting KVM UUID for {{ vmname }} VM
   block:
+
     - name: Parsing XML using XPATH to get KVM UUID for {{ vmname }} VM
       xml:
         xmlstring: "{{ vm_xml_infos.get('get_xml', '') }}"
         xpath: //uuid
         content: text
       register: uuid_infos
+
     - name: Storing XML parsing result in fact for KVM UUID for {{ vmname }} VM
       set_fact:
         vm_kvm_uuid: "{{ uuid_infos.get('matches', [])[0].get('uuid', '') }}"
+
 - name: Getting VNC port for {{ vmname }} VM
   block:
+
     - name: Parsing XML using XPATH to get VNC port for {{ vmname }} VM
       xml:
         xmlstring: "{{ vm_xml_infos.get('get_xml', '') }}"
@@ -82,10 +97,12 @@
         content: attribute
         attribute: port
       register: vnc_port_infos
+
     - name: Storing XML parsing result in facts for VNC port for {{ vmname }} VM
       set_fact:
         vm_vnc_ip: "{{ vnc_port_infos.get('matches', [])[0].get('graphics', {}).get('listen', '') | replace('0.0.0.0', ansible_default_ipv4.address) }}"
         vm_vnc_port: "{{ vnc_port_infos.get('matches', [])[0].get('graphics', {}).get('port', '') }}"
+
 - name: Setting Registration Informations for {{ vmname }} VM
   set_fact:
     registration_infos: {
@@ -99,27 +116,33 @@
       vnc_host: "{{ vm_vnc_ip }}",
       vnc_port: "{{ vm_vnc_port }}",
     }
+
 - name: Checking handling of {{ vmname }} VM by VBMC IPMI agent
   command: "vbmc show {{ vmname }}"
   environment: "{{ vbmc_venv }}"
   ignore_errors: yes
   register: vm_already_running
+
 - name: Registering {{ vmname }} VM to VBMC IPMI agent
   command: "vbmc add {{ vmname }} --port {{ registration_infos.bmc_port }}"
   environment: "{{ vbmc_venv }}"
   when: vm_already_running.failed
+
 - name: Setting VBMC status string for {{ vmname }} VM
   set_fact:
     vbmc_vm_status_str: "{{ vm_already_running.stdout_lines | select('match', '\\|\\s\\s*status\\s\\s*\\|.*') | list }}"
   when: not vm_already_running.failed
+
 - name: Setting VBMC status for {{ vmname }} VM
   set_fact:
     vbmc_vm_status: "{{ vbmc_vm_status_str[0].split('|')[-2] | replace(' ', '') }}"
   when: vbmc_vm_status_str is defined
+
 - name: Starting VBMC IPMI agent for {{ vmname }} VM
   command: "vbmc start {{ vmname }}"
   environment: "{{ vbmc_venv }}"
   when: vm_already_running.failed or ( vbmc_vm_status is defined and vbmc_vm_status == 'down')
+
 - name: Checking {{ vmname }} VM status in register-helper utility agent
   uri:
     url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
@@ -128,6 +151,7 @@
     password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
     status_code: 200
   register: vm_register_status
+
 - name: Registering {{ vmname }} VM to register-helper utility agent
   uri:
     url: "http://{{ registration_ip }}:{{ registration_port }}/{{ registration_uri }}"

@@ -22,32 +22,6 @@
     dest: "{{ tempfile['path'] }}"
   when: matching_rule is defined and matching_rule | length == 0
 
-#- name: Storing Introspection Rule File contents for {{ name }}
-#  block:
-#    - name: Sorting JSON content
-#      command: "bash -c 'cat {{ tempfile['path'] }} | jq -S .'"
-#      register: new_rule_contents
-#    - name: Storing Rule Content in set_fact
-#      set_fact:
-#        new_rule_json: "{{ new_rule_contents.stdout | from_json }}"
-
-#- debug: msg="Can not handle multiple matches"
-#  when: matching_rule is defined and matching_rule | length > 1
-
-#- name: Extracting Existing Introspection Rule
-#  block:
-#    - name: Extracting UUID of matched rule
-#      set_fact:
-#        rule_uuid: "{{ matching_rule[0].split(' ')[0] }}"
-#    - name: Retrieving current rule contents removing the UUID part
-#      command: "bash -c '. ~{{ systemuser }}/.venv/bifrost/bin/activate && . ~{{ systemuser }}/openrc bifrost-admin && openstack baremetal introspection rule show {{ rule_uuid }} -f json | jq -S del\\(.uuid\\)'"
-#      register: existing_ironic_rule
-#    - name: Storing Comparison State in set_fact
-#      set_fact:
-#        rule_already_exists: "{{ new_rule_json == (existing_ironic_rule.stdout | from_json) }}"
-#    - debug: msg="OLIVIER {{ rule_already_exists }} {{ new_rule_json }} vs {{ existing_ironic_rule.stdout | from_json }}"
-#  when: matching_rule is defined and matching_rule | length == 1
-
 - name: Registering Introspection Rule for {{ name }}
   command: "bash -c '. ~{{ systemuser }}/.venv/bifrost/bin/activate && . ~{{ systemuser }}/openrc bifrost-admin && openstack baremetal introspection rule import {{ tempfile['path'] }} -f value'"
   register: cmd_res

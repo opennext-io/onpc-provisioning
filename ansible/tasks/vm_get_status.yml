@@ -10,6 +10,7 @@
   until: registered_status.content_length | int > 3
   delay: 15
   retries: 8
+
 - name: Fetching detailed informations from register-helper utility agent
   uri:
     url: "http://{{ registration_ip }}:{{ registration_port }}/{{ details_uri }}"
