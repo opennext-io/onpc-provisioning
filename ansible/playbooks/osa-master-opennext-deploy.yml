@@ -24,13 +24,8 @@
         sshdir: "{{ root_ssh_dir }}"
         destdir: "{{ dest_repo_dir }}"
       with_items:
-        - { repo: "openstack-ansible-bootstrap", repodst: "onpc-bootstrap"}
         - { repo: "onpc-basic-model" }
-        - { repo: "onpc-collectd" }
-        - { repo: "onpc-grafana" }
-        - { repo: "onpc-logging" }
         - { repo: "onpc-monitoring" }
-        - { repo: "onpc-telegraf" }
 
     - name: Retrieving OSA GitHub Repository
       git:
