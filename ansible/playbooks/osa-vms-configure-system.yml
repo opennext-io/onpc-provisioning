@@ -1,0 +1,21 @@
+---
+- hosts: osa-vms
+  become: yes
+
+  tasks:
+
+    - name: Configuring system wide proxy informations
+      lineinfile:
+        path: /etc/environment
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { regexp: '^http_proxy=.*$', line: 'http_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
+        - { regexp: '^https_proxy=.*$', line: 'https_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
+        - { regexp: '^ftp_proxy=.*$', line: 'ftp_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
+        - { regexp: '^no_proxy=.*$', line: 'no_proxy="no_proxy="localhost,127.0.0.1"' }
+      when: proxy_host is defined

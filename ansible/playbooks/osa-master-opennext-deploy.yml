@@ -17,15 +17,10 @@
             group: "root"
             state: directory
 
-    - include_tasks: ../tasks/clone_private_git_repo.yml
-      vars:
-        repo: "{{ item.repo }}"
-        repodst: "{{ item.get('repodst', '') }}"
-        sshdir: "{{ root_ssh_dir }}"
-        destdir: "{{ dest_repo_dir }}"
-      with_items:
-        - { repo: "onpc-basic-model" }
-        - { repo: "onpc-monitoring" }
+    - name: Verifying git package
+      package:
+        name: git
+        state: latest
 
     - name: Retrieving OSA GitHub Repository
       git:
@@ -35,3 +30,13 @@
         force: yes
         recursive: no
         version: stable/pike
+
+    - include_tasks: ../tasks/clone_private_git_repo.yml
+      vars:
+        repo: "{{ item.repo }}"
+        repodst: "{{ item.get('repodst', '') }}"
+        sshdir: "{{ root_ssh_dir }}"
+        destdir: "{{ dest_repo_dir }}"
+      with_items:
+        - { repo: "onpc-basic-model" }
+        - { repo: "onpc-monitoring" }
