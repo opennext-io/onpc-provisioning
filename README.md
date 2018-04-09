@@ -158,3 +158,13 @@ You can also still use the formerly available script and start 3 slave VMs using
 
 Anyhow, all VMs will get provisioned with IPA image (Ironic Python Agent) and register
 automatically into ironic to wait for proper provisioning.
+
+### Step 6: OpenNext Bootstrap for final OSA deployment
+
+Now that your VM(s) is(are) available, you need to finalize some modifiations on
+infra-master node prior to launch the effective OSA deployment:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-pre-deploy.yml
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+

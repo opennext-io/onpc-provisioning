@@ -1,0 +1,27 @@
+---
+- hosts: infra-master
+  become: yes
+
+  tasks:
+
+    - name: Setting Facts
+      set_fact:
+        root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
+        dest_repo_dir: "{{ dest_github_repo_dir | default('/opt') }}"
+
+    - name: Creating root .ssh
+      file:
+            path: "{{ root_ssh_dir }}"
+            mode: 0700
+            owner: "root"
+            group: "root"
+            state: directory
+
+    - include_tasks: ../tasks/clone_private_git_repo.yml
+      vars:
+        repo: "{{ item.repo }}"
+        repodst: "{{ item.get('repodst', '') }}"
+        sshdir: "{{ root_ssh_dir }}"
+        destdir: "{{ dest_repo_dir }}"
+      with_items:
+        - { repo: "openstack-ansible-bootstrap", repodst: "onpc-bootstrap"}
