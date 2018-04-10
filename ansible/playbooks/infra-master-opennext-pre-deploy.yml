@@ -29,7 +29,7 @@
       with_items:
         - { repo: "openstack-ansible-bootstrap", repodst: "onpc-bootstrap"}
 
-    - name: Verifying Squid proxy package
+    - name: Installing Squid proxy package
       package:
         name: squid
         state: latest
@@ -39,6 +39,8 @@
       squid_tcp_outgoing_address: "{{ ansible_default_ipv4.address }}"
       squid_acls:
         - { name: "allowed_ips", type: "src", argument: "{{ ip_prefix | default('20.20.20') }}.0/{{ ip_netmask_bits | default(24) }}" }
+        - { name: "SSL_ports", type: "port", argument: "22" }
+        - { name: "Safe_ports", type: "port", argument: "22" }
       squid_http_access_allow_clients:
         - localhost
         - allowed_ips
