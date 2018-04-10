@@ -4,3 +4,8 @@ Host {{ ip_prefix | default('20.20.20') }}.*
 User vagrant
 StrictHostKeyChecking no
 UserKnownHostsFile /dev/null
+
+{% if proxy_host is defined %}
+Host github.com
+ProxyCommand connect-proxy -H {{ proxy_host }}:{{ proxy_port | default(3128) }} %h %p
+{% endif %}

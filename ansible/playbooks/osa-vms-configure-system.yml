@@ -2,7 +2,40 @@
 - hosts: osa-vms
   become: yes
 
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars/infra-master-deploy-bifrost_vars.yml
+    - ../vars/slaves-pkgs-ubuntu.yml
+
   tasks:
+
+    - name: Setting Facts
+      set_fact:
+        root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
+
+    - name: Creating root .ssh
+      file:
+            path: "{{ root_ssh_dir }}"
+            mode: 0700
+            owner: "root"
+            group: "root"
+            state: directory
+
+    - name: Configuring SSH defaults for {{ systemuser }}
+      template:
+        src: ../templates/ssh_cfg.j2
+        dest: "{{ systemuserhome }}/.ssh/config"
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        mode: 0644
+
+    - name: Configuring SSH defaults for root
+      template:
+        src: ../templates/ssh_cfg.j2
+        dest: "{{ root_ssh_dir }}/config"
+        owner: "root"
+        group: "root"
+        mode: 0644
 
     - name: Configuring system wide proxy informations
       lineinfile:
@@ -19,3 +52,8 @@
         - { regexp: '^ftp_proxy=.*$', line: 'ftp_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
         - { regexp: '^no_proxy=.*$', line: 'no_proxy="no_proxy="localhost,127.0.0.1"' }
       when: proxy_host is defined
+
+    - name: Verifying all mandatory packages
+      package:
+        name: "{{ systempkgs | sort }}"
+        state: latest
