@@ -72,3 +72,21 @@
         sysctl_set: yes
         state: present
         reload: yes
+
+    - name: Configuring NTP
+      replace:
+        path: /etc/ntp.conf
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { regexp: '^pool (.*)', line: '#pool \1' }
+        - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\nserver {{ proxy_host }}\n\1 ntp server as a fallback.' }
+      notify:
+        - restart ntp
+
+  handlers:
+    - name: restart ntp
+      service: name=ntp state=restarted
