@@ -1,5 +1,5 @@
 ---
-# Bifrost master node IP mandatory packages for Ubuntu
+# Bifrost infra-master node mandatory packages for Ubuntu
 systempkgs: "{{
   system +
   dev +

@@ -1,11 +1,12 @@
 ---
-# Bifrost master node IP mandatory packages for Ubuntu
+# Bifrost slave nodes mandatory packages for Ubuntu
 systempkgs: "{{
   system +
   dev +
   disk +
   monitoring +
   network +
+  proxy +
   python +
   user +
   virtualization
@@ -33,6 +34,7 @@ system:
 dev:
   - autoconf
   - build-essential
+  - git
   - libsystemd-dev
 
 disk:
@@ -75,11 +77,17 @@ network:
   - ifenslave-2.6
   - ifstat
   - iputils-tracepath
+  - netcat
   - ntp
   - ntpdate
   - open-iscsi
   - openssh-server
   - vlan
+
+proxy:
+  - connect-proxy
+  - socat
+  - proxytunnel
 
 python:
   - python-pip
