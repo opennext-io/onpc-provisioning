@@ -57,3 +57,18 @@
       package:
         name: "{{ systempkgs | sort }}"
         state: latest
+
+    - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
+      with_items:
+        - "bonding"
+        - "bridge"
+        - "br_netfilter"
+        - "8021q"
+
+    - name: Configuring IP forwarding via sysctl
+      sysctl:
+        name: "net.ipv4.ip_forward"
+        value: 1
+        sysctl_set: yes
+        state: present
+        reload: yes
