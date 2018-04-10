@@ -31,3 +31,4 @@
     force: yes
     recursive: no
     key_file: "{{ sshdir }}/{{ repo_key_filename }}"
+  environment: "{{ gitenv | default('{}') }}"
