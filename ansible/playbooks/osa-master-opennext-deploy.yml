@@ -29,3 +29,25 @@
       with_items:
         - { repo: "onpc-basic-model" }
         - { repo: "onpc-monitoring" }
+
+    - name: Boostrapping Ansible for OSA
+      command: "./scripts/bootstrap-ansible.sh"
+      args:
+        chdir: "/opt/openstack-ansible"
+        creates: "/opt/ansible-runtime/bin/ansible-playbook"
+      environment:
+        TMPDIR: "/var/tmp"
+      register: bootstrap_ansible_result
+
+    - name: Boostrapping AIO for OSA
+      command: "./scripts/bootstrap-aio.sh"
+      args:
+        chdir: "/opt/openstack-ansible"
+        creates: "/etc/openstack_deploy/user_variables.yml"
+        # Could also be /etc/network/interfaces.d/osa_interfaces.cfg
+      environment:
+        TMPDIR: "/var/tmp"
+        BOOTSTRAP_OPTS: "bootstrap_host_data_disk_device=vdb" 
+      register: bootstrap_aio_result
+      when: hostvars.get('infra-master', {}).get('groups', {}).get('osa-vms', []) | length == 1
+      # Could also be osa-master instead of infra-master
