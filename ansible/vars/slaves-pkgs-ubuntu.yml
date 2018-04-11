@@ -15,7 +15,6 @@ systempkgs: "{{
 system:
   - acl
   - acpid
-  - ansible
   - apport
   - aptitude
   - at
