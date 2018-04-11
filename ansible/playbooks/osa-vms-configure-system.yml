@@ -48,9 +48,12 @@
         mode: 0644
       with_items:
         - { regexp: '^http_proxy=.*$', line: 'http_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
+        - { regexp: '^HTTP_PROXY=.*$', line: 'HTTP_PROXY="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
         - { regexp: '^https_proxy=.*$', line: 'https_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
+        - { regexp: '^HTTPS_PROXY=.*$', line: 'HTTPS_PROXY="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
         - { regexp: '^ftp_proxy=.*$', line: 'ftp_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
         - { regexp: '^no_proxy=.*$', line: 'no_proxy="localhost,127.0.0.1"' }
+        - { regexp: '^NO_PROXY=.*$', line: 'NO_PROXY="localhost,127.0.0.1"' }
       when: proxy_host is defined
 
     - name: Verifying all mandatory packages
