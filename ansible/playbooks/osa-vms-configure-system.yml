@@ -9,7 +9,7 @@
 
   tasks:
 
-    - name: Setting Facts
+    - name: Setting facts
       set_fact:
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
 
@@ -76,9 +76,16 @@
         state: present
         reload: yes
 
-    - name: Configuring NTP
+    - name: Setting facts for NTP daemon configuration
+      set_fact:
+          ntp_daemon_conf_line: "server {{ proxy_host }}"
+          ntp_daemon_conf_file: "/etc/ntp.conf"
+          ntp_date_conf_line: "NTPSERVERS=\"{{ proxy_host }}\""
+          ntp_date_conf_file: "/etc/default/ntpdate"
+
+    - name: Configuring NTP daemon (removing default pools)
       replace:
-        path: /etc/ntp.conf
+        path: "{{ ntp_daemon_conf_file }}"
         regexp: "{{ item.regexp }}"
         replace: "{{ item.line }}"
         owner: root
@@ -86,9 +93,48 @@
         mode: 0644
       with_items:
         - { regexp: '^pool (.*)', line: '#pool \1' }
-        - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\nserver {{ proxy_host }}\n\1 ntp server as a fallback.' }
       notify:
         - restart ntp
+
+    - name: Retrieving remote NTP daemon configuration
+      slurp:
+        src: "{{ ntp_daemon_conf_file }}"
+      register:
+        ntp_daemon_info
+
+    - name: Configuring NTP daemon (inserting infra-master as NTP server)
+      replace:
+        path: "{{ ntp_daemon_conf_file }}"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 ntp server as a fallback.' }
+      notify:
+        - restart ntp
+      when: not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line))
+
+    - name: Retrieving remote NTP date configuration
+      slurp:
+        src: "{{ ntp_date_conf_file }}"
+      register:
+        ntp_date_info
+
+    - name: Configuring NTP date (inserting infra-master as NTP server)
+      replace:
+        path: "{{ ntp_date_conf_file }}"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.line }}"
+        owner: root
+        group: root
+        mode: 0644
+      with_items:
+        - { regexp: '^NTPSERVERS=".*', line: '{{ ntp_date_conf_line }}' }
+      notify:
+        - restart ntp
+      when: not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line))
 
   handlers:
     - name: restart ntp
