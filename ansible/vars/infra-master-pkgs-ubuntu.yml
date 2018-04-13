@@ -44,6 +44,7 @@ disk:
   - gdisk
   - mdadm
   - squashfs-tools
+  - xfsprogs
 
 monitoring:
   - arpwatch
