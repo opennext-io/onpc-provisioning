@@ -16,6 +16,7 @@ system:
   - acl
   - acpid
   - apport
+  - apt-utils
   - aptitude
   - at
   - debootstrap

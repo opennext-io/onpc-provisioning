@@ -16,6 +16,7 @@ system:
   - acpid
   - ansible
   - apport
+  - apt-utils
   - aptitude
   - at
   - debootstrap
