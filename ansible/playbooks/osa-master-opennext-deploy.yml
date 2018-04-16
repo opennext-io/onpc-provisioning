@@ -59,3 +59,37 @@
       register: bootstrap_aio_result
       when: hostvars.get('infra-master', {}).get('groups', {}).get('osa-vms', []) | length == 1
       # Could also be osa-master instead of infra-master
+
+    - name: Setting facts for OSA user configuration file
+      set_fact:
+        osa_user_conf_file: "/etc/openstack_deploy/user_variables.yml"
+        osa_vars_additions: "{{ lookup('file', '../files/osa_additional_user_variables.yml') }}"
+
+    - name: Retrieving remote OSA user configuration
+      slurp:
+        src: "{{ osa_user_conf_file }}"
+      register:
+        osa_user_info
+
+    - name: Adding proxy variables to /etc/openstack_deploy/user_variables.yml
+      lineinfile:
+        path: "{{ osa_user_conf_file }}"
+        line: "{{ osa_vars_additions }}"
+        state: present
+        owner: root
+        group: root
+        mode: 0644
+      when: not (osa_user_info['content'] | b64decode is search ('deployment_environment_variables'))
+
+    - name: Adding OSA final deployment script
+      template:
+        src: ../templates/osa_run_playbooks.sh.j2
+        dest: /opt/osa_run_playbooks.sh
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Executing OSA final deployment script
+      shell: /opt/osa_run_playbooks.sh
+      args:
+        executable: /bin/bash
