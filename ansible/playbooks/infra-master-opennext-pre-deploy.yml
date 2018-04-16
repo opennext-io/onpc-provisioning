@@ -37,6 +37,10 @@
   roles:
     - role: kbrebanov.squid
       squid_tcp_outgoing_address: "{{ ansible_default_ipv4.address }}"
+      squid_cache_mem: 768
+      squid_maximum_object_size: 256
+      squid_cache_dir: "/var/spool/squid"
+      squid_cache_dir_size: 16384
       squid_acls:
         - { name: "allowed_ips", type: "src", argument: "{{ ip_prefix | default('20.20.20') }}.0/{{ ip_netmask_bits | default(24) }}" }
         - { name: "SSL_ports", type: "port", argument: "22" }

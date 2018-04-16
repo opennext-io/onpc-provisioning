@@ -1,3 +1,4 @@
 # Role requirements to be installed from Ansible Galaxy
 ---
-- src: kbrebanov.squid
+- src: https://github.com/obourdon/ansible-squid
+  name: kbrebanov.squid
