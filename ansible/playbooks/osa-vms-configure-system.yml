@@ -37,29 +37,21 @@
         group: "root"
         mode: 0644
 
-    - name: Configuring system wide proxy informations
-      lineinfile:
-        path: /etc/environment
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        state: present
-        owner: root
-        group: root
-        mode: 0644
-      with_items:
-        - { regexp: '^http_proxy=.*$', line: 'http_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
-        - { regexp: '^HTTP_PROXY=.*$', line: 'HTTP_PROXY="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
-        - { regexp: '^https_proxy=.*$', line: 'https_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
-        - { regexp: '^HTTPS_PROXY=.*$', line: 'HTTPS_PROXY="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
-        - { regexp: '^ftp_proxy=.*$', line: 'ftp_proxy="http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"' }
-        - { regexp: '^no_proxy=.*$', line: 'no_proxy="localhost,127.0.0.1"' }
-        - { regexp: '^NO_PROXY=.*$', line: 'NO_PROXY="localhost,127.0.0.1"' }
+    - name: Setting environment facts
+      set_fact:
+        proxy_env: {
+          'http_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+          'https_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+          'ftp_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+          'no_proxy': 'localhost,127.0.0.1',
+        }
       when: proxy_host is defined
 
     - name: Verifying all mandatory packages
       package:
         name: "{{ systempkgs | sort }}"
         state: latest
+      environment: "{{ proxy_env | default('{}') }}"
 
     - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
       with_items:
@@ -94,7 +86,7 @@
       with_items:
         - { regexp: '^pool (.*)', line: '#pool \1' }
       notify:
-        - restart ntp
+        - restart ntp and stop systemd-timesyncd
 
     - name: Retrieving remote NTP daemon configuration
       slurp:
@@ -113,7 +105,7 @@
       with_items:
         - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 ntp server as a fallback.' }
       notify:
-        - restart ntp
+        - restart ntp and stop systemd-timesyncd
       when: not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line))
 
     - name: Retrieving remote NTP date configuration
@@ -133,9 +125,12 @@
       with_items:
         - { regexp: '^NTPSERVERS=".*', line: '{{ ntp_date_conf_line }}' }
       notify:
-        - restart ntp
+        - restart ntp and stop systemd-timesyncd
       when: not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line))
 
   handlers:
-    - name: restart ntp
-      service: name=ntp state=restarted
+    - name: restart ntp and stop systemd-timesyncd
+      service: name={{ item.name }} state={{ item.state }}
+      with_items:
+        - { name: ntp, state: restarted }
+        - { name: systemd-timesyncd, state: stopped }

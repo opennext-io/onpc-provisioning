@@ -9,6 +9,16 @@
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
         dest_repo_dir: "{{ dest_github_repo_dir | default('/opt') }}"
 
+    - name: Setting environment facts
+      set_fact:
+        proxy_env: {
+          'http_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+          'https_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+          'ftp_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+          'no_proxy': 'localhost,127.0.0.1',
+        }
+      when: proxy_host is defined
+
     - name: Retrieving OSA GitHub Repository
       git:
         repo: "https://github.com/obourdon/openstack-ansible"
@@ -17,6 +27,7 @@
         force: yes
         recursive: no
         version: stable/pike
+      environment: "{{ proxy_env | default('{}') }}"
 
     - include_tasks: ../tasks/clone_private_git_repo.yml
       vars:
@@ -35,8 +46,7 @@
       args:
         chdir: "/opt/openstack-ansible"
         creates: "/opt/ansible-runtime/bin/ansible-playbook"
-      environment:
-        TMPDIR: "/var/tmp"
+      environment: "{{ proxy_env | default('{}') | combine({ 'TMPDIR': '/var/tmp' }) }}"
       register: bootstrap_ansible_result
 
     - name: Boostrapping AIO for OSA
@@ -45,9 +55,7 @@
         chdir: "/opt/openstack-ansible"
         creates: "/etc/openstack_deploy/user_variables.yml"
         # Could also be /etc/network/interfaces.d/osa_interfaces.cfg
-      environment:
-        TMPDIR: "/var/tmp"
-        BOOTSTRAP_OPTS: "bootstrap_host_data_disk_device=vdb" 
+      environment: "{{ proxy_env | default('{}') | combine({ 'TMPDIR': '/var/tmp', 'BOOTSTRAP_OPTS': 'bootstrap_host_data_disk_device=vdb' }) }}"
       register: bootstrap_aio_result
       when: hostvars.get('infra-master', {}).get('groups', {}).get('osa-vms', []) | length == 1
       # Could also be osa-master instead of infra-master
