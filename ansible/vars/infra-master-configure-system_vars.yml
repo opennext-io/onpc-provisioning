@@ -25,3 +25,4 @@ kvm_bridge_itf: "{{ provisioning_bridge_itf | default('br-prov') }}"
 # acting as the master node and which will spawn KVM/libvirt
 # VMs which will host OSA deployment
 master_running_kvm: true
+ansible_master_using_kvm: false
