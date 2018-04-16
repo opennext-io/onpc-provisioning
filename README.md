@@ -30,6 +30,10 @@ ansible_user=vagrant
 
 ### Step 0: Install ansible
 
+Please note that it is strongly recommended to NOT use any packaged version
+of ansible that may be located on the ansible-master machine where all playbooks
+will be launched. Instead, use a virtualenv evnironment as described hereafter.
+
 Make sure your python version is proper and use virtualenv on your main system.
 On my MacOSX MacBook, I had to make sure to use the Homebrew version of Python
 and not the default system one :-(:
@@ -38,8 +42,7 @@ and not the default system one :-(:
 brew install python brew-pip pyenv-virtualenv
 /usr/local//Cellar/pipenv/11.9.0_1/libexec/bin/virtualenv ~/.venvs/ansible-brew-py27 -p /opt/local/bin/python
 . ~/.venvs/ansible-brew-py27/bin/activate
-pip install -U ansible
-pip install -U jmespath
+pip install -r requirements.txt
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Then, you need to install the Ansible Galaxy roles which are required for some of the
