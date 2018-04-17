@@ -52,6 +52,27 @@ OpenNext playbooks:
 ansible-galaxy install -r ansible/playbooks/requirements.yml 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+If you want ansible to display time information on each and every task executed
+in playbooks and get a summary of tasks which takes most of the deployment time
+you can add the following environment variable before running any of the
+ansible-playbook command hereaafter
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+export ANSIBLE_CALLBACK_WHITELIST="profile_tasks"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please also note that a summary of all playbooks to be launched can also be found
+under scripts/complete_scenario.sh
+
+Another important note to keep in mind is that stage 1-6 are launched on ansible-master
+node (where the current repository has been extracted and ansible installed) whereas
+7 and followers are launched on the OSA master machine
+
+It is recommended to have your ansible-master node and your infra-master node not refering
+to the same machine because we are computing potential collisions in IP addresses so that
+networking issues can be detected/prevented very early and some packages like KVM/libvirt
+often configure the NAT bridge with the same IP address on all machines (192.168.122.1).
+
 ### Step 1: System configuration
 
 you are now able to launch the infra-master configuration via:

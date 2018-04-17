@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export ANSIBLE_CALLBACK_WHITELIST="profile_tasks"
+
 # Stage 0.1 => create installation ISO
 # Stage 0.2 => provision baremetal machine (or VM) infra-master using ISO from 0.1
 
