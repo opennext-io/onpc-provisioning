@@ -1,0 +1,186 @@
+# SSL certificates creation and verification task
+---
+- name: Set default suffix facts
+  set_fact:
+    dhparam_suffix: ""
+    key_suffix: ""
+    csr_suffix: ""
+    cert_suffix: ""
+  tags:
+    - ssl_certs
+    - generate_certs
+
+- name: Set suffix facts according to automatic mode
+  set_fact:
+    dhparam_suffix: "-dhparam.pem"
+    key_suffix: "-key.pem"
+    csr_suffix: "-csr.pem"
+    cert_suffix: "-cert.pem"
+  when: auto_suffix | default(false)
+  tags:
+    - ssl_certs
+    - generate_certs
+
+- name: Generate DH Params (may take several minutes!)
+  command: openssl dhparam -out "{{ dhparam_file }}{{ dhparam_suffix }}" {{ bit_length | default(2048) }}
+  args:
+    creates: "{{ dhparam_file }}{{ dhparam_suffix }}"
+  tags:
+    - ssl_certs
+    - generate_certs
+
+- name: Generate RSA Key
+  command: openssl genrsa -out "{{ key_file }}{{ key_suffix }}" {{ bit_length | default(2048) }}
+  args:
+    creates: "{{ key_file }}{{ key_suffix }}"
+  tags:
+    - ssl_certs
+    - generate_certs
+
+- name: Generate CSR
+  command: |
+    openssl req -new
+      -key "{{ key_file }}{{ key_suffix }}"
+      -out "{{ csr_file }}{{ csr_suffix }}"
+      -subj "{{ subject_string | default('/C=FR/ST=Isere/L=Grenoble/O=OpenNext SAS/CN=*.opennext.io') }}"
+  args:
+    creates: "{{ csr_file }}{{ csr_suffix }}"
+  tags:
+    - ssl_certs
+    - generate_certs
+
+- name: Generate Self-signed Certificate
+  command: |
+    openssl req
+      -x509
+      -days "{{ valid_days | default(365) }}"
+      -key "{{ key_file }}{{ key_suffix }}"
+      -in "{{ csr_file }}{{ csr_suffix }}"
+      -out "{{ cert_file }}{{ cert_suffix }}"
+  args:
+    creates: "{{ cert_file }}{{ cert_suffix }}"
+  tags:
+    - ssl_certs
+    - generate_certs
+
+# Examples for some checks one could use the assertonly provider for:
+- name: Verify that an existing certificate was issued by the {{ ca_cert_authority_name }} CA and is currently still valid
+  openssl_certificate:
+    path: "{{ cert_file }}{{ cert_suffix }}"
+    provider: assertonly
+    issuer:
+      O: "{{ ca_cert_authority_name }}"
+    has_expired: False
+  when: check_certs | default(false)
+  tags:
+    - ssl_certs
+    - validate_certs
+
+- name: Ensure that a certificate uses a modern signature algorithm (no SHA1, MD5 or DSA)
+  openssl_certificate:
+    path: "{{ cert_file }}{{ cert_suffix }}"
+    provider: assertonly
+    signature_algorithms:
+      - sha224WithRSAEncryption
+      - sha256WithRSAEncryption
+      - sha384WithRSAEncryption
+      - sha512WithRSAEncryption
+      - sha224WithECDSAEncryption
+      - sha256WithECDSAEncryption
+      - sha384WithECDSAEncryption
+      - sha512WithECDSAEncryption
+  when: check_certs | default(false)
+  tags:
+    - ssl_certs
+    - validate_certs
+
+- name: Ensure that the existing certificate belongs to the specified private key
+  openssl_certificate:
+    path: "{{ cert_file }}{{ cert_suffix }}"
+    privatekey_path: "{{ key_file }}{{ key_suffix }}"
+    provider: assertonly
+  when: check_certs | default(false)
+  tags:
+    - ssl_certs
+    - validate_certs
+
+- name: Ensure that the existing certificate is still valid at date {{ valid_date }}
+  openssl_certificate:
+    path: "{{ cert_file }}{{ cert_suffix }}"
+    provider: assertonly
+    valid_at: "{{ valid_date }}"
+  when: check_certs | default(false)
+  tags:
+    - ssl_certs
+    - validate_certs
+
+- name: Ensure that the existing certificate is still valid in {{ valid_from_now_secs }} seconds from now
+  openssl_certificate:
+    path: "{{ cert_file }}{{ cert_suffix }}"
+    provider: assertonly
+    valid_in: "{{ valid_from_now_secs }}"
+  when: check_certs | default(false)
+  tags:
+    - ssl_certs
+    - validate_certs
+
+- name: Ensure that the existing certificate is invalid at date {{ invalid_date }}
+  openssl_certificate:
+    path: "{{ cert_file }}{{ cert_suffix }}"
+    provider: assertonly
+    invalid_at: "{{ invalid_date }}"
+  when: check_certs | default(false)
+  tags:
+    - ssl_certs
+    - validate_certs
+
+# Next checks from https://docs.ansible.com/ansible/2.4/openssl_certificate_module.html
+
+#- name: Ensure that the existing certificate is only used for digital signatures and encrypting other keys
+#  openssl_certificate:
+#    path: "{{ cert_file }}{{ cert_suffix }}"
+#    provider: assertonly
+#    key_usage:
+#      - digitalSignature
+#      - keyEncipherment
+#    key_usage_strict: true
+#  when: check_certs | default(false)
+#  tags:
+#    - ssl_certs
+#    - validate_certs
+
+#- name: Ensure that the existing certificate can be used for client authentication
+#  openssl_certificate:
+#    path: "{{ cert_file }}{{ cert_suffix }}"
+#    provider: assertonly
+#    extended_key_usage:
+#      - clientAuth
+#  when: check_certs | default(false)
+#  tags:
+#    - ssl_certs
+#    - validate_certs
+
+#- name: Ensure that the existing certificate can only be used for client authentication and time stamping
+#  openssl_certificate:
+#    path: "{{ cert_file }}{{ cert_suffix }}"
+#   provider: assertonly
+#    extended_key_usage:
+#     - clientAuth
+#      - 1.3.6.1.5.5.7.3.8
+#    extended_key_usage_strict: true
+#  when: check_certs | default(false)
+#  tags:
+#    - ssl_certs
+#    - validate_certs
+
+#- name: Ensure that the existing certificate has a certain domain in its subjectAltName
+#  openssl_certificate:
+#    path: "{{ cert_file }}{{ cert_suffix }}"
+#    provider: assertonly
+#    subject_alt_name:
+#      - www.example.com
+#      - test.example.com
+#  when: check_certs | default(false)
+#  tags:
+#    - ssl_certs
+#    - validate_certs

@@ -1,0 +1,229 @@
+# {{ ansible_managed }}
+
+# HTTP
+server {
+    set $myip {{ osa_master_ip }};
+    large_client_header_buffers 4 16k;
+    listen 80;
+    access_log /var/log/nginx/osa/access-openstack.log;
+    error_log /var/log/nginx/osa/error-openstack.log;
+    server_name {{ infra_master_public_ips_and_or_names | join(' ') }};
+    sub_filter 'http://${myip}:' 'http://$host/';
+    sub_filter 'http://${myip}/' 'http://$host/';
+    sub_filter 'http://$host/v3' 'http://$host/5000/v3';
+    sub_filter_last_modified on;
+    sub_filter_once off;
+    sub_filter_types *;
+    proxy_request_buffering off;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header Origin http://$host;
+    proxy_set_header Accept-Encoding "";
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_connect_timeout 90;
+    proxy_send_timeout 90;
+    proxy_read_timeout 90;
+    # Keystone
+    location /5000 {
+        rewrite ^/5000/v3/(.*) /v3/$1 break;
+        rewrite ^/5000(.*) /v3/$1 break;
+        proxy_pass https://${myip}:5000;
+        proxy_redirect https://${myip}:443 /5000;
+        break;
+    }
+    # Nova
+    location /8774 {
+        sub_filter 'http://$host/' 'http://$host/8774/';
+        rewrite ^/8774(.*) /$1 break;
+        proxy_pass https://${myip}:8774;
+        proxy_redirect https://${myip}:443 /8774;
+    }
+    # Cinder
+    location /8776 {
+        sub_filter 'http://$host/' 'http://$host/8776/';
+        rewrite ^/8776(.*) /$1 break;
+        proxy_pass https://${myip}:8776;
+        proxy_redirect https://${myip}:443 /8776;
+    }
+    # Glance
+    location /9292 {
+        sub_filter 'http://$host/' 'http://$host/9292/';
+        rewrite ^/9292(.*) /$1 break;
+        proxy_pass https://${myip}:9292;
+        proxy_redirect https://${myip}:443 /9292;
+    }
+    # Neutron
+    location /9696 {
+        sub_filter 'http://$host/' 'http://$host/9696/';
+        rewrite ^/9696(.*) /$1 break;
+        proxy_pass https://${myip}:9696;
+        proxy_redirect https://${myip}:443 /9696;
+    }
+#    location ~ /([1-46-9][0-9]*)/(.*) {
+#        rewrite ^/([1-9][0-9]*)/(.*) /$1 break;
+#        proxy_pass https://${myip}:$1/$uri$is_args$args;
+#        proxy_redirect https://${myip}:443 /$1;
+#    }
+}
+
+# HTTPS
+server {
+    ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+    ssl_ecdh_curve secp384r1;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+    # Disable preloading HSTS for now.  You can use the commented out header line that includes
+    # the "preload" directive if you understand the implications.
+    #add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+    add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    set $myip {{ osa_master_ip }};
+    large_client_header_buffers 4 16k;
+    listen 443 ssl;
+    access_log /var/log/nginx/osa/ssl-access-openstack.log;
+    error_log /var/log/nginx/osa/ssl-error-openstack.log;
+    server_name {{ infra_master_public_ips_and_or_names | join(' ') }};
+    sub_filter 'https://${myip}:' 'https://$host/';
+    sub_filter 'https://${myip}/' 'https://$host/';
+    sub_filter 'https://$host/v3' 'https://$host/5000/v3';
+    sub_filter_last_modified on;
+    sub_filter_once off;
+    sub_filter_types *;
+    proxy_request_buffering off;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header Origin https://$host;
+    proxy_set_header Accept-Encoding "";
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_connect_timeout 90;
+    proxy_send_timeout 90;
+    proxy_read_timeout 90;
+    # Keystone
+    location /5000 {
+        rewrite ^/5000/v3/(.*) /v3/$1 break;
+        rewrite ^/5000(.*) /v3/$1 break;
+        proxy_pass https://${myip}:5000;
+        proxy_redirect https://${myip}:443 /5000;
+        break;
+    }
+    # Nova
+    location /8774 {
+        sub_filter 'https://$host/' 'https://$host/8774/';
+        rewrite ^/8774(.*) /$1 break;
+        proxy_pass https://${myip}:8774;
+        proxy_redirect https://${myip}:443 /8774;
+    }
+    # Cinder
+    location /8776 {
+        sub_filter 'https://$host/' 'https://$host/8776/';
+        rewrite ^/8776(.*) /$1 break;
+        proxy_pass https://${myip}:8776;
+        proxy_redirect https://${myip}:443 /8776;
+    }
+    # Glance
+    location /9292 {
+        sub_filter 'https://$host/' 'https://$host/9292/';
+        rewrite ^/9292(.*) /$1 break;
+        proxy_pass https://${myip}:9292;
+        proxy_redirect https://${myip}:443 /9292;
+    }
+    # Neutron
+    location /9696 {
+        sub_filter 'https://$host/' 'https://$host/9696/';
+        rewrite ^/9696(.*) /$1 break;
+        proxy_pass https://${myip}:9696;
+        proxy_redirect https://${myip}:443 /9696;
+    }
+    # Horizon
+    location /horizon {
+        rewrite ^/horizon(.*) /$1 break;
+        proxy_pass https://${myip}:443;
+        proxy_redirect https://${http_host} https://$http_host/;
+        proxy_redirect https://${myip} https://$http_host/;
+    }
+    location / {
+        proxy_pass https://${myip}:443;
+        proxy_redirect https://${http_host} https://$http_host/;
+        proxy_redirect https://${myip} https://$http_host/;
+    }
+}
+
+# Grafana
+server {
+    ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+    ssl_ecdh_curve secp384r1;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+    # Disable preloading HSTS for now.  You can use the commented out header line that includes
+    # the "preload" directive if you understand the implications.
+    #add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+    add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    set $myip {{ osa_master_ip }};
+    large_client_header_buffers 4 16k;
+    listen 8089 ssl;
+    access_log /var/log/nginx/osa/ssl-access-grafana.log;
+    error_log /var/log/nginx/osa/ssl-error-grafana.log;
+    server_name {{ infra_master_public_ips_and_or_names | join(' ') }};
+    sub_filter 'https://${myip}:' 'https://$host/';
+    sub_filter 'https://${myip}/' 'https://$host/';
+    sub_filter 'https://$host/v3' 'https://$host/5000/v3';
+    sub_filter_last_modified on;
+    sub_filter_once off;
+    sub_filter_types *;
+    proxy_request_buffering off;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header Origin https://$host;
+    proxy_set_header Accept-Encoding "";
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_connect_timeout 90;
+    proxy_send_timeout 90;
+    proxy_read_timeout 90;
+    # Grafana
+    location / {
+        proxy_pass https://${myip}:8089;
+        proxy_redirect https://${http_host}:8089 https://$http_host:8089/grafana;
+        proxy_redirect https://${myip}:8089 https://$http_host:8089/grafana;
+    }
+}

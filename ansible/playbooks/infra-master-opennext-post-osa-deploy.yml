@@ -1,0 +1,99 @@
+---
+- hosts: infra-master
+  become: yes
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars//infra-master-deploy-bifrost_vars.yml
+
+  tasks:
+
+    - name: Installing Nginx package
+      package:
+        name: nginx
+        state: latest
+
+    - import_tasks: ../tasks/ssl_certs.yml
+      vars:
+        dhparam_file: /etc/ssl/certs/dhparam.pem
+        key_file: /etc/ssl/private/nginx-selfsigned.key
+        csr_file: /etc/ssl/private/nginx-selfsigned.csr
+        cert_file: /etc/ssl/certs/nginx-selfsigned.crt
+        auto_suffix: false
+        check_certs: false
+        subject_string: "/C=FR/ST=Isere/L=Grenoble/O=OpenNext SAS/CN=*.opennext.io"
+        ca_cert_authority_name: "OpenNext SAS"
+        valid_date: "20181221162800Z"
+        invalid_date: "20201221162800Z"
+        valid_from_now_secs: "1209600"
+
+    - name: Getting Public IP
+      ipify_facts:
+      register: ipify_results
+      environment:
+        LC_ALL: C
+        https_proxy: ""
+
+    - name: Retrieving OSA deployment informations
+      slurp:
+        src: "{{ systemuserhome }}/osa-inventory"
+      register:
+        osa_deploy_info
+
+    - name: Setting facts from OSA deployment informations
+      set_fact:
+        bifrost_nginx_line: "^(\\s*)(include /etc/nginx/conf.d/bifrost\\*.conf;)$"
+        osa_nginx_line: "include /etc/nginx/conf.d/osa*.conf;"
+        osa_nginx_regex_line: "include /etc/nginx/conf.d/osa\\*.conf;"
+        nginx_global_conf_file: "/etc/nginx/nginx.conf"
+        osa_nginx_conf_file: "/etc/nginx/conf.d/osa-proxy.conf"
+        osa_infos: "{{ osa_deploy_info['content'] | b64decode |
+              regex_findall('.*osa-master ansible_host=(?:[0-9]{1,3}\\.){3}[0-9]{1,3}') |
+              regex_replace('osa-master ansible_host=', '') }}"
+
+    - name: Creating Nginx log directory for OSA
+      file:
+        path: "/var/log/nginx/osa"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: 0755
+      notify:
+        - restart nginx
+
+    - name: Creating Nginx configuration file for OpenStack services and Grafana
+      template:
+        src: '../templates/osa-nginx.conf.j2'
+        dest: "{{ osa_nginx_conf_file }}"
+        owner: www-data
+        group: www-data
+        mode: 0644
+      vars:
+        osa_master_ip: "{{ osa_infos[0] }}"
+        infra_master_public_ips_and_or_names:
+          - "{{ ansible_default_ipv4.address }}"
+          - "{{ ipify_results.get('ansible_facts', {}).get('ipify_public_ip', '') }}"
+      notify:
+        - restart nginx
+
+    - name: Retrieving remote OSA user configuration
+      slurp:
+        src: "{{ nginx_global_conf_file }}"
+      register:
+        nginx_info
+
+    - name: Updating Nginx global configuration file for OSA
+      lineinfile:
+        path: "{{ nginx_global_conf_file }}"
+        backrefs: yes
+        regexp: "{{ bifrost_nginx_line }}"
+        line: "\\1\\2\\n\\1{{ osa_nginx_line }}"
+        state: present
+        owner: www-data
+        group: www-data
+        mode: 0644
+      when: not (nginx_info['content'] | b64decode is search (osa_nginx_regex_line))
+
+  handlers:
+    - name: restart nginx
+      service: name=nginx state=restarted

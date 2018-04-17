@@ -231,3 +231,17 @@ ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-master-opennext-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Please note that the final task in osa-master-opennext-deploy.yml can take a very long time to complete.
+If you want to see progress on this task, log into the osa-master node (which IP you will find in ~vagrant/osa-inventory)
+and, as root, do a tail -f /var/log/osa_run_playbooks*.logs.
+
+### Step 8: OpenNext post OSA deployment
+
+Now that OpenStack Ansible is successfully deployed, the following
+command run on your ansible-master node deploys some additional services
+like nginx to provide access to Horizon and Grafana
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-post-osa-deploy.yml
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
