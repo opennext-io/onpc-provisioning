@@ -63,7 +63,7 @@
     - name: Setting facts for OSA user configuration file
       set_fact:
         osa_user_conf_file: "/etc/openstack_deploy/user_variables.yml"
-        osa_vars_additions: "{{ lookup('file', '../files/osa_additional_user_variables.yml') }}"
+        osa_vars_additions: "{%- raw %}{{ lookup('template', '../templates/osa_additional_user_variables.yml.j2') }}{%- endraw %}"
 
     - name: Retrieving remote OSA user configuration
       slurp:
@@ -82,8 +82,8 @@
       when: not (osa_user_info['content'] | b64decode is search ('deployment_environment_variables'))
 
     - name: Adding OSA final deployment script
-      template:
-        src: ../templates/osa_run_playbooks.sh.j2
+      copy:
+        src: ../files/osa_run_playbooks.sh
         dest: /opt/osa_run_playbooks.sh
         owner: root
         group: root
