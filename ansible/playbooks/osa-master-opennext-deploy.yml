@@ -92,4 +92,5 @@
     - name: Executing OSA final deployment script
       shell: /opt/osa_run_playbooks.sh
       args:
+        creates: /opt/.osa_playbooks_done
         executable: /bin/bash
