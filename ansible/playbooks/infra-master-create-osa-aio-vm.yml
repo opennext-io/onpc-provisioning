@@ -4,7 +4,7 @@
 
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
-    - ../vars//infra-master-deploy-bifrost_vars.yml
+    - ../vars/infra-master-deploy-bifrost_vars.yml
 
   tasks:
 
@@ -35,7 +35,7 @@
 
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
-    - ../vars//infra-master-deploy-bifrost_vars.yml
+    - ../vars/infra-master-deploy-bifrost_vars.yml
 
   tasks:
 
