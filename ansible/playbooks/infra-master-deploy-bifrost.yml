@@ -12,6 +12,7 @@
       git:
         repo: https://github.com/obourdon/bifrost
         dest: "{{ git }}"
+        update: no
 
     - name: Creating Bifrost Virtualenv Directory
       file:
@@ -31,6 +32,27 @@
         VENV: "{{ venv }}"
         https_proxy: ""
       register: setup_result
+
+    - name: Retrieving Bifrost deployment informations
+      slurp:
+        src: "{{ git }}/env-vars"
+      register:
+        bifrost_env_info
+
+    - name: Retrieving ansible-master environment informations
+      set_fact:
+        ansible_env: "{{ lookup('env', 'ANSIBLE_CALLBACK_WHITELIST') }}"
+        env_already_set: "{{bifrost_env_info['content'] | b64decode | regex_findall('export ANSIBLE_CALLBACK_WHITELIST=.*') }}"
+
+    - name: Adding environment variable to remote environment script
+      lineinfile:
+        path: "{{ git }}/env-vars"
+        line: "export ANSIBLE_CALLBACK_WHITELIST=\"{{ ansible_env }}\""
+        state: present
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        mode: 0646
+      when: ansible_env | length > 0 and env_already_set | length == 0
 
     - name: Getting Public IP
       ipify_facts:
