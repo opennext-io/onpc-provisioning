@@ -20,7 +20,7 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post
 
 # Stage 5 => test scenarios 1 all-in-one one with 3 vms
 #ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-aio-vm.yml
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml
+#ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml
 
 #  Stage 6 => Add some OpenNext specifics services (Squid) and associated configurations
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-pre-deploy.yml
