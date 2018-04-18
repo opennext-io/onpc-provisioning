@@ -61,10 +61,23 @@ ansible-playbook command hereaafter
 export ANSIBLE_CALLBACK_WHITELIST="profile_tasks"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Some tasks take a very long time to complete. Even though we took great care to
+try to make the playbooks wait properly when required, there may be cases where
+the underlying ssh utilities used by Ansible to communicate with remote assets
+will timeout due to what is considered as "inactivity". Use the following
+environment variable settings to prevent this from happening:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=120 -o ServerAliveCountMax=10"
+usual default being:
+ansible-config dump | grep ANSIBLE_SSH_ARGS
+ANSIBLE_SSH_ARGS(default) = -C -o ControlMaster=auto -o ControlPersist=60s
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Please also note that a summary of all playbooks to be launched can also be found
 under scripts/complete_scenario.sh
 
-Another important note to keep in mind is that stage 1-6 are launched on ansible-master
+Another important note to keep in mind is that steps 1-6 are launched on ansible-master
 node (where the current repository has been extracted and ansible installed) whereas
 7 and followers are launched on the OSA master machine
 
@@ -186,6 +199,11 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post
 
 ### Step 5: Launch VMs to be provisioned
 
+IMPORTANT NOTE: like explained in Step 0 above, some of the tasks executed by the
+current step take a very long time and you need to adapt the Ansible environment
+variable in the exact same way on the infra-master node prior to run the following
+VM provisioning playbooks (ANSIBLE_SSH_ARGS).
+
 Once everything is deployed successfully, you can start a huge slave VM using:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,13 +218,7 @@ You can also choose to have a multi-vm deployment using:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This will provide ground for a proper single box aka all-in-one aka AIO OSA deployment.
-
-You can also still use the formerly available script and start 3 slave VMs using:
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-./scripts/create_slave_vms.sh 3
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This will provide ground for a proper multi (4) VMs OSA deployment.
 
 Anyhow, all VMs will get provisioned with IPA image (Ironic Python Agent) and register
 automatically into ironic to wait for proper provisioning.

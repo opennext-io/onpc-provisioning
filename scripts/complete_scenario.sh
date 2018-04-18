@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export ANSIBLE_CALLBACK_WHITELIST="profile_tasks"
+export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=120 -o ServerAliveCountMax=10"
 
 # Stage 0.1 => create installation ISO
 # Stage 0.2 => provision baremetal machine (or VM) infra-master using ISO from 0.1
@@ -36,6 +37,7 @@ ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks
 # If you want to see progress on this task, log into the osa-master node
 # (which IP you will find in ~vagrant/osa-inventory) and, as root, do a
 # tail -f /var/log/osa_run_playbooks*.logs.
+export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=120 -o ServerAliveCountMax=10"
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-master-opennext-deploy.yml
 
 # Stage 8 => configure additional services to access Horizon and Grafana from infra-master node
