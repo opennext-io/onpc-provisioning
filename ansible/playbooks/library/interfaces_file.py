@@ -322,7 +322,7 @@ def read_interfaces_lines(module, line_strings):
     return lines, ifaces
 
 
-def setInterfaceOption(module, lines, iface, ifaces, option, raw_value, state, bridge_options = None):
+def setInterfaceOption(module, lines, iface, ifaces, option, raw_value, state, bridge_options = None, method = None):
     value = str(raw_value)
     changed = False
     removed_lines = None
@@ -378,13 +378,18 @@ def setInterfaceOption(module, lines, iface, ifaces, option, raw_value, state, b
             changed = True
             lines = list(filter(lambda ln: ln.get('iface') != iface, lines))
             removed_lines = iface_lines
+        if method:
+            for ln in removed_lines:
+                if ln.get('line_type') == 'iface':
+                    ln['line'] = re.sub(ln.get('params', {}).get('method', '') + '$', method, ln.get('line'))
+                    ln['params']['method'] = method
     elif state == "bridge":
         changed = True
         lines = list(filter(lambda ln: ln.get('iface') != iface, lines))
         removed_lines = iface_lines
         res_lines = []
         # Copy the removed lines corresponding to the interface to be moved
-        # to bridge and  change method to 'manual'
+        # to bridge and change method to 'manual'
         # Add comment to mention that this is the 'ethernet' interface part
         # of th bridge
         for ln in removed_lines:
@@ -400,7 +405,7 @@ def setInterfaceOption(module, lines, iface, ifaces, option, raw_value, state, b
                 comment = new_ln.get('comment')
                 if comment:
                     new_ln['comment'] = re.sub("\n$", " (ethernet)\n", comment)
-                new_ln['line'] = re.sub(ln.get('params', {}).get('method', '')  + '$', new_method, ln.get('line'))
+                new_ln['line'] = re.sub(ln.get('params', {}).get('method', '') + '$', new_method, ln.get('line'))
                 new_ln['params']['method'] = new_method
                 res_lines.append(new_ln)
 
@@ -414,6 +419,10 @@ def setInterfaceOption(module, lines, iface, ifaces, option, raw_value, state, b
             'value': iface,
         }
         removed_lines.append(new_ln)
+
+        # Check that all necessary information has been provided
+        if not bridge_options:
+            module.fail_json(msg="Error: migrating interface to bridge requires bridge_options")
 
         # Add the other bridge options and store new bridge name
         br_name = None
@@ -431,7 +440,7 @@ def setInterfaceOption(module, lines, iface, ifaces, option, raw_value, state, b
                     }
                     removed_lines.append(new_ln)
 
-        # Check that all necessary information is provided
+        # Check that all necessary information has been provided
         if not br_name:
             module.fail_json(msg="Error: migrating interface to bridge requires at least a bridge 'name' option")
 
@@ -494,6 +503,7 @@ def main():
             src=dict(default=None, required=False, type='path'),
             dest=dict(default='/etc/network/interfaces', required=False, type='path'),
             iface=dict(required=False),
+            method=dict(default=None, required=False),
             option=dict(required=False),
             value=dict(required=False),
             backup=dict(default='no', type='bool'),
@@ -507,6 +517,7 @@ def main():
     src = module.params['src']
     dest = module.params['dest']
     iface = module.params['iface']
+    method = module.params['method']
     option = module.params['option']
     value = module.params['value']
     backup = module.params['backup']
@@ -535,7 +546,7 @@ def main():
     if option is not None:
         changed, lines, _ = setInterfaceOption(module, lines, iface, ifaces, option, value, state)
     elif state == 'absent' or state == 'move' or state == 'bridge':
-        changed, lines, removed_lines = setInterfaceOption(module, lines, iface, ifaces, None, None, state, bridge_options)
+        changed, lines, removed_lines = setInterfaceOption(module, lines, iface, ifaces, None, None, state, bridge_options, method)
         if state == 'bridge' and src == dest:
             lines = lines + removed_lines
             removed_lines = []
