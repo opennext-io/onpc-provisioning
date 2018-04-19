@@ -25,9 +25,10 @@
         vbmc_port: "{{ vm_item.bmc }}"
         vmmacprefix: "52:54:01"
       with_items:
-        - { name: "slave-1", cpus: 4, mem: 16, hdd: 60, vnc: 5901, bmc: 6001}
-        - { name: "slave-2", cpus: 4, mem: 16, hdd: 60, vnc: 5902, bmc: 6002}
-        - { name: "slave-3", cpus: 4, mem: 16, hdd: 60, vnc: 5903, bmc: 6003}
+        - { name: "master-osa", cpus: 2, mem: 8, hdd: 60, vnc: 5901, bmc: 6001}
+        - { name: "slave-1", cpus: 8, mem: 16, hdd: 60, vnc: 5902, bmc: 6002}
+        - { name: "slave-2", cpus: 8, mem: 8, hdd: 60, vnc: 5903, bmc: 6003}
+        - { name: "slave-3", cpus: 4, mem: 8, hdd: 60, vnc: 5904, bmc: 6004}
       loop_control:
         loop_var: vm_item
 
@@ -50,7 +51,9 @@
     - name: Waiting for VMs to be reachable by SSH
       wait_for:
         sleep: 60
-        timeout: 3600
+        # Need to increase timeout to 2h because on KVM/libvirt, Ironic provisioning
+        # takes longer when several VMs are bootstrapped in //
+        timeout: 7200
         port: 22
         host: '{{ item }}'
         search_regex: OpenSSH
@@ -64,3 +67,11 @@
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(vm_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_vms: "{{ vm_names }}"
+
+    - name: Dump all vars
+      action: template src=../templates/dumpall.j2 dest=/tmp/ansible_facts.txt
+
+    - name: Dump hostvars
+      action: template src=../templates/dumpvar.j2 dest=/tmp/all_hostvars.json
+      vars:
+        myvar: "{{ hostvars }}"
