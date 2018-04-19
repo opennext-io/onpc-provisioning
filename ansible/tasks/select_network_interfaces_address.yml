@@ -1,0 +1,5 @@
+# Network Interface address selection task
+---
+- name: Selecting IPv4 interface with {{ itf_address }} address
+  set_fact:
+    itfs: "{{ itfs | default([]) | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'defined') | selectattr('ipv4.address', 'equalto', itf_address ) | list }}"

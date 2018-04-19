@@ -128,6 +128,92 @@
         - restart ntp and stop systemd-timesyncd
       when: not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line))
 
+    - name: Getting interfaces infos
+      interfaces_file:
+      register: cur_interfaces
+
+    - name: Moving loopback interface to its own config file
+      interfaces_file:
+        src: /etc/network/interfaces
+        dest: /etc/network/interfaces.d/lo.cfg
+        iface: lo
+        state: move
+      register: lo_changed
+      when: "'lo' in cur_interfaces.get('ifaces', {})"
+
+    - import_tasks: ../tasks/select_network_interfaces_type.yml
+      vars:
+       itf_type: "ether"
+
+    - import_tasks: ../tasks/filter_network_interfaces_name.yml
+      vars:
+        itf_reject_name: "virbr.*|.*\\.[1-9][0-9]*"
+
+    - import_tasks: ../tasks/select_network_interfaces_state.yml
+      vars:
+       itf_state: true
+
+    - import_tasks: ../tasks/select_network_interfaces_address.yml
+      vars:
+       itf_address: "{{ ansible_host }}"
+
+    - name: Setting matching ethernet network interfaces list
+      set_fact:
+        matching_ether_itfs: "{{ itfs[0].get('device','') }}"
+
+    - name: Moving {{ matching_ether_itfs }} primary ethernet interface to its own config file
+      interfaces_file:
+        src: /etc/network/interfaces
+        dest: "/etc/network/interfaces.d/{{ matching_ether_itfs }}.cfg"
+        iface: "{{ matching_ether_itfs }}"
+        state: move
+      register: primary_changed
+      when: "matching_ether_itfs in cur_interfaces.get('ifaces', {})"
+
+    - name: Bringing down interface and dhcpclient for proper bridging
+      set_fact:
+        primary_itf_down: "pkill dhclient ; ip addr flush {{ matching_ether_itfs }} ; "
+      when: "matching_ether_itfs in cur_interfaces.get('ifaces', {})"
+
+    - name: Setting remaining interfaces list
+      set_fact:
+        remaining_itfs: "{{ cur_interfaces.get('ifaces', {}).keys() | difference(['lo', matching_ether_itfs]) }}"
+
+    - name: Moving {{ remaining_itfs[0] }} primary ethernet interface to its own config file
+      interfaces_file:
+        src: /etc/network/interfaces
+        dest: "/etc/network/interfaces.d/{{ remaining_itfs[0] }}.cfg"
+        iface: "{{ remaining_itfs[0] }}"
+        state: move
+      register: secondary_changed
+      when: remaining_itfs | length > 0
+
+    - name: Bringing down interface and dhcpclient for proper bridging
+      set_fact:
+        secondary_itf_down: "pkill dhclient ; ip addr flush {{ remaining_itfs[0] }} ; "
+      when: remaining_itfs | length > 0
+
+    - name: Set fact for conditional execution
+      set_fact:
+        network_reconfig: True
+      when: ((lo_changed is defined and lo_changed.changed) or
+             (primary_changed is defined and primary_changed.changed) or
+             (secondary_changed is defined and secondary_changed.changed))
+
+    - name: Restarting network services
+      shell: echo "{{ primary_itf_down | default('') }}{{ secondary_itf_down | default('') }}service networking restart" | at now + 0 min
+      when: network_reconfig is defined and network_reconfig
+
+    - name: Wait for server come back
+      wait_for: >
+        host="{{ hostvars.get(inventory_hostname, {}).get('ansible_host') }}"
+        port=22
+        delay=10
+        timeout=60
+      delegate_to: localhost
+      become: no
+      when: network_reconfig is defined and network_reconfig
+
   handlers:
     - name: restart ntp and stop systemd-timesyncd
       service: name={{ item.name }} state={{ item.state }}
