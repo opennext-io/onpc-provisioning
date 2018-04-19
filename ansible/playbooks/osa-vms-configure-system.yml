@@ -6,6 +6,7 @@
     - ../vars/infra-master-configure-system_vars.yml
     - ../vars/infra-master-deploy-bifrost_vars.yml
     - ../vars/slaves-pkgs-ubuntu.yml
+    - ../vars/osa-briges-vlans_vars.yml
 
   tasks:
 
@@ -67,6 +68,20 @@
         sysctl_set: yes
         state: present
         reload: yes
+
+    - name: Configuring Bridges for proper VLAN support via sysctl
+      sysctl:
+        name: "{{ item }}"
+        value: 0
+        sysctl_set: yes
+        state: present
+        reload: yes
+      with_items:
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.bridge.bridge-nf-call-iptables
+        - net.bridge.bridge-nf-call-arptables
+        - net.bridge.bridge-nf-filter-pppoe-tagged
+        - net.bridge.bridge-nf-filter-vlan-tagged
 
     - name: Setting facts for NTP daemon configuration
       set_fact:
@@ -193,12 +208,27 @@
         secondary_itf_down: "pkill dhclient ; ip addr flush {{ remaining_itfs[0] }} ; "
       when: remaining_itfs | length > 0
 
+    - name: Configuring {{ remaining_itfs[0] }} VLANs and bridges
+      template:
+        src: ../templates/bridge_vlans_itf_cfg.j2
+        dest: "/etc/network/interfaces.d/{{ remaining_itfs[0] }}.cfg"
+        owner: root
+        group: root
+        mode: 0644
+      register: vlan_changed
+      when: remaining_itfs | length > 0
+      vars:
+        - prov_itf: "{{ remaining_itfs[0] }}"
+        - vlans_list: "{{ osa_vlans | default([]) }}"
+        - ip_suffix: "{{ ansible_host.split('.')[-1] }}"
+
     - name: Set fact for conditional execution
       set_fact:
         network_reconfig: True
       when: ((lo_changed is defined and lo_changed.changed) or
              (primary_changed is defined and primary_changed.changed) or
-             (secondary_changed is defined and secondary_changed.changed))
+             (secondary_changed is defined and secondary_changed.changed) or
+             (vlan_changed is defined and vlan_changed.changed))
 
     - name: Restarting network services
       shell: echo "{{ primary_itf_down | default('') }}{{ secondary_itf_down | default('') }}service networking restart" | at now + 0 min
