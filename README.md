@@ -239,7 +239,7 @@ it(them) prior to launch the effective OSA deployment. To do so, you need to log
 into infra-master and launch the following:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-vms-configure-system.yml
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-nodes-configure-system.yml
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-master-opennext-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

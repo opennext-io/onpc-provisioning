@@ -57,7 +57,7 @@
         # Could also be /etc/network/interfaces.d/osa_interfaces.cfg
       environment: "{{ proxy_env | default('{}') | combine({ 'TMPDIR': '/var/tmp', 'BOOTSTRAP_OPTS': 'bootstrap_host_data_disk_device=vdb' }) }}"
       register: bootstrap_aio_result
-      when: hostvars.get('infra-master', {}).get('groups', {}).get('osa-vms', []) | length == 1
+      when: hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1
       # Could also be osa-master instead of infra-master
 
     - name: Setting facts for OSA user configuration file

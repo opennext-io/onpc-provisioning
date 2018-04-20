@@ -29,7 +29,7 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-open
 # Stage 7 => configure provisioned VMs system and services for OSA deployment
 # For this stage only (2 playbooks to be run), you need to be logged on the infra-master node where
 # the osa-inventory file has been generated for you
-ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-vms-configure-system.yml
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-nodes-configure-system.yml
 
 # effective OSA deployment. A fair part of this is what you use when deploying OSA by your own
 # means. However a lot of hidden potential issues are delt with here

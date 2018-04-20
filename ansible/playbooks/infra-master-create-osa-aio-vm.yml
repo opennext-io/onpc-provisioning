@@ -63,4 +63,4 @@
       vars:
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(vm_names[0]).get('extra/all/interfaces/eth0/ip') }}"
-        osa_vms: "{{ vm_names }}"
+        osa_nodes: "{{ vm_names }}"

@@ -4,8 +4,8 @@ infra-master ansible_host={{ infra_master_ip }}
 
 osa-master ansible_host={{ osa_master_ip }}
 
-[osa-vms]
-{% for name in osa_vms %}
+[osa-nodes]
+{% for name in osa_nodes %}
 {{ name }} ansible_host={{ hostvars[inventory_hostname].registered_status.json.get(name).get('extra/all/interfaces/eth0/ip') }}
 {% endfor %}
 
