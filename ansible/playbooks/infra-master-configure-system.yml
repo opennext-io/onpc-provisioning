@@ -68,7 +68,6 @@
         - net.bridge.bridge-nf-call-arptables
         - net.bridge.bridge-nf-filter-pppoe-tagged
         - net.bridge.bridge-nf-filter-vlan-tagged
-      when: master_running_kvm
 
     - name: Storing collision IP addresses list
       set_fact:
@@ -190,7 +189,7 @@
         itf_down: "pkill dhclient ; ip addr flush {{ primary_itf.get('device') }} ; "
       when: primary_itf is defined and primary_itf.get('device')
 
-    - name: Configuring {{ secondary_itf.device }}
+    - name: Configuring {{ secondary_itf.device }} VLANs and bridges
       template:
         src: ../templates/bridge_vlans_itf_cfg.j2
         dest: "/etc/network/interfaces.d/{{ secondary_itf.device }}.cfg"
@@ -226,117 +225,9 @@
       become: no
       when: network_reconfig is defined and network_reconfig
 
-    - name: Adding existing user {{ systemuser }} to group {{ libvirtgroup }}
-      user:
-        name="{{ systemuser }}"
-        groups="{{ libvirtgroup }}"
-        append=yes
+    - name: Configuring infra-master node for KVM/libvirt
+      include_tasks: ../tasks/kvm_host_configure.yml
       when: master_running_kvm
-
-    - name: Making sure libvirt service is running
-      service:
-        name: "{{ libvirtservice }}"
-        state: started
-      when: master_running_kvm
-
-    # Facts will be available as 'ansible_libvirt_networks'
-    - name: Gather facts about available networks in KVM/libvirt
-      virt_net:
-        command: facts
-      when: master_running_kvm
-
-    - name: Creating KVM/libvirt network bridge template & network
-      block:
-
-        - name: Creating KVM/libvirt network bridge template & network
-          become: no
-          template:
-            src: ../templates/kvm-network-bridge.xml.j2
-            dest: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
-            owner: "{{ systemuser }}"
-            group: "{{ systemuser }}"
-            mode: 0644
-          vars:
-            network_name: "{{ kvm_network_name }}"
-            bridge_interface: "{{ kvm_bridge_itf }}"
-            uuid_seed: "OpenNext"
-
-        - name: Getting XML definition of KVM/libvirt network
-          slurp:
-            src: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
-          register: xml_network
-
-        - name: Creating KVM/libvirt network
-          virt_net:
-            command: define
-            name: "{{ kvm_network_name }}"
-            xml: "{{ xml_network['content'] | b64decode }}"
-      when: master_running_kvm and kvm_network_name not in ansible_libvirt_networks
-
-    - name: Autostarting KVM/libvirt network
-      virt_net:
-        autostart: yes
-        name: "{{ kvm_network_name }}"
-      when: master_running_kvm
-
-    - name: Activating KVM/libvirt network
-      virt_net:
-        state: active
-        name: "{{ kvm_network_name }}"
-      when: master_running_kvm
-
-    - name: Retrieving max free space mount point
-      set_fact:
-        max_free_mount: "{{ ansible_mounts | sort('size_available' | int) | last }}"
-      when: master_running_kvm
-
-    - name: Setting {{ libvirtvarpath }} destination to max free space zone
-      set_fact:
-        virt_dest: "{{ max_free_mount['mount'] }}"
-      when: master_running_kvm
-
-    - name: Getting filesystem informations about {{ libvirtvarpath }}
-      stat:
-        path: "{{ item }}"
-        follow: yes
-      register: libvirt_stat
-      when: master_running_kvm
-      with_items:
-        - "{{ libvirtvarpath }}"
-        - "{{ virt_dest }}"
-
-    - name: Migrating {{ libvirtvarpath }} to {{ virt_dest }}
-      block:
-
-      - name: Stopping libvirt service
-        service:
-          name: "{{ libvirtservice }}"
-          state: stopped
-
-      - name: Moving over {{ libvirtvarpath }} to {{ virt_dest }}
-        command: "mv {{ libvirtvarpath }} {{ virt_dest }}"
-
-      - name: Re-creating {{ libvirtvarpath }} directory
-        file:
-          path: "{{ libvirtvarpath }}"
-          state: directory
-          owner: root
-          group: root
-          mode: 0755
-
-      - name: Bindmounting {{ virt_dest | regex_replace('/$', '') }}/{{ libvirtvarpath | basename }} onto {{ libvirtvarpath }}
-        mount:
-          path: "{{ libvirtvarpath }}"
-          src: "{{ virt_dest | regex_replace('/$', '') }}/{{ libvirtvarpath | basename }}"
-          opts: bind
-          fstype: none
-          state: mounted
-
-      - name: Restarting libvirt service
-        service:
-          name: "{{ libvirtservice }}"
-          state: started
-      when: master_running_kvm and libvirt_stat['results'][0]['stat']['dev'] != libvirt_stat['results'][1]['stat']['dev']
 
     - name: Configuring System Wide Proxy
       lineinfile:
