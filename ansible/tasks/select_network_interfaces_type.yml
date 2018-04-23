@@ -1,11 +1,9 @@
-# Network Interface retrieval task
+# Network interfaces from type selection task
 ---
-- name: Initializing search for IPv4 interface with {{ itf_type }} type
+- name: Selecting all interfaces
   set_fact:
-    itfs: []
+    all_itfs: "{{ hostvars[inventory_hostname]['ansible_interfaces'] | map('replace', '-', '_') | list }}"
 
-- name: Selecting IPv4 interface with {{ itf_type }} type
+- name: Selecting IPv4 interfaces with {{ itf_type }} type
   set_fact:
-    itfs: "{% set itfs = itfs + [hostvars[inventory_hostname]['ansible_' + item]] %}{{ itfs | list }}"
-  when: hostvars[inventory_hostname]['ansible_' + item]['type'] is match(itf_type)
-  with_items: "{{ hostvars[inventory_hostname]['ansible_interfaces'] | map('replace', '-', '_') | list }}"
+    itfs: "{% set sel = [] %}{% for x in all_itfs %}{% if hostvars[inventory_hostname]['ansible_' + x]['type'] is match(itf_type) %}{% set l = sel.append(hostvars[inventory_hostname]['ansible_' + x]) %}{% endif %}{% endfor %}{{ sel | list }}"
