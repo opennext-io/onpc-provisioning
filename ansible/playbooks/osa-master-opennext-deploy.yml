@@ -2,12 +2,17 @@
 - hosts: osa-master
   become: yes
 
+  vars_files:
+    - ../vars/osa-briges-vlans_vars.yml
+
   tasks:
 
     - name: Setting Facts
       set_fact:
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
         dest_repo_dir: "{{ dest_github_repo_dir | default('/opt') }}"
+        is_aio: hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1 | bool
+        # Could also be osa-master instead of infra-master
 
     - name: Setting environment facts
       set_fact:
@@ -57,8 +62,58 @@
         # Could also be /etc/network/interfaces.d/osa_interfaces.cfg
       environment: "{{ proxy_env | default('{}') | combine({ 'TMPDIR': '/var/tmp', 'BOOTSTRAP_OPTS': 'bootstrap_host_data_disk_device=vdb' }) }}"
       register: bootstrap_aio_result
-      when: hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1
-      # Could also be osa-master instead of infra-master
+      when: is_aio
+
+    - name: Retrieving remote OSA nodes informations
+      slurp:
+        src: "/tmp/all_hostvars.json"
+      register:
+        osa_nodes_infos_content
+
+    - name: Setting remote OSA nodes informations facts
+      set_fact:
+        osa_nodes_infos: "{{ osa_nodes_infos_content['content'] | b64decode | from_json }}"
+
+    - debug: msg="{{ osa_nodes_infos }}"
+
+    - name: Computing OSA deployment nodes facts
+      set_fact:
+        osa_deploy_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
+        ip_reject_regex: "{{ '^' ~ ip_prefix ~ '.*' }}"
+        osa_bridges_ips: "{{ osa_vlans | map(attribute='prefix') | flatten | list }}"
+        controller_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', 'slave-1') | list }}"
+        cinder_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', 'slave-2') | list }}"
+        compute_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', 'slave-3') | list }}"
+#        neutron_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
+
+    - name: Computing OSA deployment nodes facts
+      set_fact:
+        osa_deploy_hosts_ips_infos: "{% set sel = [] %} {% for x in osa_deploy_hosts %} {% set l = sel.append(osa_nodes_infos.get(x)) %}{% endfor %}{{ sel | map(attribute='ansible_all_ipv4_addresses') | flatten | reject('match', ip_reject_regex) | list | to_yaml }}"
+        osa_bridges_ips_ranges: "{% set sel = [] %} {% for x in osa_bridges_ips %} {% set l = sel.append(x + '.1,' + x + '.50') %}{% endfor %}{{ sel | to_yaml }}"
+        controller_hosts_ips_l: "{% set sel = [] %} {% for x in controller_hosts %} {% set l = sel.append(osa_nodes_infos.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
+        cinder_hosts_ips_l: "{% set sel = [] %} {% for x in cinder_hosts %} {% set l = sel.append(osa_nodes_infos.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
+        compute_hosts_ips_l: "{% set sel = [] %} {% for x in compute_hosts %} {% set l = sel.append(osa_nodes_infos.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
+
+
+    - name: Setting final facts
+      set_fact:
+        osa_ips: "{{ osa_deploy_hosts_ips_infos | from_yaml + osa_bridges_ips_ranges | from_yaml }}"
+
+    - name: Templating openstack_user_config.yml
+      template:
+        src: ../templates/osa/openstack_user_config.yml.j2
+        dest: "/tmp/toto"
+        owner: root
+        group: root
+        mode: 0644
+      vars:
+        reserved_ips: "{{ osa_ips | sort }}"
+        controller_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
+        cinder_hosts_ips: "{{ cinder_hosts_ips_l | from_yaml }}"
+        compute_hosts_ips: "{{ compute_hosts_ips_l | from_yaml }}"
+        neutron_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
+
+    - fail: msg="OLIVIER"
 
     - name: Setting facts for OSA user configuration file
       set_fact:
