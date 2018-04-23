@@ -68,10 +68,4 @@
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(vm_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ vm_names }}"
 
-    - name: Dump all vars
-      action: template src=../templates/dumpall.j2 dest=/tmp/ansible_facts.txt
-
-    - name: Dump hostvars
-      action: template src=../templates/dumpvar.j2 dest=/tmp/all_hostvars.json
-      vars:
-        myvar: "{{ hostvars }}"
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"

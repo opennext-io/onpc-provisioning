@@ -64,3 +64,5 @@
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(vm_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ vm_names }}"
+
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"

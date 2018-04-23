@@ -244,18 +244,7 @@
       become: no
       when: network_reconfig is defined and network_reconfig
 
-    - name: Gathering facts
-      setup:
-
-    - name: Dump all vars
-      action: template src=../templates/dumpall.j2 dest=/tmp/ansible_facts_json.txt
-      delegate_to: osa-master
-
-    - name: Dump hostvars
-      action: template src=../templates/dumpvar.j2 dest=/tmp/all_hostvars.json
-      delegate_to: osa-master
-      vars:
-        myvar: "{{ hostvars }}"
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
 
   handlers:
     - name: restart ntp and stop systemd-timesyncd

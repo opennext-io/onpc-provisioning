@@ -131,6 +131,8 @@
     - name: Printing alternate (shorter) deploy command
       debug: msg="ssh {{ systemuser }}@({{ ansible_default_ipv4.address }} | {{ ipify_results.get('ansible_facts', {}).get('ipify_public_ip', '') }}) -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e @{{ args_file }}'"
 
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_deploy_bifrost"
+
     - name: Running Bifrost Playbook
       shell: ". ../env-vars && . {{ venv }}/bin/activate && ansible-playbook -i inventory/target install.yaml {{ all_args }}"
       args:

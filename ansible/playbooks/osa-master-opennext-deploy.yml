@@ -149,3 +149,5 @@
       args:
         creates: /opt/.osa_playbooks_done
         executable: /bin/bash
+
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_master_opennext_deploy"

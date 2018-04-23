@@ -1,0 +1,27 @@
+# Ansible facts dumping task
+---
+- name: Setting destination facts directory and file
+  set_fact:
+    dest_fact_dir: "/etc/ansible/facts.d"
+
+- name: Checking {{ dest_fact_dir }} directory
+  stat:
+    path: "{{ dest_fact_dir }}"
+  register: fact_dir_exists
+
+- name: Creating {{ dest_fact_dir }} directory
+  become: yes
+  file:
+    path: "{{ dest_fact_dir }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+    recurse: yes
+  when: not fact_dir_exists.stat.exists
+
+- name: Dumping hostvars to {{ dest_fact_dir }}/{{ facts_file }}.fact
+  become: yes
+  action: template src=../templates/dumpvar.j2 dest="{{ dest_fact_dir }}/{{ facts_file }}.fact"
+  vars:
+    myvar: "{{ hostvars }}"

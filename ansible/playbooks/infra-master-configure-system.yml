@@ -302,6 +302,8 @@
 
     - include_tasks: ../tasks/system_user_home.yml
 
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_configure_system"
+
   handlers:
 
     - name: Creating Hosts File Template

@@ -94,6 +94,8 @@
         mode: 0644
       when: not (nginx_info['content'] | b64decode is search (osa_nginx_regex_line))
 
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_opennext_post_osa_deploy"
+
   handlers:
     - name: restart nginx
       service: name=nginx state=restarted

@@ -150,6 +150,8 @@
         mode: 0644
       notify: Restarting Register Helper Service
 
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_post_deploy_bifrost"
+
     - meta: flush_handlers
 
   handlers:
