@@ -189,6 +189,15 @@
         itf_down: "pkill dhclient ; ip addr flush {{ primary_itf.get('device') }} ; "
       when: primary_itf is defined and primary_itf.get('device')
 
+    - name: Setting default fact for VLANs and Bridges
+      set_fact:
+        vlans_list: "{{ osa_vlans | default([]) }}"
+
+    - name: Setting fact for VLANs and Bridges
+      set_fact:
+        vlans_list: "{{ vlans_list + opennext_vlans | default([]) }}"
+      when: not baremetal_provisioning
+
     - name: Configuring {{ secondary_itf.device }} VLANs and bridges
       template:
         src: ../templates/bridge_vlans_itf_cfg.j2
@@ -200,8 +209,6 @@
       when: secondary_itf is defined
       vars:
         - prov_itf: "{{ secondary_itf.device }}"
-        - prov_bridge: "{{ kvm_bridge_itf }}"
-        - vlans_list: "{{ osa_vlans | default([]) + opennext_vlans | default([]) }}"
 
     - name: Set fact for conditional execution
       set_fact:

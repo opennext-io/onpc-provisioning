@@ -26,3 +26,4 @@ kvm_bridge_itf: "{{ provisioning_bridge_itf | default('br-prov') }}"
 # VMs which will host OSA deployment
 master_running_kvm: "{{ kvm_on_master | default(true) }}"
 ansible_master_using_kvm: "{{ kvm_on_ansible_master | default(false) }}"
+baremetal_provisioning: "{{ real_baremetal | default(false) }}"

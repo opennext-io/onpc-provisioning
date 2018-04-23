@@ -103,7 +103,12 @@
     - name: Retrieving provisioning interface from network infos
       set_fact:
         itf: "{{ kvm_bridge_itf }}"
-      when: not master_running_kvm
+      when: not master_running_kvm and not baremetal_provisioning
+
+    - name: Retrieving provisioning interface from network infos
+      set_fact:
+        itf: "{{ baremetal_itf | default(ansible_default_ipv4.interface) }}"
+      when: baremetal_provisioning
 
     - name: Retrieving all deploy options
       set_fact:
