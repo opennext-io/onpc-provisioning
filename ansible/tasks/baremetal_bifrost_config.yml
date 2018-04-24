@@ -1,0 +1,80 @@
+# Bifrost/Ironic baremetal configuration task
+---
+- name: Retrieving baremetal provisioning interface from network infos
+  set_fact:
+    itf: "{{ baremetal_itf | default('br-host') }}"
+    opennext_opts: "{{ opennext_opts }} -e inventory_dhcp=true"
+    ntp_conf_file: "/etc/ntp.conf"
+    resolv_conf_file: "/etc/resolv.conf"
+
+- name: Retrieving baremetal provisioning interface system informations
+  set_fact:
+    itf_name: "{{ itf }}"
+    prov_sys_infos: "{{ hostvars[inventory_hostname]['ansible_' + (itf | replace('-', '_'))] }}"
+
+- name: Retrieving baremetal provisioning interface system informations
+  set_fact:
+    itf_name: "{{ prov_sys_infos.get('interfaces', [])[0] }}"
+  when: prov_sys_infos.get('type', '') == 'bridge'
+
+- name: Getting interfaces infos
+  interfaces_file:
+    dest: "/etc/network/interfaces.d/{{ itf_name }}.cfg"
+  register: prov_interface_infos
+
+- name: Setting additionial baremetal provisioning options (router)
+  set_fact:
+    default_router: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('gateway', '') }}"
+    dns_servers: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('dns-nameservers', '').split(' ') | list }}"
+    itf_ip_prefix: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('address', '').split('.')[0:3] | join('.') }}"
+
+- name: Checking existence of {{ resolv_conf_file }}
+  stat:
+    path: "{{ resolv_conf_file }}"
+  register: resolv_conf_stat
+
+- name: Retrieving contents of {{ resolv_conf_file }}
+  slurp:
+    path: "{{ resolv_conf_file }}"
+  register: resolv_conf_contents
+  when: resolv_conf_stat.stat.exists
+
+- name: Retrieving nameservers defined in {{ resolv_conf_file }}
+  set_fact:
+    resolv_conf_dns: "{{ resolv_conf_contents['content'] | b64decode | regex_findall('nameserver .*') | map('replace', 'nameserver ', '') | list }}"
+  when: resolv_conf_stat.stat.exists
+
+- name: Checking existence of {{ ntp_conf_file }}
+  stat:
+    path: "{{ ntp_conf_file }}"
+  register: ntp_conf_stat
+
+- name: Retrieving contents of {{ ntp_conf_file }}
+  slurp:
+    path: "{{ ntp_conf_file }}"
+  register: ntp_conf_contents
+  when: ntp_conf_stat.stat.exists
+
+- name: Retrieving servers defined in {{ ntp_conf_file }}
+  set_fact:
+    ntp_servers: "{{ (ntp_conf_contents['content'] | b64decode).split('\n') | select('match', '^server') | map('replace', 'server ', '') | list }}"
+  when: ntp_conf_stat.stat.exists
+
+- name: Setting extra option for default router in Bifrost/Ironic dnsmasq configuration
+  set_fact:
+    opennext_opts: "{{ opennext_opts }} -e dnsmasq_router={{ default_router }}"
+  when: default_router | length > 0
+
+- name: Setting extra option for default DNS servers in Bifrost/Ironic dnsmasq configuration
+  set_fact:
+    opennext_opts: "{{ opennext_opts }} -e dnsmasq_dns_servers={{ dns_servers | join(',') }}"
+  when: dns_servers | length > 0
+
+- name: Setting extra option for default NTP servers in Bifrost/Ironic dnsmasq configuration
+  set_fact:
+    opennext_opts: "{{ opennext_opts }} -e dnsmasq_ntp_servers={{ ntp_servers | join(',') }}"
+  when: ntp_servers is defined and ntp_servers | length > 0
+
+- name: Setting extra IP boundaries for DHCP range in  Bifrost/Ironic dnsmasq configuration
+  set_fact:
+    opennext_opts: "{{ opennext_opts }} -e dhcp_pool_start={{ itf_ip_prefix }}.2 -e dhcp_pool_end={{ itf_ip_prefix }}.253"
