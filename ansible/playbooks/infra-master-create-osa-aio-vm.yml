@@ -39,7 +39,7 @@
 
   tasks:
 
-    - import_tasks: ../tasks/vm_get_status.yml
+    - import_tasks: ../tasks/node_get_status.yml
 
     - name: Extracting VMs names from facts
       set_fact:

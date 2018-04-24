@@ -87,6 +87,7 @@ network:
 
 python:
   - python-pip
+  - python-pyghmi
   - python-selinux
   - python-virtualenv
   - virtualenv
