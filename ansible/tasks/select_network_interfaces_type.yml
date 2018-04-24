@@ -3,7 +3,8 @@
 - name: Selecting all interfaces
   set_fact:
     all_itfs: "{{ hostvars[inventory_hostname]['ansible_interfaces'] | map('replace', '-', '_') | list }}"
+    all_required: "{{ select_all_itfs | default(false) | bool }}"
 
 - name: Selecting IPv4 interfaces with {{ itf_type }} type
   set_fact:
-    itfs: "{% set sel = [] %}{% for x in all_itfs %}{% if hostvars[inventory_hostname]['ansible_' + x]['type'] is match(itf_type) %}{% set l = sel.append(hostvars[inventory_hostname]['ansible_' + x]) %}{% endif %}{% endfor %}{{ sel | list }}"
+    itfs: "{% set sel = [] %}{% for x in all_itfs %}{% if all_required or hostvars[inventory_hostname]['ansible_' + x]['type'] is match(itf_type) %}{% set l = sel.append(hostvars[inventory_hostname]['ansible_' + x]) %}{% endif %}{% endfor %}{{ sel | list }}"
