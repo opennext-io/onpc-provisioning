@@ -1,0 +1,119 @@
+---
+- hosts: infra-master
+  become: yes
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars/infra-master-deploy-bifrost_vars.yml
+
+  tasks:
+
+    - import_tasks: ../tasks/operational_informations.yml
+
+    - name: Setting Registration Informations for {{ node_name }} baremetal node
+      set_fact: 
+        dnsmasq_conf_file: "/etc/dnsmasq.conf"
+        registration_infos: {
+          name: "{{ node_name }}",
+          mac_addr: "{{ node_mac_address }}",
+          virt-uuid: "{{ node_uuid | default(node_name | to_uuid) }}",
+          bmc_host: "{{ node_bmc_ip }}",
+          bmc_user: "{{ node_bmc_user | default('admin') }}",
+          bmc_password: "{{ node_bmc_passwd | default('password') }}",
+        }
+
+    - name: Retrieving infos from  {{ dnsmasq_conf_file }}
+      slurp:
+        src: "{{ dnsmasq_conf_file }}"
+      register:
+        dnsmasq_info
+
+    - name: Retrieving path for Bifrost/Ironic dnsmasq DHCP host vars_files
+      set_fact:
+        dhcp_host_files_path: "{{ (dnsmasq_info['content'] | b64decode).split('\n') | select('match', '^dhcp-hostsfile=') | map('replace', 'dhcp-hostsfile=', '') | list }}"
+
+    - fail: msg="No dhcp-hostsfile directive in {{ dnsmasq_conf_file}}"
+      when: dhcp_host_files_path | length == 0
+
+    - name: Checking if dnsmasq host file already exists
+      stat:
+        path: "{{ dhcp_host_files_path[0] }}/{{ node_name }}"
+      register: dhcp_file_infos
+
+    - name: Creating file for {{ node_name }}
+      copy:
+        dest: "{{ dhcp_host_files_path[0] }}/{{ node_name }}"
+        content: "{{ node_mac_address }},{{ node_ip }},{{ node_name }}"
+        owner: root
+        group: root
+        mode: 0644
+      when: not dhcp_file_infos.stat.exists
+
+    - name: Asking dnsmasq to reread configuration
+      action: shell pkill -HUP -f dnsmasq || true
+      ignore_errors: yes
+
+    - name: Checking {{ node_name }} baremetal node status in register-helper utility agent
+      uri:
+        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+        force_basic_auth: yes
+        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+        status_code: 200
+      register: node_register_status
+
+    - name: Registering {{ node_name }} baremetal node to register-helper utility agent
+      uri:
+        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ registration_uri }}"
+        method: POST
+        force_basic_auth: yes
+        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+        status_code: 201
+        body_format: json
+        body: "{{ registration_infos }}"
+      when: node_register_status is defined and node_name not in node_register_status.json
+
+    - name: Setting IPMI boot device to PXE for {{ node_name }}
+      ipmi_boot:
+        name: "{{ registration_infos['bmc_host'] }}"
+        user: "{{ registration_infos['bmc_user'] }}"
+        password: "{{ registration_infos['bmc_password'] }}"
+        bootdev: network
+
+    - name: Resetting {{ node_name }} via IPMI
+      ipmi_power:
+        name: "{{ registration_infos['bmc_host'] }}"
+        user: "{{ registration_infos['bmc_user'] }}"
+        password: "{{ registration_infos['bmc_password'] }}"
+        state: boot
+
+    - import_tasks: ../tasks/node_get_status.yml
+      vars:
+        node_status_retries: 20
+
+    - name: Extracting baremetal nodes names from facts
+      set_fact:
+        node_names: "{{ hostvars[inventory_hostname].registered_status.json | json_query('keys(@)') }}"
+        node_ips: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/all/interfaces/eth0/ip') | list }}"
+
+    - name: Waiting for baremetal nodes to be reachable by SSH
+      wait_for:
+        connect_timeout: 10
+        sleep: 60
+        timeout: 3600
+        port: 22
+        host: '{{ item }}'
+        search_regex: OpenSSH
+      with_items: "{{ node_ips }}"
+
+    - name: Creating OSA inventory file
+      template:
+        src: ../templates/inventory.cfg.j2
+        dest: "{{ systemuserhome }}/osa-inventory"
+      vars:
+        infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
+        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
+        osa_nodes: "{{ node_names }}"
+
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"

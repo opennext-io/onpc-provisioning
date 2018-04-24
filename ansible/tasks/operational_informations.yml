@@ -25,5 +25,6 @@
 
 - name: Setting IP adresses and VBMC environment for master running kvm {{ master_running_kvm }}
   set_fact:
+    registration_ip: "{{ infra_master_ip | default('127.0.0.1') }}"
     vbmc_venv: {}
-  when: not master_running_kvm
+  when: not master_running_kvm or real_baremetal

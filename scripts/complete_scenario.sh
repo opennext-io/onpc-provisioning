@@ -19,9 +19,12 @@ ssh vagrant@80.93.82.50 -t 'cd /home/vagrant/bifrost/playbooks && . /home/vagran
 # Stage 4 => add some ironic introspection rules and agent for managing ironic state auto-magically
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post-deploy-bifrost.yml
 
-# Stage 5 => test scenarios 1 all-in-one one with 3 vms
+# Stage 5 => test scenarios all-in-one (one huge VM) or 3 vms
 #ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-aio-vm.yml
 #ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml
+# You can also use the following playbook to register a real baremetal server providing
+# IPMI/BMC IP address, user+password and mac address
+#ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-baremetal-node.yml -e node_name="<NODE_NAME>" -e node_ip="<NODE_IP>" -e node_mac_address="<NODE_MAC_@>" -e node_bmc_ip="<NODE_BMC_IP>" -e node_bmc_user="<NODE_BMC_USER>" -e node_bmc_passwd="<NODE_BMC_PASSWD>"
 
 #  Stage 6 => Add some OpenNext specifics services (Squid) and associated configurations
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-pre-deploy.yml
