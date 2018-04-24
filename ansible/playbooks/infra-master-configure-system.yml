@@ -198,6 +198,11 @@
         vlans_list: "{{ vlans_list + opennext_vlans | default([]) }}"
       when: not baremetal_provisioning
 
+    - name: Setting fact for baremetal provisioning DHCP timeout
+      set_fact:
+        dhcp_timeout: 90
+      when: baremetal_provisioning and dhcp_timeout is not defined
+
     - name: Configuring {{ secondary_itf.device }} VLANs and bridges
       template:
         src: ../templates/bridge_vlans_itf_cfg.j2
