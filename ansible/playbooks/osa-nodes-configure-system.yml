@@ -158,7 +158,7 @@
 
     - import_tasks: ../tasks/select_network_interfaces_type.yml
       vars:
-       itf_type: "ether"
+        itf_type: "ether"
 
     - import_tasks: ../tasks/filter_network_interfaces_name.yml
       vars:
@@ -166,11 +166,11 @@
 
     - import_tasks: ../tasks/select_network_interfaces_state.yml
       vars:
-       itf_state: true
+        itf_state: true
 
     - import_tasks: ../tasks/select_network_interfaces_address.yml
       vars:
-       itf_address: "{{ ansible_host }}"
+        itf_address: "{{ ansible_host }}"
 
     - name: Setting matching ethernet network interfaces list
       set_fact:
