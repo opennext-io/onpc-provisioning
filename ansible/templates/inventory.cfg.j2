@@ -11,4 +11,4 @@ osa-master ansible_host={{ osa_master_ip }}
 
 [all:vars]
 ansible_user=vagrant
-proxy_host={{ hostvars[inventory_hostname]['ansible_' + kvm_bridge_itf | replace('-', '_') ]['ipv4']['address'] }}
+proxy_host={{ hostvars[inventory_hostname]['ansible_' + bridge_itf | replace('-', '_') ]['ipv4']['address'] }}

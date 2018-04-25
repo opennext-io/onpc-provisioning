@@ -278,6 +278,12 @@ scheduler = BackgroundScheduler()
 job = scheduler.add_job(_get_shade_infos, 'interval', seconds=30)
 scheduler.start()
 
+# GET request handler to list machines registered but not handled yet by Ironic
+@app.route('/waiting')
+@requires_auth
+def get_waiting():
+    return jsonify(todo_machines)
+
 # GET request handler to list already registered machines
 @app.route('/machines')
 @requires_auth
