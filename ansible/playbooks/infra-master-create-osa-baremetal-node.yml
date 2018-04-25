@@ -11,7 +11,7 @@
     - import_tasks: ../tasks/operational_informations.yml
 
     - name: Setting Registration Informations for {{ node_name }} baremetal node
-      set_fact: 
+      set_fact:
         dnsmasq_conf_file: "/etc/dnsmasq.conf"
         registration_infos: {
           name: "{{ node_name }}",
@@ -48,10 +48,12 @@
         group: root
         mode: 0644
       when: not dhcp_file_infos.stat.exists
+      register: dhcp_file_infos_changed
 
     - name: Asking dnsmasq to reread configuration
       action: shell pkill -HUP -f dnsmasq || true
       ignore_errors: yes
+      when: dhcp_file_infos_changed is changed
 
     - name: Checking {{ node_name }} baremetal node status in register-helper utility agent
       uri:
@@ -80,6 +82,7 @@
         user: "{{ registration_infos['bmc_user'] }}"
         password: "{{ registration_infos['bmc_password'] }}"
         bootdev: network
+      when: node_register_status is defined and node_name not in node_register_status.json
 
     - name: Resetting {{ node_name }} via IPMI
       ipmi_power:
@@ -87,10 +90,12 @@
         user: "{{ registration_infos['bmc_user'] }}"
         password: "{{ registration_infos['bmc_password'] }}"
         state: boot
+      when: node_register_status is defined and node_name not in node_register_status.json
 
     - import_tasks: ../tasks/node_get_status.yml
       vars:
         node_status_retries: 20
+        node_status_delay: 30
 
     - name: Extracting baremetal nodes names from facts
       set_fact:
