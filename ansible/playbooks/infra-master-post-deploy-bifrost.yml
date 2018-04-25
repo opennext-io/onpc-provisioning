@@ -113,7 +113,7 @@
         virtualenv_site_packages: yes
         name: virtualbmc
         version: 1.2.0
-      when: master_running_kvm
+      when: infra_master_running_kvm
 
     - name: Setting up Flask in virtualenv
       become: no

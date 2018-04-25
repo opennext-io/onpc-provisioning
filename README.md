@@ -104,7 +104,7 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-conf
 If you don't want infra-master node to use KVM/libvirt for running VMs you can add and extra flag
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml --extra-vars "master_running_kvm=false"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml --extra-vars "kvm_on_infra_master=false"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can customize the IP settings of the secondary network interface using:
@@ -164,10 +164,10 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-depl
 
 Note that right now the only way Bifrost deployment is supported is with keystone=true
 
-Do not forget to add `master_running_kvm=false` if you added this option in step 1 above
+Do not forget to add `kvm_on_infra_master=false` if you added this option in step 1 above
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-deploy-bifrost.yml --extra-vars "master_running_kvm=false"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-deploy-bifrost.yml --extra-vars "kvm_on_infra_master=false"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 At the very end of this Ansible deployment, you'll see a debug message which

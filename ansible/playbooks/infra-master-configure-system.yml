@@ -38,7 +38,7 @@
       package:
         name: "{{ kvmsystempkgs | sort }}"
         state: latest
-      when: master_running_kvm
+      when: infra_master_running_kvm
 
     - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
       with_items:
@@ -239,7 +239,7 @@
 
     - name: Configuring infra-master node for KVM/libvirt
       include_tasks: ../tasks/kvm_host_configure.yml
-      when: master_running_kvm
+      when: infra_master_running_kvm
 
     - name: Configuring System Wide Proxy
       lineinfile:

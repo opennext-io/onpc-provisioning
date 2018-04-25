@@ -86,24 +86,24 @@
       service:
         name: "{{ libvirtservice }}"
         state: started
-      when: master_running_kvm
+      when: infra_master_running_kvm
 
     # Facts will be available as 'ansible_libvirt_networks'
     - name: Gathering facts about available networks in KVM/libvirt
       become: yes
       virt_net:
         command: facts
-      when: master_running_kvm
+      when: infra_master_running_kvm
 
     - name: Retrieving provisioning interface from KVM/libvirt network infos
       set_fact:
         itf: "{{ ansible_libvirt_networks.get('provisioning', {}).get('bridge') }}"
-      when: master_running_kvm
+      when: infra_master_running_kvm
 
     - name: Retrieving provisioning interface from network infos
       set_fact:
         itf: "{{ kvm_bridge_itf }}"
-      when: not master_running_kvm and not baremetal_provisioning
+      when: not infra_master_running_kvm and not baremetal_provisioning
 
     - import_tasks: ../tasks/baremetal_bifrost_config.yml
       when: baremetal_provisioning
