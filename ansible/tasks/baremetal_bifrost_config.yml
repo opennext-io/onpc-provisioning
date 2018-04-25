@@ -3,7 +3,7 @@
 - name: Retrieving baremetal provisioning interface from network infos
   set_fact:
     itf: "{{ baremetal_itf | default('br-host') }}"
-    opennext_opts: "{{ opennext_opts }} -e inventory_dhcp=true"
+    opennext_opts: "{{ opennext_opts }} -e inventory_dhcp=true -e cleaning=true"
     ntp_conf_file: "/etc/ntp.conf"
     resolv_conf_file: "/etc/resolv.conf"
 
