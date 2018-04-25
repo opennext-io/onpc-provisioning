@@ -76,7 +76,16 @@
         body: "{{ registration_infos }}"
       when: node_register_status is defined and node_name not in node_register_status.json
 
-    - name: Setting IPMI boot device to PXE for {{ node_name }}
+    - name: Preventing HDD to be used as boot device for {{ node_name }} via IPMI
+      ipmi_boot:
+        name: "{{ registration_infos['bmc_host'] }}"
+        user: "{{ registration_infos['bmc_user'] }}"
+        password: "{{ registration_infos['bmc_password'] }}"
+        bootdev: hd
+        state: absent
+      when: node_register_status is defined and node_name not in node_register_status.json
+
+    - name: Setting primary boot device to PXE for {{ node_name }} via IPMI
       ipmi_boot:
         name: "{{ registration_infos['bmc_host'] }}"
         user: "{{ registration_infos['bmc_user'] }}"
