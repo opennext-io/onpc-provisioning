@@ -79,7 +79,7 @@
 
     - name: Checking IP collisions
       fail: msg="Collision in IP addresses {{ collision_ips }}"
-      when: ansible_master_using_kvm is defined and ansible_master_using_kvm and collision_ips | length > 0
+      when: ansible_master_running_kvm is defined and ansible_master_running_kvm and collision_ips | length > 0
 
     - name: Checking duplicate IPs
       fail: msg="ip_prefix and ip_suffix variables lead to {{ master_ip }} colliding with {{ hostvars['localhost']['local_ips'] }}"

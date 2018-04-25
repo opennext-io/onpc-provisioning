@@ -95,10 +95,10 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-conf
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you launch the playbook from a node where KVM/libvirt is already installed and on which infra-master and other
-VMs will be spawned, you need to change ansible_master_using_kvm variable to true:
+VMs will be spawned, you need to change kvm_on_ansible_master variable to true:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml --extra-vars "ansible_master_using_kvm=true"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml --extra-vars "kvm_on_ansible_master=true"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you don't want infra-master node to use KVM/libvirt for running VMs you can add and extra flag
