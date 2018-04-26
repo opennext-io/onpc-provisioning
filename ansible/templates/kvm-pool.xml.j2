@@ -1,0 +1,13 @@
+<!-- {{ ansible_managed }} -->
+<pool type='dir'>
+  <name>{{ pool_name | default('default') }}</name>
+  <uuid>{{ uuid_seed | to_uuid }}</uuid>
+  <target>
+    <path>{{ pool_path | default('/var/lib/libvirt/images') }}</path>
+    <permissions>
+      <mode>0711</mode>
+      <owner>0</owner>
+      <group>0</group>
+    </permissions>
+  </target>
+</pool>

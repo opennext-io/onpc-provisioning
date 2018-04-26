@@ -1,25 +1,80 @@
 # KVM/libvirt disk creation task
 ---
-- name: Setting full path of {{ diskname }} for {{ vmname }}
-  set_fact:
-    vmdiskpath: "{{ kvm_vms_disks_path | default('/var/lib/libvirt/images') }}/{{ vmname }}-{{ diskname }}.qcow2"
+- name: Getting pool informations from KVM/libvirt
+  virt_pool:
+    command: list_pools
+  register: pools_xml_infos_result
 
-- name: Checking existence of {{ diskname }} for {{ vmname }}
-  become: yes
-  stat:
-    path: "{{ vmdiskpath }}"
-    get_checksum: false
-  register: disk_exists
+- name: Creating default pool for KVM/libvirt
+  virt_pool:
+    command: define
+    name: default
+    xml: '{{ lookup("template", "../templates/kvm-pool.xml.j2") }}'
+  vars:
+    uuid_seed: "OpenNext"
 
-- name: Creating {{ diskname }} for {{ vmname }}
-  become: yes
-  command: "qemu-img create -f qcow2 {{ vmdiskpath }} {{ vmdisksizegb }}G"
-  when: not disk_exists.get('stat', dict(exists=False)).get('exists')
-
-- name: Setting owner group and permissions of {{ diskname }} for {{ vmname }}
+- name: Creating pool directory for KVM/libvirt
   become: yes
   file:
-    path: "{{ vmdiskpath }}"
-    mode: 0600
-    owner: "{{ kvm_vms_user | default('libvirt-qemu') }}"
-    group: "{{ kvm_vms_group | default('kvm') }}"
+    path: "{{ pool_path | default('/var/lib/libvirt/images') }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0711
+
+- name: Activating default pool for KVM/libvirt
+  virt_pool:
+    command: create
+    name: default
+    state: active
+
+- name: Autostarting default pool for KVM/libvirt
+  virt_pool:
+    name: default
+    autostart: yes
+
+- name: Getting default pool informations from KVM/libvirt
+  virt_pool:
+    name: "default"
+    command: get_xml
+  register: default_pool_xml_infos_result
+
+- name: Getting path for default pool for KVM/libvirt
+  block:
+
+    - name: Parsing XML using XPATH to get path for default pool for KVM/libvirt
+      xml:
+        xmlstring: "{{ default_pool_xml_infos_result.get('get_xml', '') }}"
+        xpath: '//target/path'
+        content: text
+      register: default_pool_path_infos
+
+    - name: Storing XML parsing result in fact for path for default pool for KVM/libvirt
+      set_fact:
+        kvm_vms_disks_path: "{{ default_pool_path_infos.get('matches', [])[0].get('path', '') }}"
+
+- fail: msg="Unable to retrieve default pool path for KVM/libvirt"
+  when: kvm_vms_disks_path | length == 0
+
+- name: Checking existence of {{ diskname }} for {{ vmname }}
+  command: "virsh vol-list --pool default"
+  register: vol_list
+
+- name: Setting fact for disk name
+  set_fact:
+    cur_disk_name: "{{ vmname }}-{{ diskname }}.qcow2"
+
+- name: Creating {{ diskname }} for {{ vmname }}
+  command: "virsh vol-create-as --pool default --name {{ cur_disk_name }} --capacity {{ vmdisksizegb }}G --format qcow2"
+  when: vol_list.stdout_lines | select('match', '^ ' + cur_disk_name + ' ') | list | length == 0
+
+- name: Retrieving infos on {{ diskname }} for {{ vmname }}
+  command: "virsh vol-list --pool default"
+  register: vol_list
+
+- fail: msg="Error retrieving {{ diskname }} for {{ vmname }} in default pool for KVM/libvirt"
+  when: vol_list.stdout_lines | select('match', '^ ' + cur_disk_name + ' ') | list | length != 1
+
+- name: Setting fact for storing path of created volume for {{ diskname }} for {{ vmname }}
+  set_fact:
+    vmdiskpath: "{{ vol_list.stdout_lines | select('match', '^ ' + cur_disk_name + ' ') | map('regex_replace', '^ .*  */', '/') | list | first }}"
