@@ -24,6 +24,6 @@ kvm_bridge_itf: "{{ provisioning_bridge_itf | default('br-prov') }}"
 # Current default scenario is to have a physical machine
 # acting as the master node and which will spawn KVM/libvirt
 # VMs which will host OSA deployment
-infra_master_running_kvm: "{{ kvm_on_infra_master | default(true) }}"
-ansible_master_running_kvm: "{{ kvm_on_ansible_master | default(false) }}"
-baremetal_provisioning: "{{ real_baremetal | default(false) }}"
+infra_master_running_kvm: "{{ kvm_on_infra_master | default(true) | bool }}"
+ansible_master_running_kvm: "{{ kvm_on_ansible_master | default(false) | bool }}"
+baremetal_provisioning: "{{ real_baremetal | default(false) | bool }}"
