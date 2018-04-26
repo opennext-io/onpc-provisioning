@@ -27,4 +27,4 @@
   set_fact:
     registration_ip: "{{ infra_master_ip | default('127.0.0.1') }}"
     vbmc_venv: {}
-  when: not infra_master_running_kvm or real_baremetal
+  when: not infra_master_running_kvm or baremetal_provisioning
