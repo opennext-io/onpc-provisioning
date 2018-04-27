@@ -25,14 +25,21 @@
     dest_fact_file: "{{ dest_fact_dir }}/{{ facts_file }}.fact"
     dest_fact_dump: "{{ dest_fact_dir }}/{{ facts_file }}.dump"
 
+- name: Checking existence of fact file
+  stat:
+    path: "{{ dest_fact_dir }}/{{ facts_file }}.fact"
+  register: fact_file_status
+
 - name: Dumping hostvars to {{ dest_fact_dump }}
   become: yes
   action: template src=../templates/dumpvar.j2 dest="{{ dest_fact_dump }}"
   vars:
     myvar: "{{ hostvars }}"
+  when: not fact_file_status.stat.exists
 
 - name: Dumping selected hostvars to {{ dest_fact_file }}
   become: yes
   action: template src=../templates/dumpvar.j2 dest="{{ dest_fact_file }}"
   vars:
     myvar: "{{ hostvars | to_json | hostvars_filter(keys_to_store) }}"
+  when: not fact_file_status.stat.exists
