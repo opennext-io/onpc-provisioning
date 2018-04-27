@@ -32,7 +32,7 @@
       set_fact:
         dhcp_host_files_path: "{{ (dnsmasq_info['content'] | b64decode).split('\n') | select('match', '^dhcp-hostsfile=') | map('replace', 'dhcp-hostsfile=', '') | list }}"
 
-    - fail: msg="No dhcp-hostsfile directive in {{ dnsmasq_conf_file}}"
+    - fail: msg="No dhcp-hostsfile directive in {{ dnsmasq_conf_file }}"
       when: dhcp_host_files_path | length == 0
 
     - name: Checking if dnsmasq host file already exists

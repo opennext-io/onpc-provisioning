@@ -42,7 +42,7 @@
     - name: Retrieving ansible-master environment informations
       set_fact:
         ansible_env: "{{ lookup('env', 'ANSIBLE_CALLBACK_WHITELIST') }}"
-        env_already_set: "{{bifrost_env_info['content'] | b64decode | regex_findall('export ANSIBLE_CALLBACK_WHITELIST=.*') }}"
+        env_already_set: "{{ bifrost_env_info['content'] | b64decode | regex_findall('export ANSIBLE_CALLBACK_WHITELIST=.*') }}"
 
     - name: Adding environment variable to remote environment script
       lineinfile:

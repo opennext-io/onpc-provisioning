@@ -137,7 +137,7 @@
     - name: Setting fact for primary ethernet interface for migration to bridge
       set_fact:
         primary_itf: "{{ primary[0] }}"
-      when: primary is defined and primary|length > 0
+      when: primary is defined and primary | length > 0
 
     - name: Checking if secondary interface needs to migrate to bridge
       set_fact:
@@ -146,7 +146,7 @@
     - name: Setting fact for secondary ethernet interface for migration to bridge
       set_fact:
         secondary_itf: "{{ secondary[0] }}"
-      when: (secondary is defined and secondary|length > 0)
+      when: (secondary is defined and secondary | length > 0)
 
     - name: Getting interfaces infos
       interfaces_file:
