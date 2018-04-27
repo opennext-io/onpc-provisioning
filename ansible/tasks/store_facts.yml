@@ -1,6 +1,6 @@
 # Ansible facts dumping task
 ---
-- name: Setting destination facts directory and file
+- name: Setting destination facts directory
   set_fact:
     dest_fact_dir: "/etc/ansible/facts.d"
 
@@ -20,8 +20,19 @@
     recurse: yes
   when: not fact_dir_exists.stat.exists
 
-- name: Dumping hostvars to {{ dest_fact_dir }}/{{ facts_file }}.fact
+- name: Setting destination facts file
+  set_fact:
+    dest_fact_file: "{{ dest_fact_dir }}/{{ facts_file }}.fact"
+    dest_fact_dump: "{{ dest_fact_dir }}/{{ facts_file }}.dump"
+
+- name: Dumping hostvars to {{ dest_fact_dump }}
   become: yes
-  action: template src=../templates/dumpvar.j2 dest="{{ dest_fact_dir }}/{{ facts_file }}.fact"
+  action: template src=../templates/dumpvar.j2 dest="{{ dest_fact_dump }}"
   vars:
     myvar: "{{ hostvars }}"
+
+- name: Dumping selected hostvars to {{ dest_fact_file }}
+  become: yes
+  action: template src=../templates/dumpvar.j2 dest="{{ dest_fact_file }}"
+  vars:
+    myvar: "{{ hostvars | to_json | hostvars_filter(keys_to_store) }}"
