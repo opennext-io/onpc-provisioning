@@ -48,7 +48,3 @@
       squid_http_access_allow_clients:
         - localhost
         - allowed_ips
-
-  tasks:
-
-    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_opennext_pre_deploy"
