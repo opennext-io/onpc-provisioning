@@ -123,13 +123,22 @@
       vars:
         args: "{{ all_args.split(' ') | reject('equalto', '-e') | list }}"
 
+    - name: Setting fact for command line to execute on remote
+      set_fact:
+        remote_cmd_line: "ssh {{ systemuser }}@({{ ansible_default_ipv4.address }} | {{ ipify_results.get('ansible_facts', {}).get('ipify_public_ip', '') }}) -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e @{{ args_file }}'"
+
     - name: Printing complete deploy command
       debug: msg="ssh {{ systemuser }}@({{ ansible_default_ipv4.address }} | {{ ipify_results.get('ansible_facts', {}).get('ipify_public_ip', '') }}) -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml {{ all_args }}'"
 
     - name: Printing alternate (shorter) deploy command
-      debug: msg="ssh {{ systemuser }}@({{ ansible_default_ipv4.address }} | {{ ipify_results.get('ansible_facts', {}).get('ipify_public_ip', '') }}) -t 'cd {{ git }}/playbooks && {{ todo }} && https_proxy= ansible-playbook -i inventory/target install.yaml -e @{{ args_file }}'"
+      debug: msg="{{ remote_cmd_line }}"
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_deploy_bifrost"
+      vars:
+        keys_to_store:
+          - "^all_args$"
+          - "^args_file$"
+          - "^remote_cmd_line$"
 
     - name: Running Bifrost Playbook
       shell: ". ../env-vars && . {{ venv }}/bin/activate && ansible-playbook -i inventory/target install.yaml {{ all_args }}"

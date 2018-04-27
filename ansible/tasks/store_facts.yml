@@ -34,7 +34,7 @@
   become: yes
   action: template src=../templates/dumpvar.j2 dest="{{ dest_fact_dump }}"
   vars:
-    myvar: "{{ hostvars }}"
+    myvar: "{{ hostvars | to_json | hostvars_filter([], ['^ansible_local']) }}"
   when: not fact_file_status.stat.exists
 
 - name: Dumping selected hostvars to {{ dest_fact_file }}
