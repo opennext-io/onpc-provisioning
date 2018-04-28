@@ -108,6 +108,7 @@
 
     - name: Extracting baremetal nodes names from facts
       set_fact:
+        node_infos: "{{ hostvars[inventory_hostname].registered_status.json }}"
         node_names: "{{ hostvars[inventory_hostname].registered_status.json | json_query('keys(@)') }}"
         node_ips: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/all/interfaces/eth0/ip') | list }}"
 
@@ -126,9 +127,15 @@
         src: ../templates/inventory.cfg.j2
         dest: "{{ systemuserhome }}/osa-inventory"
       vars:
+        # TODO next variables to be retrieved from facts
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names }}"
         bridge_itf: "br-host"
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"
+      vars:
+        keys_to_store:
+          - "^node_infos$"
+          - "^node_names$"
+          - "^node_ips$"
