@@ -151,6 +151,11 @@
       notify: Restarting Register Helper Service
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_post_deploy_bifrost"
+      vars:
+        keys_to_store:
+          - "^auth.*"
+          - "^clouds$"
+          - "^ironic_http_url"
 
     - meta: flush_handlers
 

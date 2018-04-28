@@ -322,20 +322,20 @@
           - ".*_master_running_kvm$"
           - ".*baremetal.*"
           - "^ip_.*fix$"
-          - '^master_ip$'
-          - '^prov_vlan_id$'
-          - '^active_bridges.*'
-          - '^primary_itf$'
-          - '^secondary_itf$'
-          - '^.*active_ether_itfs$'
-          - '^vlans_list$'
-          - '^ansible_all_ipv4_addresses$'
-          - '^ansible_default_ipv4$'
-          - '^ansible_dns$'
-          - '^ansible_interfaces$'
-          - '^.*libvirt_networks'
-          - '^groups$'
-          - '^inventory_hostname$'
+          - "^master_ip$"
+          - "^prov_vlan_id$"
+          - "^active_bridges.*"
+          - "^primary_itf$"
+          - "^secondary_itf$"
+          - "^.*active_ether_itfs$"
+          - "^vlans_list$"
+          - "^ansible_all_ipv4_addresses$"
+          - "^ansible_default_ipv4$"
+          - "^ansible_dns$"
+          - "^ansible_interfaces$"
+          - "^.*libvirt_networks"
+          - "^groups$"
+          - "^inventory_hostname$"
 
   handlers:
 
