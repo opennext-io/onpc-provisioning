@@ -1,0 +1,8 @@
+[infra-master]
+LAB1-PUBLIC-IP ip_prefix=10.20.53 prov_vlan_id=153 kvm_on_ansible_master=false
+
+[kvm-master]
+LAB1-PUBLIC-IP
+
+[all:vars]
+ansible_user=vagrant
