@@ -101,7 +101,7 @@
         state: boot
       when: node_register_status is defined and node_name not in node_register_status.json
 
-    - import_tasks: ../tasks/node_get_status.yml
+    - import_tasks: ../tasks/nodes_get_status.yml
       vars:
         node_status_retries: 20
         node_status_delay: 30

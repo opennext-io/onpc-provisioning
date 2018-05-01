@@ -41,7 +41,11 @@
 
   tasks:
 
-    - import_tasks: ../tasks/node_get_status.yml
+    - import_tasks: ../tasks/nodes_get_status.yml
+      vars:
+        node_status_delay: 30
+        node_status_retries: 20
+        nodes_nb: 4
 
     - name: Extracting VMs names from facts
       set_fact:

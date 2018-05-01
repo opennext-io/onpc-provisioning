@@ -1,4 +1,4 @@
-# Ironic VMs status retrieval task
+# Ironic nodes status retrieval task
 ---
 - name: Getting status from register-helper utility agent
   uri:
@@ -7,7 +7,7 @@
     user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
     password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
   register: registered_status
-  until: registered_status.content_length | int > 3
+  until: (registered_status.content_length | int > 3) and (registered_status.get('json', {}).keys() | length >= nodes_nb | default(1))
   delay: "{{ node_status_delay | default(15) }}"
   retries: "{{ node_status_retries | default(8) }}"
 
