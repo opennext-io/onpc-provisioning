@@ -137,5 +137,7 @@
       vars:
         keys_to_store:
           - "^node_infos$"
-          - "^node_names$"
           - "^node_ips$"
+          - "^node_names$"
+          - "^registered_machines$"
+          - "^registered_status$"
