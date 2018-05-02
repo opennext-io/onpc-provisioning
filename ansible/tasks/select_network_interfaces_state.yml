@@ -1,11 +1,11 @@
 # Network interfaces from state selection task
 ---
-- name: Selecting IPV4 unconfigured interfaces for {{ itf_state }} state
+- name: Selecting IPV4 unconfigured interfaces for state {{ itf_state }} is false
   set_fact:
     unconfigured: "{{ itfs | default([]) | selectattr('ipv4', 'undefined') | list }}"
   when: itf_state == False
 
-- name: Selecting IPV4 unconfigured interfaces for {{ itf_state }} state
+- name: Selecting IPV4 unconfigured interfaces for state {{ itf_state }} is true
   set_fact:
     unconfigured: []
   when: itf_state == True
