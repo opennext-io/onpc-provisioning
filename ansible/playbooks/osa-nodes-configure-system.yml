@@ -1,4 +1,11 @@
 ---
+- hosts: infra-master
+
+  tasks:
+
+    - name: Retrieving facts
+      setup:
+
 - hosts: osa-nodes
   become: yes
 
@@ -12,7 +19,15 @@
 
     - name: Setting facts
       set_fact:
+        ip_prefixes: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).values() | selectattr('ip_prefix', 'defined') | map(attribute='ip_prefix') | list | unique }}"
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
+
+    - fail: msg="Missing ip_prefix information"
+      when: ip_prefixes | length != 1
+
+    - name: Setting facts
+      set_fact:
+        ip_prefix: "{{ ip_prefixes[0] }}"
 
     - name: Creating root .ssh
       file:
@@ -245,6 +260,19 @@
       when: network_reconfig is defined and network_reconfig
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
+      vars:
+        keys_to_store:
+          - "^cur_interfaces$"
+          - "^matching_ether_itfs$"
+          - "^remaining_itfs$"
+          - "^osa_vlans$"
+          - "^ansible_all_ipv4_addresses$"
+          - "^ansible_default_ipv4$"
+          - "^ansible_dns$"
+          - "^ansible_interfaces$"
+          - "^.*libvirt_networks"
+          - "^groups$"
+          - "^inventory_hostname$"
 
   handlers:
     - name: restart ntp and stop systemd-timesyncd
@@ -252,3 +280,23 @@
       with_items:
         - { name: ntp, state: restarted }
         - { name: systemd-timesyncd, state: stopped }
+
+- hosts: infra-master
+  become: yes
+
+  tasks:
+
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
+      vars:
+        keys_to_store:
+          - "^cur_interfaces$"
+          - "^matching_ether_itfs$"
+          - "^remaining_itfs$"
+          - "^osa_vlans$"
+          - "^ansible_all_ipv4_addresses$"
+          - "^ansible_default_ipv4$"
+          - "^ansible_dns$"
+          - "^ansible_interfaces$"
+          - "^.*libvirt_networks"
+          - "^groups$"
+          - "^inventory_hostname$"
