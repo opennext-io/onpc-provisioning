@@ -21,6 +21,7 @@
       set_fact:
         ip_prefixes: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).values() | selectattr('ip_prefix', 'defined') | map(attribute='ip_prefix') | list | unique }}"
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
+        is_aio: "{{ hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1 | bool }}"
 
     - fail: msg="Missing ip_prefix information"
       when: ip_prefixes | length != 1
@@ -231,7 +232,7 @@
         group: root
         mode: 0644
       register: vlan_changed
-      when: remaining_itfs | length > 0
+      when: remaining_itfs | length > 0 and (not is_aio or (force_bridges | default(false) | bool))
       vars:
         - prov_itf: "{{ remaining_itfs[0] }}"
         - vlans_list: "{{ osa_vlans | default([]) }}"
