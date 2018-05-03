@@ -1,4 +1,11 @@
 ---
+- hosts: infra-master
+
+  tasks:
+
+    - name: Retrieving facts
+      setup:
+
 - hosts: osa-master
   become: yes
 
@@ -9,13 +16,18 @@
 
     - name: Setting Facts
       set_fact:
+        ip_prefixes: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).values() | selectattr('ip_prefix', 'defined') | map(attribute='ip_prefix') | list | unique }}"
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
         dest_repo_dir: "{{ dest_github_repo_dir | default('/opt') }}"
-        is_aio: hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1 | bool
+        is_aio: "{{ hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1 | bool }}"
         # Could also be osa-master instead of infra-master
+
+    - fail: msg="Missing ip_prefix information"
+      when: ip_prefixes | length != 1
 
     - name: Setting environment facts
       set_fact:
+        ip_prefix: "{{ ip_prefixes[0] }}"
         proxy_env: {
           'http_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
           'https_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
@@ -64,46 +76,76 @@
       register: bootstrap_aio_result
       when: is_aio
 
-    - name: Retrieving remote OSA nodes informations
-      slurp:
-        src: "/tmp/all_hostvars.json"
-      register:
-        osa_nodes_infos_content
+- hosts: osa-nodes
 
+  tasks:
+
+    - name: Retrieving facts
+      setup:
+      register: node_facts
+
+- hosts: osa-master
+  become: yes
+
+  vars_files:
+    - ../vars/osa-briges-vlans_vars.yml
+
+  tasks:
     - name: Setting remote OSA nodes informations facts
       set_fact:
-        osa_nodes_infos: "{{ osa_nodes_infos_content['content'] | b64decode | from_json }}"
+        osa_nodes_infos: "{{ hostvars.get(inventory_hostname, {}).get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {}) }}"
 
-    - debug: msg="{{ osa_nodes_infos }}"
+    - name: Setting facts for AIO mode {{ is_aio }} is true
+      set_fact:
+        control_match: 'osa-aio'
+        cinder_match: 'osa-aio'
+        compute_match: 'osa-aio'
+        shared_infra_hosts_name: 'aio'
+        compute_hosts_name: 'aio'
+        storage_hosts_name: 'aio'
+      when: is_aio
+
+    - name: Setting facts for AIO mode {{ is_aio }} is false
+      set_fact:
+        control_match: 'slave-.*'
+        cinder_match: 'slave-.*'
+        compute_match: 'slave-.*'
+      when: not is_aio
 
     - name: Computing OSA deployment nodes facts
       set_fact:
         osa_deploy_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
         ip_reject_regex: "{{ '^' ~ ip_prefix ~ '.*' }}"
         osa_bridges_ips: "{{ osa_vlans | map(attribute='prefix') | flatten | list }}"
-        controller_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', 'slave-1') | list }}"
-        cinder_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', 'slave-2') | list }}"
-        compute_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', 'slave-3') | list }}"
+        controller_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', control_match) | list }}"
+        cinder_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', cinder_match) | list }}"
+        compute_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', compute_match) | list }}"
 #        neutron_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
 
     - name: Computing OSA deployment nodes facts
       set_fact:
-        osa_deploy_hosts_ips_infos: "{% set sel = [] %} {% for x in osa_deploy_hosts %} {% set l = sel.append(osa_nodes_infos.get(x)) %}{% endfor %}{{ sel | map(attribute='ansible_all_ipv4_addresses') | flatten | reject('match', ip_reject_regex) | list | to_yaml }}"
+        osa_deploy_hosts_ips_infos: "{% set sel = [] %} {% for x in osa_deploy_hosts %} {% set l = sel.append(hostvars.get(x)) %}{% endfor %}{{ sel | map(attribute='ansible_all_ipv4_addresses') | flatten | reject('match', ip_reject_regex) | list | to_yaml }}"
         osa_bridges_ips_ranges: "{% set sel = [] %} {% for x in osa_bridges_ips %} {% set l = sel.append(x + '.1,' + x + '.50') %}{% endfor %}{{ sel | to_yaml }}"
-        controller_hosts_ips_l: "{% set sel = [] %} {% for x in controller_hosts %} {% set l = sel.append(osa_nodes_infos.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
-        cinder_hosts_ips_l: "{% set sel = [] %} {% for x in cinder_hosts %} {% set l = sel.append(osa_nodes_infos.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
-        compute_hosts_ips_l: "{% set sel = [] %} {% for x in compute_hosts %} {% set l = sel.append(osa_nodes_infos.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
-
+        controller_hosts_ips_l: "{% set sel = [] %} {% for x in controller_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
+        cinder_hosts_ips_l: "{% set sel = [] %} {% for x in cinder_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
+        compute_hosts_ips_l: "{% set sel = [] %} {% for x in compute_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
 
     - name: Setting final facts
       set_fact:
         osa_ips: "{{ osa_deploy_hosts_ips_infos | from_yaml + osa_bridges_ips_ranges | from_yaml }}"
 
+    - name: Retrieving template from remote host
+      fetch:
+        src: "/opt/onpc-basic-model/etc/openstack_deploy/templates/openstack_user_config.yml.j2"
+        dest: "/tmp/openstack_user_config.yml.j2"
+        flat: yes
+        fail_on_missing: yes
+
     - name: Templating openstack_user_config.yml
       template:
-        src: ../templates/osa/openstack_user_config.yml.j2
-        dest: "/tmp/toto"
-        owner: root
+        src: "/tmp/openstack_user_config.yml.j2"
+        dest: "/etc/openstack_deploy/openstack_user_config.yml"
+        backup: yes
         group: root
         mode: 0644
       vars:
@@ -112,8 +154,6 @@
         cinder_hosts_ips: "{{ cinder_hosts_ips_l | from_yaml }}"
         compute_hosts_ips: "{{ compute_hosts_ips_l | from_yaml }}"
         neutron_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
-
-    - fail: msg="OLIVIER"
 
     - name: Setting facts for OSA user configuration file
       set_fact:
@@ -130,6 +170,7 @@
       lineinfile:
         path: "{{ osa_user_conf_file }}"
         line: "{{ osa_vars_additions }}"
+        backup: yes
         state: present
         owner: root
         group: root
@@ -151,3 +192,16 @@
         executable: /bin/bash
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_master_opennext_deploy"
+      vars:
+        keys_to_store:
+          - "^osa_deploy_hosts$"
+          - "^osa_bridges_ips$"
+          - "^controller_hosts$"
+          - "^cinder_hosts$"
+          - "^compute_hosts$"
+          - "^osa_deploy_hosts_ips_infos$"
+          - "^osa_bridges_ips_ranges$"
+          - "^controller_hosts_ips_l$"
+          - "^cinder_hosts_ips_l$"
+          - "^compute_hosts_ips_l$"
+          - "^osa_ips$"
