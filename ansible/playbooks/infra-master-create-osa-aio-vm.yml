@@ -20,13 +20,13 @@
         vmname: "{{ vm_item.name }}"
         vmcpus: "{{ vm_item.cpus }}"
         vmmemorysizegb: "{{ vm_item.mem }}"
+        vmdisksnb: "{{ vm_item.disks | default(1) }}"
         vmdisksizegb: "{{ vm_item.hdd }}"
         vncport: "{{ vm_item.vnc }}"
         vbmc_port: "{{ vm_item.bmc }}"
-        vmdisksnb: 2
         vmmacprefix: "52:54:00"
       with_items:
-        - { name: "osa-aio", cpus: 10, mem: 48, hdd: 120, vnc: 5901, bmc: 6001}
+        - { name: "osa-aio", cpus: 10, mem: 48, disks: 2, hdd: 200, vnc: 5901, bmc: 6001 }
       loop_control:
         loop_var: vm_item
 

@@ -17,11 +17,11 @@
     - import_tasks: kvm_disk_create.yml
       vars:
         diskname: disk2
-      when: vmdisksnb | default(1) > 1
+      when: vmdisksnb | default(1) | int > 1
     - name: Storing disk 2 path
       set_fact:
         vmdisk2: "{{ vmdiskpath }}"
-      when: vmdisksnb | default(1) > 1
+      when: vmdisksnb | default(1) | int > 1
 
 - name: Templating {{ vmname }} VM
   template:

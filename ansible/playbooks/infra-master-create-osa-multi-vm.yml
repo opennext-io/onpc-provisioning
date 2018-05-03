@@ -20,15 +20,16 @@
         vmname: "{{ vm_item.name }}"
         vmcpus: "{{ vm_item.cpus }}"
         vmmemorysizegb: "{{ vm_item.mem }}"
+        vmdisksnb: "{{ vm_item.disks | default(1) }}"
         vmdisksizegb: "{{ vm_item.hdd }}"
         vncport: "{{ vm_item.vnc }}"
         vbmc_port: "{{ vm_item.bmc }}"
         vmmacprefix: "52:54:01"
       with_items:
-        - { name: "master", cpus: 2, mem: 8, hdd: 60, vnc: 5901, bmc: 6001}
-        - { name: "slave-1", cpus: 8, mem: 16, hdd: 60, vnc: 5902, bmc: 6002}
-        - { name: "slave-2", cpus: 8, mem: 8, hdd: 60, vnc: 5903, bmc: 6003}
-        - { name: "slave-3", cpus: 4, mem: 8, hdd: 60, vnc: 5904, bmc: 6004}
+        - { name: "master", cpus: 2, mem: 4, hdd: 60, vnc: 5901, bmc: 6001 }
+        - { name: "slave-1", cpus: 8, mem: 12, disks: 2, hdd: 200, vnc: 5902, bmc: 6002 }
+        - { name: "slave-2", cpus: 8, mem: 12, disks: 2, hdd: 200, vnc: 5903, bmc: 6003 }
+        - { name: "slave-3", cpus: 8, mem: 12, disks: 2, hdd: 200, vnc: 5904, bmc: 6004 }
       loop_control:
         loop_var: vm_item
 
