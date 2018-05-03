@@ -27,7 +27,7 @@
         sshdir: "{{ root_ssh_dir }}"
         destdir: "{{ dest_repo_dir }}"
       with_items:
-        - { repo: "openstack-ansible-bootstrap", repodst: "onpc-bootstrap"}
+        - { repo: "onpc-provisioning" }
 
     - name: Installing Squid proxy package
       package:

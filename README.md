@@ -1,5 +1,5 @@
-openstack-ansible-bootstrap
-===========================
+onpc-provisioning
+=================
 
 Node provisioning automation to get hosts and network ready to install OpenStack
 with OSA
@@ -239,8 +239,8 @@ it(them) prior to launch the effective OSA deployment. To do so, you need to log
 into infra-master and launch the following:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-nodes-configure-system.yml
-ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-master-opennext-deploy.yml
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-nodes-configure-system.yml
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Please note that the final task in osa-master-opennext-deploy.yml can take a very long time to complete.

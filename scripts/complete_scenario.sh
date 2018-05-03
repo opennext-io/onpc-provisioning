@@ -32,7 +32,7 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-open
 # Stage 7 => configure provisioned VMs system and services for OSA deployment
 # For this stage only (2 playbooks to be run), you need to be logged on the infra-master node where
 # the osa-inventory file has been generated for you
-ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-nodes-configure-system.yml
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-nodes-configure-system.yml
 
 # effective OSA deployment. A fair part of this is what you use when deploying OSA by your own
 # means. However a lot of hidden potential issues are delt with here
@@ -41,7 +41,7 @@ ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks
 # (which IP you will find in ~vagrant/osa-inventory) and, as root, do a
 # tail -f /var/log/osa_run_playbooks*.logs.
 export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=120 -o ServerAliveCountMax=10"
-ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-bootstrap/ansible/playbooks/osa-master-opennext-deploy.yml
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml
 
 # Stage 8 => configure additional services to access Horizon and Grafana from infra-master node
 # acting as a reverse proxy to appropriate services in VMs
