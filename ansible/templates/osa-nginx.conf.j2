@@ -227,3 +227,60 @@ server {
         proxy_redirect https://${myip}:8089 https://$http_host:8089/grafana;
     }
 }
+
+# Kibana
+server {
+    ssl_certificate /etc/ssl/certs/nginx-selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/nginx-selfsigned.key;
+    ssl_dhparam /etc/ssl/certs/dhparam.pem;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH";
+    ssl_ecdh_curve secp384r1;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+    # Disable preloading HSTS for now.  You can use the commented out header line that includes
+    # the "preload" directive if you understand the implications.
+    #add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+    add_header Strict-Transport-Security "max-age=63072000; includeSubdomains";
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+
+    set $myip {{ osa_master_ip }};
+    large_client_header_buffers 4 16k;
+    listen 5601 ssl;
+    access_log /var/log/nginx/osa/ssl-access-kibana.log;
+    error_log /var/log/nginx/osa/ssl-error-kibana.log;
+    server_name {{ infra_master_public_ips_and_or_names | join(' ') }};
+    sub_filter 'https://${myip}:' 'https://$host/';
+    sub_filter 'https://${myip}/' 'https://$host/';
+    sub_filter 'https://$host/v3' 'https://$host/5000/v3';
+    sub_filter_last_modified on;
+    sub_filter_once off;
+    sub_filter_types *;
+    proxy_request_buffering off;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header Origin https://$host;
+    proxy_set_header Accept-Encoding "";
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Server $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_connect_timeout 90;
+    proxy_send_timeout 90;
+    proxy_read_timeout 90;
+    # Kibana
+    location / {
+        proxy_pass https://${myip}:5601;
+        proxy_redirect https://${http_host}:5601 https://$http_host:5601/kibana;
+        proxy_redirect https://${myip}:5601 https://$http_host:5601/kibana;
+    }
+}
