@@ -26,7 +26,7 @@
         vbmc_port: "{{ vm_item.bmc }}"
         vmmacprefix: "52:54:00"
       with_items:
-        - { name: "osa-aio", cpus: 10, mem: 48, disks: 2, hdd: 200, vnc: 5901, bmc: 6001 }
+        - { name: "osa-aio", cpus: 10, mem: 48, disks: 3, hdd: 100, vnc: 5901, bmc: 6001 }
       loop_control:
         loop_var: vm_item
 
