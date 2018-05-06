@@ -76,6 +76,7 @@
         - "bridge"
         - "br_netfilter"
         - "8021q"
+        - "vxlan"
 
     - name: Configuring IP forwarding via sysctl
       sysctl:

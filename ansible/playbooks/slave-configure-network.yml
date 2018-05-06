@@ -27,6 +27,7 @@
         - "bonding"
         - "bridge"
         - "8021q"
+        - "vxlan"
 
     - import_tasks: ../tasks/secondary_network_interface.yml
 
