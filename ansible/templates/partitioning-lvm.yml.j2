@@ -22,22 +22,19 @@
     lvs:
       - name: lv_root
         base: vg
-        extents: {{ root_fs_size_percent | default(15) }}%VG
+        extents: {{ root_fs_size_percent | default(30) }}%VG
       - name: lv_tmp
         base: vg
-        extents: {{ tmp_fs_size_percent | default(5) }}%VG
+        extents: {{ tmp_fs_size_percent | default(10) }}%VG
       - name: lv_var
         base: vg
-        extents: {{ var_fs_size_percent | default(20) }}%VG
+        extents: {{ var_fs_size_percent | default(35) }}%VG
       - name: lv_log
         base: vg
-        extents: {{ log_fs_size_percent | default(10) }}%VG
+        extents: {{ log_fs_size_percent | default(20) }}%VG
       - name: lv_home
         base: vg
         extents: {{ home_fs_size_percent | default(5) }}%VG
-      - name: lv_lxc
-        base: vg
-        extents: {{ lxc_fs_size_percent | default(45) }}%VG
 - mkfs:
     name: fs_root
     base: lv_root
@@ -79,12 +76,4 @@
     mount:
       mount_point: /home
       fstab:
-        options: "rw,nodev,relatime" 
-- mkfs:
-    name: fs_lxc
-    base: lv_lxc
-    type: {{ lxc_fs_type | default('xfs') }}
-    mount:
-      mount_point: /var/lib/lxc
-      fstab:
-        options: "rw,relatime" 
+        options: "rw,nodev,relatime"
