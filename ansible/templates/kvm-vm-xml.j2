@@ -33,42 +33,34 @@
   </pm>
   <devices>
     <emulator>/usr/bin/kvm-spice</emulator>
+{% for d in vm_disks_paths %}
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2' cache='none' io='native'/>
-      <source file='{{ vmdisk1 }}'/>
+      <source file='{{ d }}'/>
       <backingStore/>
-      <target dev='vda' bus='virtio'/>
-      <alias name='virtio-disk0'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+      <target dev='vd{{ "%c" | format(loop.index + 96 | int) }}' bus='virtio'/>
+      <alias name='virtio-disk{{ loop.index - 1 }}'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x{{ "%02x" | format( loop.index + 6 | int) }}' function='0x0'/>
     </disk>
-{% if vmdisk2 is defined %}
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='qcow2' cache='none' io='native'/>
-      <source file='{{ vmdisk2 }}'/>
-      <backingStore/>
-      <target dev='vdb' bus='virtio'/>
-      <alias name='virtio-disk1'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
-    </disk>
-{% endif %}
+{% endfor %}
     <controller type='usb' index='0' model='ich9-ehci1'>
       <alias name='usb'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x7'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x7'/>
     </controller>
     <controller type='usb' index='0' model='ich9-uhci1'>
       <alias name='usb'/>
       <master startport='0'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0' multifunction='on'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0' multifunction='on'/>
     </controller>
     <controller type='usb' index='0' model='ich9-uhci2'>
       <alias name='usb'/>
       <master startport='2'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x1'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x1'/>
     </controller>
     <controller type='usb' index='0' model='ich9-uhci3'>
       <alias name='usb'/>
       <master startport='4'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x2'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x2'/>
     </controller>
     <controller type='pci' index='0' model='pci-root'>
       <alias name='pci.0'/>
@@ -109,7 +101,7 @@
     </video>
     <memballoon model='virtio'>
       <alias name='balloon0'/>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
     </memballoon>
   </devices>
   <seclabel type='dynamic' model='apparmor' relabel='yes'>

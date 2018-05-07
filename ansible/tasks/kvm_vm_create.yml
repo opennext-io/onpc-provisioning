@@ -6,22 +6,17 @@
     provbridge: "{{ prov_bridge | default('br-prov') }}"
     vlanbridge: "{{ vlan_bridge | default('br-vlan') }}"
 
-- name: Creating disks for {{ vmname }}
-  block:
-    - import_tasks: kvm_disk_create.yml
-      vars:
-        diskname: disk1
-    - name: Storing disk 1 path
-      set_fact:
-        vmdisk1: "{{ vmdiskpath }}"
-    - import_tasks: kvm_disk_create.yml
-      vars:
-        diskname: disk2
-      when: vmdisksnb | default(1) | int > 1
-    - name: Storing disk 2 path
-      set_fact:
-        vmdisk2: "{{ vmdiskpath }}"
-      when: vmdisksnb | default(1) | int > 1
+- name: Setting disk names
+  set_fact:
+    vm_disks_paths: []
+
+- include_tasks: kvm_disk_create.yml
+  vars:
+    diskname: "{{ disk_item }}"
+    vmdiskspaths: "{{ vm_disks_paths }}"
+  with_sequence: start=1 end="{{ vmdisksnb }}" format=disk%d
+  loop_control:
+    loop_var: disk_item
 
 - name: Templating {{ vmname }} VM
   template:

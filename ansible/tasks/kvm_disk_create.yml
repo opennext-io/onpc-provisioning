@@ -77,4 +77,4 @@
 
 - name: Setting fact for storing path of created volume for {{ diskname }} for {{ vmname }}
   set_fact:
-    vmdiskpath: "{{ vol_list.stdout_lines | select('match', '^ ' + cur_disk_name + ' ') | map('regex_replace', '^ .*  */', '/') | list | first }}"
+    vm_disks_paths: "{% set l = vmdiskspaths.append(vol_list.stdout_lines | select('match', '^ ' + cur_disk_name + ' ') | map('regex_replace', '^ .*  */', '/') | list | first) %}{{ vmdiskspaths | list }}"
