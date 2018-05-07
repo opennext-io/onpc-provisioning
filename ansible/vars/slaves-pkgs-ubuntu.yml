@@ -23,6 +23,7 @@ system:
   - eatmydata
   - linux-virtual
   - overlayroot
+  - parted
   - pollinate
   - software-properties-common
   - sosreport
