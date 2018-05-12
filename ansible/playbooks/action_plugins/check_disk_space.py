@@ -1,5 +1,5 @@
 from ansible.plugins.action import ActionBase
-from ansible.module_utils.six import iteritems, string_types, integer_types
+
 
 class ActionModule(ActionBase):
 
@@ -9,14 +9,31 @@ class ActionModule(ActionBase):
             task_vars = dict()
 
         result = super(ActionModule, self).run(tmp, task_vars)
-#        del tmp  # tmp no longer has any effect
 
         fres = {}
         res = {}
-        result = self._execute_module(module_name='setup', module_args={}, task_vars=task_vars, tmp=tmp)
-        res['mounts'] = result.get('ansible_facts', {}).get('ansible_mounts', {})
-        res['device_links'] = result.get('ansible_facts', {}).get('ansible_device_links', {})
-        res['devices'] = { k: v for k, v in result.get('ansible_facts', {}).get('ansible_devices', {}).iteritems() if not k.startswith("loop") }
+        result = self._execute_module(
+            module_name='setup',
+            module_args={},
+            task_vars=task_vars,
+            tmp=tmp)
+        res['mounts'] = result.get(
+            'ansible_facts',
+            {}).get(
+            'ansible_mounts',
+            {})
+        res['device_links'] = result.get(
+            'ansible_facts',
+            {}).get(
+            'ansible_device_links',
+            {})
+        res['devices'] = {
+            k: v for k, v in result.get(
+                'ansible_facts',
+                {}).get(
+                'ansible_devices',
+                {}).iteritems() if not k.startswith("loop")
+        }
 
         # Retrieve device ID of mount points retrieve via facts
         mount_points = {}
@@ -36,8 +53,13 @@ class ActionModule(ActionBase):
                     },
                 task_vars=task_vars,
                 tmp=tmp)
-            mount_points[mnt['mount']]['device'] = mount_point_stat.get('stat', {}).get('dev')
-            mount_devices[mount_points[mnt['mount']]['device']] = dict(mount_points[mnt['mount']])
+            mount_points[mnt['mount']]['device'] = mount_point_stat.get(
+                'stat',
+                {}).get(
+                    'dev')
+            mount_devices[mount_points[mnt['mount']]['device']] = dict(
+                mount_points[mnt['mount']]
+            )
         fres['before'] = mount_points.values()
         fres['errors'] = []
 
@@ -60,16 +82,19 @@ class ActionModule(ActionBase):
                     tmp=tmp)
                 ldev = path_stat.get('stat', {}).get('dev')
                 tdev = mount_devices.get(ldev)
-                # Find matching device ID in remote mount points discovered above
+                # Find matching device ID in remote mount
+                # points discovered above
                 if not tdev:
                     # Should never happen but who knows ...
-                    lerror = 'Error retrieving device for path={}'.format(lpath)
+                    lerror = ('Error retrieving device' +
+                              ' for path={}').format(lpath)
                     fres['errors'].append(lerror)
                 else:
                     rsize = tdev.get('size_available', 0)
                     # Check if required size can be allocated in mount point
                     if rsize < lsize:
-                        lerror = 'Not enough space on {} for path {}: {} required {} remaining'.format(
+                        lerror = ('Not enough space on {} for path {}:' +
+                                  ' {} required {} remaining').format(
                             tdev.get('path'),
                             lpath,
                             lsize,
