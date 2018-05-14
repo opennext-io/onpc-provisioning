@@ -6,6 +6,7 @@
     label: mbr
     partitions:
       - name: root
+        type: '0x8E'
         flags: [ boot,primary ]
         size: {{ root_part_size_gb | default(50) }}G
 - lvm:
