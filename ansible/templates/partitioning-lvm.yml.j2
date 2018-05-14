@@ -3,14 +3,21 @@
     name: image0
 - partitioning:
     base: image0
-    label: gpt
+    label: {{ dibblockdevice }}
     partitions:
+{% if dibblockdevice == 'gpt' %}
       - name: BSP
         type: 'EF02'
         size: 8MiB
+{% endif %}
       - name: root
+{% if dibblockdevice == 'gpt' %}
         type: '8E00'
         flags: [ boot ]
+{% else %}
+        type: '0x8E'
+        flags: [ boot,primary ]
+{% endif %}
         size: {{ root_part_size_gb | default(50) }}G
 - lvm:
     name: lvm

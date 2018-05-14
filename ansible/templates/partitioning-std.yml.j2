@@ -3,13 +3,19 @@
     name: image0
 - partitioning:
     base: image0
-    label: gpt
+    label: {{ dibblockdevice }}
     partitions:
+{% if dibblockdevice == 'gpt' %}
       - name: BSP
         type: 'EF02'
         size: 8MiB
+{% endif %}
       - name: root
+{% if dibblockdevice == 'gpt' %}
         flags: [ boot ]
+{% else %}
+        flags: [ boot,primary ]
+{% endif %}
         size: {{ root_fs_size_gb | default(6) }}G
         mkfs:
           type: {{ root_fs_type | default('xfs') }}
