@@ -20,3 +20,4 @@ dibblockdevice: "{{ dib_block_device | default('gpt') }}"
 dibdistribmirror: "{{ dib_distrib_mirror | default('http://fr.archive.ubuntu.com/ubuntu') }}"
 deployimagefilename: on-os-ubuntu-xenial.qcow2
 ipa_ramdisk_upstream_url: http://www.olivierbourdon.com/ipa.initramfs
+download_latest_ipxe: true

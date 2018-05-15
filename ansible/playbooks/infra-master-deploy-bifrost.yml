@@ -71,15 +71,20 @@
         dib_partitioning_infos: " -e partitioning_file={{ systemuserhome }}/{{ partitioning_scheme }}.yml"
       when: partitioning_scheme is defined and partitioning_scheme | length > 0
 
-    - name: Setting custom IPA ramdisk URL
+    - name: Setting custom IPA ramdisk URL (if configured to do so)
       set_fact:
         opennext_ipa: " -e ipa_ramdisk_upstream_url={{ ipa_ramdisk_upstream_url }}"
       when: ipa_ramdisk_upstream_url is defined and ipa_ramdisk_upstream_url | length > 0
 
+    - name: Requesting latest iPXE download (if configured to do so)
+      set_fact:
+        opennext_ipxe: " -e download_ipxe={{ download_latest_ipxe }}"
+      when: download_latest_ipxe is defined and download_latest_ipxe | bool == True
+
     - name: Computing OS Image Options
       set_fact:
         os_opts: "{{ dib_std_options | default('') }}{{ dib_partitioning_infos | default('') }} -e dib_imagesize={{ root_part_size_gb | default(60) }} -e dib_os_release={{ os_release | default('xenial') }} -e dib_os_element={{ os_flavor | default('ubuntu-minimal') }} -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}"
-        opennext_opts: " -e use_symlinks=true{{ opennext_ipa | default('') }}"
+        opennext_opts: " -e use_symlinks=true{{ opennext_ipa | default('') }}{{ opennext_ipxe | default('') }}"
 
     - name: Computing Keystone Options
       set_fact:
