@@ -5,6 +5,13 @@
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
 
+  pre_tasks:
+
+    - name: Installing Squid proxy package
+      package:
+        name: squid
+        state: latest
+
   tasks:
 
     - name: Setting Facts
@@ -20,19 +27,14 @@
             group: "root"
             state: directory
 
-    - include_tasks: ../tasks/clone_private_git_repo.yml
-      vars:
-        repo: "{{ item.repo }}"
-        repodst: "{{ item.get('repodst', '') }}"
-        sshdir: "{{ root_ssh_dir }}"
-        destdir: "{{ dest_repo_dir }}"
+    - name: Retrieving OpenNext GitHub Repositories
+      git:
+        repo: "https://github.com/opennext-io/{{ item }}"
+        dest: "{{ dest_repo_dir }}/{{ item }}"
+        force: yes
+        recursive: no
       with_items:
-        - { repo: "onpc-provisioning" }
-
-    - name: Installing Squid proxy package
-      package:
-        name: squid
-        state: latest
+        - "onpc-provisioning"
 
   roles:
     - role: kbrebanov.squid

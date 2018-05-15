@@ -56,8 +56,17 @@
           TMPDIR: "/var/tmp"
       with_items:
         - { repo: "onpc-basic-model" }
-        - { repo: "onpc-monitoring" }
 
+    - name: Retrieving OpenNext GitHub Repositories
+      git:
+        repo: "https://github.com/opennext-io/{{ item }}"
+        dest: "{{ dest_repo_dir }}/{{ item }}"
+        force: yes
+        recursive: no
+      with_items:
+        - "onpc-monitoring"
+      environment: "{{ proxy_env | default('{}') }}"
+ 
     - name: Boostrapping Ansible for OSA
       command: "./scripts/bootstrap-ansible.sh"
       args:
