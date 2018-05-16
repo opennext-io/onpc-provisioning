@@ -105,6 +105,7 @@
       vars:
         node_status_retries: 20
         node_status_delay: 30
+        node_name: "{{ node_name }}"
 
     - name: Extracting baremetal nodes names from facts
       set_fact:
