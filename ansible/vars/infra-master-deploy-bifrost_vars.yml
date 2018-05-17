@@ -21,3 +21,4 @@ dibdistribmirror: "{{ dib_distrib_mirror | default('http://fr.archive.ubuntu.com
 deployimagefilename: on-os-ubuntu-xenial.qcow2
 ipa_ramdisk_upstream_url: http://www.olivierbourdon.com/ipa.initramfs
 download_latest_ipxe: true
+customized_ipxe: http://www.olivierbourdon.com/undionly.kpxe

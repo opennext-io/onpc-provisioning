@@ -33,15 +33,19 @@
     - name: Setting Facts From Remote Informations
       set_fact:
         clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
-        ironic: "{{ ironic_info['content'] | b64decode | regex_search('http_url *= .*') }}"
+        ironic_http: "{{ ironic_info['content'] | b64decode | regex_search('http_url *= .*') }}"
+        ironic_httpboot: "{{ ironic_info['content'] | b64decode | regex_search('http_root *= .*') }}"
+        ironic_tftpboot: "{{ ironic_info['content'] | b64decode | regex_search('tftp_root *= .*') }}"
 
     - name: Setting Fact For Ironic URL
       set_fact:
-        ironic_http_url: "{{ ironic.split(' ')[-1] }}"
+        ironic_http_url: "{{ ironic_http.split(' ')[-1] }}"
+        ironic_httpboot_path: "{{ ironic_httpboot.split(' ')[-1] }}"
+        ironic_tftpboot_path: "{{ ironic_tftpboot.split(' ')[-1] }}"
 
     - name: Retrieving IPA informations
       find:
-        paths: /httpboot
+        paths: "{{ ironic_httpboot_path }}"
         follow: yes
         patterns: '^ipa\.(vmlinuz|initramfs)$'
         use_regex: yes
@@ -49,7 +53,7 @@
 
     - name: Retrieving Deployment Image Informations
       find:
-        paths: /httpboot
+        paths: "{{ ironic_httpboot_path }}"
         follow: yes
         patterns: "^{{ deployimagefilename }}$"
         use_regex: yes
@@ -105,6 +109,44 @@
           template: "../templates/ironic_deploy_image_rule.yaml.j2",
           description: "Set initial instance_info if not defined on node"
         }
+
+    - name: "Testing OpenNext customized iPXE presence"
+      stat: path={{ ironic_tftpboot_path }}/{{ customized_ipxe | basename }}
+      register: test_customized_ipxe_present
+
+    - name: Downloading SHA256 checksum of OpenNext customized iPXE
+      get_url:
+        url: "{{ customized_ipxe }}.sha256"
+        dest: "{{ ironic_tftpboot_path }}/{{ customized_ipxe | basename }}.sha256"
+      register: customized_ipxe_chksum_result
+      when: customized_ipxe is defined and customized_ipxe | length > 0
+
+    - name: "Extracting OpenNext customized iPXE checksum"
+      shell: awk '/{{ customized_ipxe | basename }}/{print $1}' "{{ ironic_tftpboot_path }}/{{ customized_ipxe | basename }}.sha256"
+      register: parsed_customized_ipxe_chksum
+      changed_when: false
+
+    - fail:
+        msg: "Failed to extract checksum for {{ customized_ipxe | basename }}"
+      when: parsed_customized_ipxe_chksum.stdout == ""
+
+    - set_fact:
+        customized_ipxe_checksum: "sha256:{{ parsed_customized_ipxe_chksum.stdout }}"
+
+    - name: "Downloading OpenNext customized iPXE"
+      get_url:
+        url: "{{ customized_ipxe }}"
+        dest: "{{ ironic_tftpboot_path }}/{{ customized_ipxe | basename }}"
+        checksum: "{{ customized_ipxe_checksum | default(omit) }}"
+        backup: yes
+        timeout: 300
+        # Keep downloading it until we get a good copy
+        force: yes
+      register: customized_ipxe_download_done
+      until: customized_ipxe_download_done is succeeded or
+             (customized_ipxe_download_done is failed and customized_ipxe_download_done.status_code == 404)
+      retries: 5
+      delay: 10
 
     - name: Setting up VirtualBMC in virtualenv
       become: no
