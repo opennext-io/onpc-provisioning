@@ -136,9 +136,11 @@
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"
       vars:
+        force_update: true
         keys_to_store:
           - "^node_infos$"
           - "^node_ips$"
           - "^node_names$"
           - "^registered_machines$"
           - "^registered_status$"
+      when: node_register_status is defined and node_name not in node_register_status.json

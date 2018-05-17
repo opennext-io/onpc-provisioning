@@ -35,11 +35,11 @@
   action: template src=../templates/dump_var_json.j2 dest="{{ dest_fact_dump }}"
   vars:
     myvar: "{{ hostvars | to_json | hostvars_filter([], ['^ansible_local']) }}"
-  when: not fact_file_status.stat.exists
+  when: not fact_file_status.stat.exists or (force_update is defined and force_update | bool == True)
 
 - name: Dumping selected hostvars to {{ dest_fact_file }}
   become: yes
   action: template src=../templates/dump_var_json.j2 dest="{{ dest_fact_file }}"
   vars:
     myvar: "{{ hostvars | to_json | hostvars_filter(keys_to_store) }}"
-  when: not fact_file_status.stat.exists
+  when: not fact_file_status.stat.exists or (force_update is defined and force_update | bool == True)
