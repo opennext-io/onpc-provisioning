@@ -2,6 +2,7 @@
 ---
 - name: Looking Up Current Introspection Rules
   command: "bash -c '. ~{{ systemuser }}/.venv/bifrost/bin/activate && . ~{{ systemuser }}/openrc bifrost-admin && openstack baremetal introspection rule list -f value'"
+  changed_when: false
   register: current_ironic_rules
 
 - name: Trying To Match Rule Description
