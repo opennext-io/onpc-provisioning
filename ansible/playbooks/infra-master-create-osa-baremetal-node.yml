@@ -134,6 +134,13 @@
         osa_nodes: "{{ node_names }}"
         bridge_itf: "br-host"
 
+    - name: Configuring proper SSH access to baremetal nodes
+      template:
+        src: ../templates/ssh_hosts_cfg.j2
+        dest: "{{ systemuserhome }}/.ssh/config"
+      vars:
+        hosts: "{{ node_ips }}"
+
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"
       vars:
         force_update: true
