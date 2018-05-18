@@ -93,6 +93,16 @@
       register: bootstrap_aio_result
       when: is_aio
 
+    - name: Creating mandatory directories
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "/etc/openstack_deploy"
+        - "/etc/openstack_deploy/conf.d"
+        - "/etc/openstack_deploy/env.d"
+      when: not is_aio
+
 - hosts: osa-nodes
 
   tasks:
