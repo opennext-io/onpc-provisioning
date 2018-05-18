@@ -52,7 +52,7 @@
 
     - name: Asking dnsmasq to reread configuration
       action: shell pkill -HUP -f dnsmasq || true
-      ignore_errors: yes
+      failed_when: false
       when: dhcp_file_infos_changed is changed
 
     - name: Checking {{ node_name }} baremetal node status in register-helper utility agent
