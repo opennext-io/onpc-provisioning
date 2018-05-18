@@ -64,6 +64,13 @@
         }
       when: proxy_host is defined
 
+    - name: Remove known problem packages
+      package:
+        name: "{{ prohibited_systempkgs }}"
+        state: absent
+      environment: "{{ proxy_env | default('{}') }}"
+      when: prohibited_systempkgs is defined and prohibited_systempkgs | length > 0
+
     - name: Verifying all mandatory packages
       package:
         name: "{{ systempkgs | sort }}"

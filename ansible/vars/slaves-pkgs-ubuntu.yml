@@ -17,26 +17,33 @@ system:
   - acpid
   - apport
   - apt-utils
+  - apt-transport-https
   - aptitude
   - at
   - debootstrap
   - eatmydata
+  - ipython
+  - linux-image-extra-{{ ansible_kernel }}
   - linux-virtual
   - overlayroot
   - parted
   - pollinate
   - software-properties-common
   - sosreport
+  - sshpass
   - ubuntu-cloudimage-keyring
   - ubuntu-core-launcher
   - ubuntu-server
   - unzip
+  - xfsprogs
 
 dev:
   - autoconf
   - build-essential
   - git
+  - git-core
   - libsystemd-dev
+  - python-dev
 
 disk:
   - btrfs-tools
@@ -111,3 +118,7 @@ virtualization:
   - lxd
   - open-vm-tools
   - virt-what
+
+prohibited_systempkgs:
+  - libmysqlclient18
+  - mysql-common
