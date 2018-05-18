@@ -12,8 +12,6 @@
         name: squid
         state: latest
 
-  tasks:
-
     - name: Setting Facts
       set_fact:
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
@@ -21,11 +19,11 @@
 
     - name: Creating root .ssh
       file:
-            path: "{{ root_ssh_dir }}"
-            mode: 0700
-            owner: "root"
-            group: "root"
-            state: directory
+        path: "{{ root_ssh_dir }}"
+        mode: 0700
+        owner: "root"
+        group: "root"
+        state: directory
 
     - name: Retrieving OpenNext GitHub Repositories
       git:
@@ -36,6 +34,25 @@
       with_items:
         - "onpc-provisioning"
 
+    - name: Setting default facts for Squid ACLs
+      set_fact:
+        osa_nodes_ips: "{{ hostvars.get(inventory_hostname, {}).get('ansible_local', {}).get('opennext_infra_master_create_osa_nodes', {}).get(inventory_hostname, {}).get('node_ips', []) }}"
+        squid_ports_acls:
+          - { name: "SSL_ports", type: "port", argument: "22" }
+          - { name: "Safe_ports", type: "port", argument: "22" }
+        squid_ips_acls:
+          - { name: "allowed_ips", type: "src", argument: "{{ ip_prefix | default('20.20.20') }}.0/{{ ip_netmask_bits | default(24) }}" }
+
+    - block:
+      - name: Computing baremetal facts for Squid ACLs
+        set_fact:
+           l_squid_ips_acls: "{% set sel = [] %} {% for x in osa_nodes_ips | to_yaml | from_yaml %} {% set l = sel.append({ 'name': 'allowed_ips', 'type': 'src', 'argument': x }) %}{% endfor %}{{ sel }}"
+
+      - name: Setting baremetal facts for Squid ACLs
+        set_fact:
+           squid_ips_acls: "{{ [] + l_squid_ips_acls | from_yaml }}"
+      when: real_baremetal is defined and real_baremetal | bool == True
+
   roles:
     - role: kbrebanov.squid
       squid_tcp_outgoing_address: "{{ ansible_default_ipv4.address }}"
@@ -43,10 +60,7 @@
       squid_maximum_object_size: 256
       squid_cache_dir: "/var/spool/squid"
       squid_cache_dir_size: 16384
-      squid_acls:
-        - { name: "allowed_ips", type: "src", argument: "{{ ip_prefix | default('20.20.20') }}.0/{{ ip_netmask_bits | default(24) }}" }
-        - { name: "SSL_ports", type: "port", argument: "22" }
-        - { name: "Safe_ports", type: "port", argument: "22" }
+      squid_acls: "{{ squid_ports_acls + squid_ips_acls }}"
       squid_http_access_allow_clients:
         - localhost
         - allowed_ips
