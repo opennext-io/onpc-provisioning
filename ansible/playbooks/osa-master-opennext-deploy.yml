@@ -80,7 +80,7 @@
       args:
         chdir: "/opt/openstack-ansible"
         creates: "/opt/ansible-runtime/bin/ansible-playbook"
-      environment: "{{ proxy_env | default('{}') | combine({ 'TMPDIR': '/var/tmp' }) }}"
+      environment: "{{ proxy_env | default({}) | combine({ 'TMPDIR': '/var/tmp' }) }}"
       register: bootstrap_ansible_result
 
     - name: Boostrapping AIO for OSA
@@ -89,7 +89,7 @@
         chdir: "/opt/openstack-ansible"
         creates: "/etc/openstack_deploy/user_variables.yml"
         # Could also be /etc/network/interfaces.d/osa_interfaces.cfg
-      environment: "{{ proxy_env | default('{}') | combine({ 'TMPDIR': '/var/tmp', 'BOOTSTRAP_OPTS': 'bootstrap_host_data_disk_device=vdb' }) }}"
+      environment: "{{ proxy_env | default({}) | combine({ 'TMPDIR': '/var/tmp', 'BOOTSTRAP_OPTS': 'bootstrap_host_data_disk_device=vdb' }) }}"
       register: bootstrap_aio_result
       when: is_aio
 
