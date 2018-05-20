@@ -134,9 +134,9 @@
 
     - name: Setting facts for AIO mode {{ is_aio }} is false
       set_fact:
-        control_match: 'slave-.*'
-        cinder_match: 'slave-.*'
-        compute_match: 'slave-.*'
+        control_match: 'node-.*'
+        cinder_match: 'node-.*'
+        compute_match: 'node-.*'
       when: not is_aio
 
     - name: Computing OSA deployment nodes facts

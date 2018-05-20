@@ -27,9 +27,9 @@
         vmmacprefix: "52:54:01"
       with_items:
         - { name: "master", cpus: 2, mem: 4, hdd: 60, vnc: 5901, bmc: 6001 }
-        - { name: "slave-1", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5902, bmc: 6002 }
-        - { name: "slave-2", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5903, bmc: 6003 }
-        - { name: "slave-3", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5904, bmc: 6004 }
+        - { name: "node-1", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5902, bmc: 6002 }
+        - { name: "node-2", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5903, bmc: 6003 }
+        - { name: "node-3", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5904, bmc: 6004 }
       loop_control:
         loop_var: vm_item
 
