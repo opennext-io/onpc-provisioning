@@ -1,0 +1,30 @@
+# Disk and partitions configuration task
+---
+- fail: msg="Wrong disk specification {{ disk_setup }}"
+  when: disk_setup is not defined or not disk_setup.get('device_path')
+
+- name: Retrieving disk and partitions infos
+  parted:
+    device: "{{ disk_setup.get('device_path') }}"
+    state: info
+    unit: GB
+  register: disk_and_partitions_infos
+
+- name: Setting disk and partitions facts
+  set_fact:
+    found_disk_table_type: "{{ disk_and_partitions_infos.get('disk', {}).get('table') }}"
+    found_disk_size: "{{ disk_and_partitions_infos.get('disk', {}).get('size') }}"
+
+- fail: msg="Disk is too small required {{ disk_setup.get('minsize') }} found {{ found_disk_size }}"
+  when: disk_setup.get('minsize') and found_disk_size | float < disk_setup.get('minsize') | float
+
+- fail: msg="Wrong table type {{ found_disk_table_type }}"
+  when: found_disk_table_type != disk_setup.get('disk_table_type', 'gpt')
+
+- include_tasks: ../tasks/disk_partition_create.yml
+  vars:
+    disk_device: "{{ disk_setup.get('device_path') }}"
+    partition_setup: "{{ part_item }}"
+  with_items: "{{  disk_setup.get('partitions', []) }}"
+  loop_control:
+    loop_var: part_item

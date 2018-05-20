@@ -1,0 +1,92 @@
+# Disk specific partition configuration task
+---
+- fail: msg="Wrong disk name specification {{ disk_device }}"
+  when: disk_device is not defined or disk_device | length ==0
+
+- fail: msg="Wrong partition specification {{ partition_setup }}"
+  when: (partition_setup is not defined or not partition_setup.get('name')
+         or not partition_setup.get('size') or not partition_setup.get('mountpoint'))
+
+- name: Retrieving current partitions infos
+  parted:
+    device: "{{ disk_device }}"
+    state: info
+    unit: GB
+  register: partitions_infos
+
+- name: Setting partitions facts
+  set_fact:
+    found_disk_partitions: "{{ partitions_infos.get('partitions', []) }}"
+    found_disk_size: "{{ partitions_infos.get('disk', {}).get('size') }}"
+
+- name: Looking if partition {{ partition_setup.get('name') }} already exits
+  set_fact:
+    existing_partition: "{{ found_disk_partitions | selectattr('name', 'match', '^' + partition_setup.get('name') + '$') | list }}"
+    last_partition_id: "{{ found_disk_partitions | map(attribute='num') | list | max }}"
+    partitions_size: "{{ found_disk_partitions | map(attribute='size') | list | sum }}"
+
+- name: Setting extra derived disk and partitions facts
+  set_fact:
+    last_partition_infos: "{{ found_disk_partitions | selectattr('num', 'equalto', last_partition_id | int ) | list }}"
+    remaining_disk_size: "{{ (found_disk_size | float) - (partitions_size | float) }}"
+
+- fail: msg="Number of last partition found should always be 1"
+  when: last_partition_infos | length != 1
+
+- fail: msg="Not enough space remaining on disk for partition {{ partition_setup.get('name') }} required {{ partition_setup.get('size') }} remaining {{ remaining_disk_size }}"
+  when: existing_partition | length == 0 and remaining_disk_size < partition_setup.get('size') | float
+
+- name: Creating partition {{ partition_setup.get('name') }}
+  parted:
+    device: "{{ disk_device }}"
+    state: present
+    unit: GB
+    name: "{{ partition_setup.get('name') }}"
+    label: gpt
+#    flags: [ lvm ]
+    align: optimal
+    number: "{{ last_partition_id | int + 1 }}"
+    part_start: "{{ last_partition_infos[0].get('end') }}GB"
+    part_end: "{{ last_partition_infos[0].get('end') + partition_setup.get('size') }}GB"
+  environment: "{{ parted_env | default({}) | combine({ 'LC_ALL': 'C' }) }}"
+  when: existing_partition | length == 0
+
+- name: Setting partition device
+  set_fact:
+    target_partition: "{{ disk_device }}{{ last_partition_id | int + 1 }}"
+    partition_id: "{{ last_partition_id | int + 1 }}"
+  when: existing_partition | length == 0
+
+- name: Setting partition device
+  set_fact:
+    target_partition: "{{ disk_device }}{{ existing_partition[0].get('num') }}"
+    partition_id: "{{ existing_partition[0].get('num') }}"
+  when: existing_partition | length > 0
+
+#- name: Creating associated physical volume
+#  lvg:
+#    pvs: "{{ target_partition }}"
+#    vg: "{{ partition_setup.get('vg', 'os') }}-{{ partition_id }}"
+#    state: present
+
+#- name: Creating associated logical volume
+#  lvol:
+#    pvs: "{{ target_partition }}"
+#    vg: "{{ partition_setup.get('vg', 'os') }}-{{ partition_id }}"
+#    lv: "{{ partition_setup.get('lv') }}"
+#    size: '100%FREE'
+#    state: present
+
+- name: Formating {{ target_partition }} partition
+  filesystem:
+    fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
+    dev: "{{ target_partition }}"
+  when: existing_partition | length == 0
+
+- name: Creating mount points, fstab entries and mount the filesystem for {{ target_partition }}
+  mount:
+    name: "{{ partition_setup.get('mountpoint') }}"
+    src: "{{ target_partition }}"
+    fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
+    state: mounted
+

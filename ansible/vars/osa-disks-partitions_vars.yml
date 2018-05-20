@@ -1,0 +1,28 @@
+---
+# OSA disks and partitions configuration
+osa_disks: [
+    {
+      device_path: "/dev/sda",
+      minsize: 60.0,
+      partitions: [
+          {
+            name: "openstack-core",
+            lv: "os_core",
+            size: 100.0,
+            mountpoint: "/openstack",
+          },
+          {
+            name: "openstack-logs",
+            lv: "os_logs",
+            size: 100.0,
+            mountpoint: "/openstack/log",
+          },
+          {
+            name: "openstack-varliblxc",
+            lv: "os_lxc",
+            size: 100.0,
+            mountpoint: "/var/lib/lxc",
+          },
+       ],
+    },
+]

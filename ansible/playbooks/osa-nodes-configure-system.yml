@@ -14,6 +14,7 @@
     - ../vars/infra-master-deploy-bifrost_vars.yml
     - ../vars/slaves-pkgs-ubuntu.yml
     - ../vars/osa-briges-vlans_vars.yml
+    - ../vars/osa-disks-partitions_vars.yml
 
   tasks:
 
@@ -274,6 +275,13 @@
         state: directory
       with_items:
         - "/openstack"
+
+    - include_tasks: ../tasks/disk_partitions.yml
+      vars:
+        disk_setup: "{{ disk_item }}"
+      with_items: "{{ osa_disks }}"
+      loop_control:
+        loop_var: disk_item
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
