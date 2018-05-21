@@ -23,6 +23,12 @@ osa_disks: [
             size: 100.0,
             mountpoint: "/var/lib/lxc",
           },
+          {
+            name: "swap",
+            size: 16.0,
+            type: "swap",
+            fstype: "ext4",
+          },
        ],
     },
 ]

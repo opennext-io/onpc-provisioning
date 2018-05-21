@@ -5,7 +5,8 @@
 
 - fail: msg="Wrong partition specification {{ partition_setup }}"
   when: (partition_setup is not defined or not partition_setup.get('name')
-         or not partition_setup.get('size') or not partition_setup.get('mountpoint'))
+         or not partition_setup.get('size') or not (partition_setup.get('mountpoint')
+         or partition_setup.get('type') == 'swap'))
 
 - name: Retrieving current partitions infos
   parted:
@@ -77,10 +78,11 @@
 #    size: '100%FREE'
 #    state: present
 
-- name: Formating {{ target_partition }} partition
+- name: Formating {{ target_partition }} partition as {{ partition_setup.get('fstype', 'xfs') }}
   filesystem:
-    fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
     dev: "{{ target_partition }}"
+    fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
+    force: "{{ partition_setup.get('type') == 'swap' | bool }}"
   when: existing_partition | length == 0
 
 - name: Creating mount points, fstab entries and mount the filesystem for {{ target_partition }}
@@ -89,4 +91,39 @@
     src: "{{ target_partition }}"
     fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
     state: mounted
+  when: partition_setup.get('mountpoint')
 
+- name: Format the swap partition
+  command: "mkswap {{ target_partition }}"
+  when: partition_setup.get('type') == 'swap'
+
+- name: Ensure that the swap partition entry is in /etc/fstab
+  mount:
+    name: none
+    src: "{{ target_partition }}"
+    fstype: swap
+    opts: sw
+    passno: 0
+    dump: 0
+    state: present
+  when: partition_setup.get('type') == 'swap'
+
+- name: Bring swap file online
+  shell: |
+    return_code=0
+    if ! grep "{{ target_partition }}" /proc/swaps; then
+      swapon "{{ target_partition }}"
+      return_code=2
+    fi
+    exit ${return_code}
+  register: _set_swap_online
+  changed_when: _set_swap_online.rc == 2
+  failed_when: _set_swap_online.rc not in [0, 2]
+  when: partition_setup.get('type') == 'swap'
+
+- name: Set system swappiness
+  sysctl:
+    name: vm.swappiness
+    value: 10
+    state: present
+  when: partition_setup.get('type') == 'swap'
