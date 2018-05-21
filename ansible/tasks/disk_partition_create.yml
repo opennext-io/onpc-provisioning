@@ -83,7 +83,7 @@
     dev: "{{ target_partition }}"
     fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
     force: "{{ partition_setup.get('type') == 'swap' | bool }}"
-  when: existing_partition | length == 0
+  when: partition_setup.get('type') != 'swap' and existing_partition | length == 0
 
 - name: Creating mount points, fstab entries and mount the filesystem for {{ target_partition }}
   mount:
@@ -95,7 +95,7 @@
 
 - name: Format the swap partition
   command: "mkswap {{ target_partition }}"
-  when: partition_setup.get('type') == 'swap'
+  when: partition_setup.get('type') == 'swap' and existing_partition | length == 0
 
 - name: Ensure that the swap partition entry is in /etc/fstab
   mount:
