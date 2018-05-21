@@ -1,0 +1,48 @@
+---
+- name: Set sparse Cinder file default size
+  set_fact:
+    bootstrap_host_loopback_cinder_size: 1024
+
+- name: Create sparse Cinder file
+  command: "truncate -s {{ bootstrap_host_loopback_cinder_size }}G /openstack/cinder.img"
+  args:
+    creates: /openstack/cinder.img
+  register: cinder_create
+
+- name: Get a loopback device for cinder file
+  command: losetup -f
+  when: cinder_create is changed
+  register: cinder_losetup
+
+- name: Create the loopback device
+  command: "losetup {{ cinder_losetup.stdout }} /openstack/cinder.img"
+  when: cinder_create is changed
+
+- name: Set default rc.local facts
+  set_fact:
+    rc_local: /etc/rc.local
+    rc_local_insert_before: "^exit 0$"
+
+- name: Ensure that rc.local exists
+  file:
+    path: "{{ rc_local }}"
+    state: touch
+    mode: "u+x"
+
+# As the cinder loopback is an LVM VG, it needs to be mounted differently
+#  to the other loopback files. It requires the use of rc.local to attach
+#  the loopback device on boot so that the VG becomes available immediately
+#  after the boot process completes.
+- name: Create loopback devices at boot time
+  lineinfile:
+    dest:  "{{ rc_local }}"
+    line: "losetup $(losetup -f) /openstack/cinder.img"
+    insertbefore: "{{ rc_local_insert_before }}"
+
+# TODO: fix reentrency (stdout, checks, ..) all over the place
+- name: Make LVM physical volume on the cinder device
+  command: "{{ item }}"
+  when: cinder_create is changed
+  with_items:
+    - "pvcreate {{ cinder_losetup.stdout }}"
+    - "pvscan"

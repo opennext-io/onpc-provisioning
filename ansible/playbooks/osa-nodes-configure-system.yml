@@ -283,6 +283,8 @@
       loop_control:
         loop_var: disk_item
 
+    - include_tasks: ../tasks/cinder_loopback.yml
+
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
         keys_to_store:
