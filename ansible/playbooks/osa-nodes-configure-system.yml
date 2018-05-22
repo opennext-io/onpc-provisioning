@@ -343,6 +343,7 @@
       with_items: "{{ osa_disks }}"
       loop_control:
         loop_var: disk_item
+      when: not is_aio
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
