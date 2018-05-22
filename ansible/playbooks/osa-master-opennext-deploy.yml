@@ -137,6 +137,9 @@
         control_match: 'node-.*'
         cinder_match: 'node-.*'
         compute_match: 'node-.*'
+        shared_infra_hosts_name: 'infra'
+        compute_hosts_name: 'infra'
+        storage_hosts_name: 'infra'
       when: not is_aio
 
     - name: Computing OSA deployment nodes facts
@@ -149,7 +152,7 @@
         compute_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', compute_match) | list }}"
 #        neutron_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
 
-    - name: Computing OSA deployment nodes facts
+    - name: Computing OSA deployment nodes additional facts
       set_fact:
         osa_deploy_hosts_ips_infos: "{% set sel = [] %} {% for x in osa_deploy_hosts %} {% set l = sel.append(hostvars.get(x)) %}{% endfor %}{{ sel | map(attribute='ansible_all_ipv4_addresses') | flatten | reject('match', ip_reject_regex) | list | to_yaml }}"
         osa_bridges_ips_ranges: "{% set sel = [] %} {% for x in osa_bridges_ips %} {% set l = sel.append(x + '.1,' + x + '.50') %}{% endfor %}{{ sel | to_yaml }}"
@@ -161,7 +164,7 @@
       set_fact:
         osa_ips: "{{ osa_deploy_hosts_ips_infos | from_yaml + osa_bridges_ips_ranges | from_yaml }}"
 
-    - name: Retrieving template from remote host
+    - name: Retrieving openstack_user_config.yml template from remote host
       fetch:
         src: "/opt/onpc-basic-model/etc/openstack_deploy/templates/openstack_user_config.yml.j2"
         dest: "/tmp/openstack_user_config.yml.j2"
@@ -181,6 +184,23 @@
         cinder_hosts_ips: "{{ cinder_hosts_ips_l | from_yaml }}"
         compute_hosts_ips: "{{ compute_hosts_ips_l | from_yaml }}"
         neutron_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
+
+    - name: Retrieving user_variables.yml template from remote host
+      fetch:
+        src: "/opt/onpc-basic-model/etc/openstack_deploy/templates/user_variables.yml.j2"
+        dest: "/tmp/user_variables.yml.j2"
+        flat: yes
+        fail_on_missing: yes
+      when: not is_aio
+
+    - name: Templating user_variables.yml
+      template:
+        src: "/tmp/user_variables.yml.j2"
+        dest: "/etc/openstack_deploy/user_variables.yml"
+        backup: yes
+        group: root
+        mode: 0644
+      when: not is_aio
 
     - name: Setting facts for OSA user configuration file
       set_fact:
