@@ -46,6 +46,14 @@ sudo service register-helper restart
 
 This step is mandatory as today, this utility has no cleanup functionnality
 
-### Step 5: Restart provisioning
+### Step 5: Do facts cleanup on infra-master
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sudo rm -f /etc/ansible/facts.d/opennext_infra_master_create_osa_nodes* \
+           /etc/ansible/facts.d/opennext_osa_nodes_configure_system* \
+           /etc/ansible/facts.d/opennext_infra_master_opennext_post_osa_deploy*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+### Step 6: Restart provisioning
 
 Cf. README.md Step 5
