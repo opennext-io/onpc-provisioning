@@ -94,7 +94,18 @@
         mode: 0644
       when: not (nginx_info['content'] | b64decode is search (osa_nginx_regex_line))
 
+    - name: Setting some interesting facts to keep
+      set_fact:
+        osa_master_ip: "{{ osa_infos[0] }}"
+        infra_master_public_ips_and_or_names:
+          - "{{ ansible_default_ipv4.address }}"
+          - "{{ ipify_results.get('ansible_facts', {}).get('ipify_public_ip', '') }}"
+
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_opennext_post_osa_deploy"
+      vars:
+        keys_to_store:
+          - "^osa_infos$"
+          - "^infra_master_public_ips_and_or_names$"
 
   handlers:
     - name: restart nginx
