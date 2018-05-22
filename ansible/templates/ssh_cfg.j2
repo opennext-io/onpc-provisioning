@@ -1,4 +1,24 @@
 # {{ ansible_managed }}
+{% if ips is defined %}
+
+# IPs
+{% for h in ips %}
+Host {{ h }}
+StrictHostKeyChecking no
+UserKnownHostsFile /dev/null
+
+{% endfor %}
+{% endif %}
+{% if vlans is defined %}
+
+# VLANS
+{% for h in vlans %}
+Host {{ h }}.*
+StrictHostKeyChecking no
+UserKnownHostsFile /dev/null
+
+{% endfor %}
+{% endif %}
 
 Host {{ ip_prefix | default('20.20.20') }}.*
 User vagrant
@@ -6,6 +26,7 @@ StrictHostKeyChecking no
 UserKnownHostsFile /dev/null
 
 {% if proxy_host is defined %}
+# Proxy
 Host github.com
 ProxyCommand connect-proxy -H {{ proxy_host }}:{{ proxy_port | default(3128) }} %h %p
 {% endif %}
