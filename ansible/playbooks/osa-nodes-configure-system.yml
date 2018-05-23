@@ -45,6 +45,27 @@
       set_fact:
         ip_prefix: "{{ ip_prefixes[0] }}"
 
+    - name: Checking dynamic hostname
+      command: "hostname"
+      changed_when: false
+      register: hostname_result
+
+    - name: Changing dynamic hostname to {{ inventory_hostname }}
+      command: "hostname {{ inventory_hostname }}"
+      when: hostname_result.stdout != inventory_hostname
+
+    - name: Updating /etc/hostname with {{ inventory_hostname }}
+      replace:
+        path: /etc/hostname
+        regexp: '^ubuntu$'
+        replace: '{{ inventory_hostname }}'
+
+    - name: Updating /etc/hosts with {{ inventory_hostname }}
+      replace:
+        path: /etc/hosts
+        regexp: '(\s+)ubuntu(\s+.*)?$'
+        replace: '\1{{ inventory_hostname }}\2'
+
     - name: Setting proper perms on {{ systemuser }} .ssh
       file:
         path: "{{ systemuserhome }}/.ssh"
