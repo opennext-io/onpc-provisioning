@@ -26,7 +26,15 @@
         vbmc_port: "{{ vm_item.bmc }}"
         vmmacprefix: "52:54:00"
       with_items:
-        - { name: "osa-aio", cpus: 10, mem: 48, disks: 3, hdd: 100, vnc: 5901, bmc: 6001 }
+        - {
+          name: "osa-aio",
+          cpus: "{{ aio_cpus | default(10) | int }}",
+          mem: "{{ aio_mem | default(48) | int }}",
+          disks: "{{ aio_disks | default(3) | int }}",
+          hdd: "{{ aio_disk_size | default(100) | int }}",
+          vnc: 5901,
+          bmc: 6001,
+        }
       loop_control:
         loop_var: vm_item
 

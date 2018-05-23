@@ -211,6 +211,11 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-crea
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This will provide ground for a proper single box aka all-in-one aka AIO OSA deployment.
+You can also customize the AIO VM and specify values for #CPUs, memory, #HDDs, HDD-size
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master-ikoula-56 ansible/playbooks/infra-master-create-osa-aio-vm.yml -e aio_cpus=8 -e aio_disks=1 -e aio_disk_size=500
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can also choose to have a multi-vm deployment using:
 

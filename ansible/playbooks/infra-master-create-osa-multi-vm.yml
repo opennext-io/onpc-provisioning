@@ -26,10 +26,42 @@
         vbmc_port: "{{ vm_item.bmc }}"
         vmmacprefix: "52:54:01"
       with_items:
-        - { name: "master", cpus: 2, mem: 4, hdd: 60, vnc: 5901, bmc: 6001 }
-        - { name: "node-1", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5902, bmc: 6002 }
-        - { name: "node-2", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5903, bmc: 6003 }
-        - { name: "node-3", cpus: 8, mem: 12, disks: 3, hdd: 100, vnc: 5904, bmc: 6004 }
+        - {
+          name: "osa-master",
+          cpus: "{{ osa_master_cpus | default(2) | int }}",
+          mem: "{{ osa_master_mem | default(4) | int }}",
+          disks: "{{ osa_master_disks | default(1) | int }}",
+          hdd: "{{ osa_master_disk_size | default(60) | int }}",
+          vnc: 5901,
+          bmc: 6001,
+        }
+        - {
+          name: "node-1",
+          cpus: "{{ osa_nodes_cpus | default(8) | int }}",
+          mem: "{{ osa_nodes_mem | default(12) | int }}",
+          disks: "{{ osa_nodes_disks | default(3) | int }}",
+          hdd: "{{ osa_nodes_disk_size | default(100) | int }}",
+          vnc: 5902,
+          bmc: 6002,
+        }
+        - {
+          name: "node-2",
+          cpus: "{{ osa_nodes_cpus | default(8) | int }}",
+          mem: "{{ osa_nodes_mem | default(12) | int }}",
+          disks: "{{ osa_nodes_disks | default(3) | int }}",
+          hdd: "{{ osa_nodes_disk_size | default(100) | int }}",
+          vnc: 5903,
+          bmc: 6003,
+        }
+        - {
+          name: "node-3",
+          cpus: "{{ osa_nodes_cpus | default(8) | int }}",
+          mem: "{{ osa_nodes_mem | default(12) | int }}",
+          disks: "{{ osa_nodes_disks | default(3) | int }}",
+          hdd: "{{ osa_nodes_disk_size | default(100) | int }}",
+          vnc: 5904,
+          bmc: 6004,
+        }
       loop_control:
         loop_var: vm_item
 
