@@ -24,11 +24,16 @@
 
     - name: Setting Facts
       set_fact:
+        osa_deploy_conf_path: "/etc/openstack_deploy"
         ip_prefixes: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).values() | selectattr('ip_prefix', 'defined') | map(attribute='ip_prefix') | list | unique }}"
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
         dest_repo_dir: "{{ dest_github_repo_dir | default('/opt') }}"
         is_aio: "{{ hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1 | bool }}"
         # Could also be osa-master instead of infra-master
+
+    - name: Setting extra facts
+      set_fact:
+        osa_user_conf_file: "{{ osa_deploy_conf_path }}/user_variables.yml"
 
     - fail: msg="Missing ip_prefix information"
       when: ip_prefixes | length != 1
@@ -75,7 +80,7 @@
         - "onpc-logging"
         - "onpc-monitoring"
       environment: "{{ proxy_env | default('{}') }}"
- 
+
     - name: Boostrapping Ansible for OSA
       command: "./scripts/bootstrap-ansible.sh"
       args:
@@ -88,7 +93,7 @@
       command: "./scripts/bootstrap-aio.sh"
       args:
         chdir: "/opt/openstack-ansible"
-        creates: "/etc/openstack_deploy/user_variables.yml"
+        creates: "{{ osa_user_conf_file }}"
         # Could also be /etc/network/interfaces.d/osa_interfaces.cfg
       environment: "{{ proxy_env | default({}) | combine({ 'TMPDIR': '/var/tmp', 'BOOTSTRAP_OPTS': 'bootstrap_host_data_disk_device=vdb' }) }}"
       register: bootstrap_aio_result
@@ -99,10 +104,27 @@
         path: "{{ item }}"
         state: directory
       with_items:
-        - "/etc/openstack_deploy"
-        - "/etc/openstack_deploy/conf.d"
-        - "/etc/openstack_deploy/env.d"
+        - "{{ osa_deploy_conf_path }}"
+        - "{{ osa_deploy_conf_path }}/conf.d"
+        - "{{ osa_deploy_conf_path }}/env.d"
       when: not is_aio
+
+    - name: Checking existence of user_secrets.yml
+      stat:
+        path: "{{ osa_deploy_conf_path }}/user_secrets.yml"
+      register: user_secrets_info
+
+    - name: Copying template of user_secrets.yml
+      copy:
+        src: "/opt/openstack-ansible/etc/openstack_deploy/user_secrets.yml"
+        dest: "{{ osa_deploy_conf_path }}/user_secrets.yml"
+        remote_src: yes
+      when: not user_secrets_info.stat.exists
+
+    - name: Generating any missing values in user_secrets
+      command: "/opt/ansible-runtime/bin/python /opt/openstack-ansible/scripts/pw-token-gen.py --file {{ osa_deploy_conf_path }}/user_secrets.yml"
+      changed_when: false
+      when: not user_secrets_info.stat.exists
 
 - hosts: osa-nodes
 
@@ -165,17 +187,17 @@
       set_fact:
         osa_ips: "{{ osa_deploy_hosts_ips_infos | from_yaml + osa_bridges_ips_ranges | from_yaml }}"
 
-    - name: Retrieving openstack_user_config.yml template from remote host
+    - name: Retrieving OpenNext openstack_user_config.yml template from osa-master host
       fetch:
         src: "/opt/onpc-basic-model/etc/openstack_deploy/templates/openstack_user_config.yml.j2"
         dest: "/tmp/openstack_user_config.yml.j2"
         flat: yes
         fail_on_missing: yes
 
-    - name: Templating openstack_user_config.yml
+    - name: Writing openstack_user_config.yml on osa-master host
       template:
         src: "/tmp/openstack_user_config.yml.j2"
-        dest: "/etc/openstack_deploy/openstack_user_config.yml"
+        dest: "{{ osa_deploy_conf_path }}/openstack_user_config.yml"
         backup: yes
         group: root
         mode: 0644
@@ -186,17 +208,17 @@
         compute_hosts_ips: "{{ compute_hosts_ips_l | from_yaml }}"
         neutron_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
 
-    - name: Retrieving user_variables.yml template from remote host
+    - name: Retrieving OpenNext user_variables.yml template from osa-master host
       fetch:
         src: "/opt/onpc-basic-model/etc/openstack_deploy/templates/user_variables.yml.j2"
         dest: "/tmp/user_variables.yml.j2"
         flat: yes
         fail_on_missing: yes
 
-    - name: Templating user_variables.yml
+    - name: Writing user_variables.yml on osa-master host
       template:
         src: "/tmp/user_variables.yml.j2"
-        dest: "/etc/openstack_deploy/user_variables.yml"
+        dest: "{{ osa_user_conf_file }}"
         backup: yes
         group: root
         mode: 0644
@@ -204,11 +226,10 @@
 
     - name: Setting facts for OSA user configuration file
       set_fact:
-        osa_user_conf_file: "/etc/openstack_deploy/user_variables.yml"
         osa_vars_additions: "{%- raw %}{{ lookup('template', '../templates/osa_additional_user_variables.yml.j2') }}{%- endraw %}"
         onpc_osa_user_config: "{%- raw %}{{ lookup('template', '/tmp/user_variables.yml.j2') }}{%- endraw %}"
 
-    - name: Retrieving remote OSA user configuration
+    - name: Retrieving OSA user configuration from osa-master host
       slurp:
         src: "{{ osa_user_conf_file }}"
       register: osa_user_info
@@ -217,7 +238,7 @@
       set_fact:
         osa_user_config: "{{ osa_user_info['content'] | b64decode | from_yaml }}"
 
-    - name: Storing new /etc/openstack_deploy/user_variables.yml
+    - name: Storing new {{ osa_user_conf_file }} on osa-master host
       copy:
         dest: "{{ osa_user_conf_file }}"
         content: "{{ osa_user_config | combine(onpc_osa_user_config | from_yaml) | combine(osa_vars_additions | from_yaml) | to_nice_yaml(indent=4) }}"
