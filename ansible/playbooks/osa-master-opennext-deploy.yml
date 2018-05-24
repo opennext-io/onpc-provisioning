@@ -191,7 +191,6 @@
         dest: "/tmp/user_variables.yml.j2"
         flat: yes
         fail_on_missing: yes
-      when: not is_aio
 
     - name: Templating user_variables.yml
       template:
@@ -206,23 +205,25 @@
       set_fact:
         osa_user_conf_file: "/etc/openstack_deploy/user_variables.yml"
         osa_vars_additions: "{%- raw %}{{ lookup('template', '../templates/osa_additional_user_variables.yml.j2') }}{%- endraw %}"
+        onpc_osa_user_config: "{%- raw %}{{ lookup('template', '/tmp/user_variables.yml.j2') }}{%- endraw %}"
 
     - name: Retrieving remote OSA user configuration
       slurp:
         src: "{{ osa_user_conf_file }}"
-      register:
-        osa_user_info
+      register: osa_user_info
 
-    - name: Adding proxy variables to /etc/openstack_deploy/user_variables.yml
-      lineinfile:
-        path: "{{ osa_user_conf_file }}"
-        line: "{{ osa_vars_additions }}"
+    - name: Setting fact for OSA user configuration contents
+      set_fact:
+        osa_user_config: "{{ osa_user_info['content'] | b64decode | from_yaml }}"
+
+    - name: Storing new /etc/openstack_deploy/user_variables.yml
+      copy:
+        dest: "{{ osa_user_conf_file }}"
+        content: "{{ osa_user_config | combine(onpc_osa_user_config | from_yaml) | combine(osa_vars_additions | from_yaml) | to_nice_yaml(indent=4) }}"
         backup: yes
-        state: present
         owner: root
         group: root
         mode: 0644
-      when: not (osa_user_info['content'] | b64decode is search ('deployment_environment_variables'))
 
     - name: Adding OSA final deployment script
       copy:
