@@ -381,6 +381,9 @@
         loop_var: disk_item
       when: not is_aio
 
+    - include_tasks: ../tasks/cinder_loopback.yml
+      when: not is_aio
+
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
         keys_to_store:
