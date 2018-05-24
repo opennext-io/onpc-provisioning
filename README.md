@@ -252,6 +252,12 @@ Please note that the final task in osa-master-opennext-deploy.yml can take a ver
 If you want to see progress on this task, log into the osa-master node (which IP you will find in ~vagrant/osa-inventory)
 and, as root, do a tail -f /var/log/osa_run_playbooks*.logs.
 
+If you want to also run the tempest tests at the very end of the deployment, you can add the following option:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml -e run_tempest_tests=yes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ### Step 8: OpenNext post OSA deployment
 
 Now that OpenStack Ansible is successfully deployed, the following
@@ -261,4 +267,3 @@ like nginx to provide access to Horizon and Grafana
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-post-osa-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
