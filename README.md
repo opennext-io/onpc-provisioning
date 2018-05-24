@@ -224,6 +224,11 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-crea
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This will provide ground for a proper multi (4) VMs OSA deployment.
+You can also customize the OSA VMs and specify values for #CPUs, memory, #HDDs, HDD-size
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml -e osa_nodes_disks=2 -e osa_nodes_disk_size=200
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Anyhow, all VMs will get provisioned with IPA image (Ironic Python Agent) and register
 automatically into ironic to wait for proper provisioning.
