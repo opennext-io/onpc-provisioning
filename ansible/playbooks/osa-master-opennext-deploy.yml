@@ -72,6 +72,7 @@
         force: yes
         recursive: no
       with_items:
+        - "onpc-logging"
         - "onpc-monitoring"
       environment: "{{ proxy_env | default('{}') }}"
  
