@@ -44,35 +44,36 @@
     - name: Setting facts
       set_fact:
         ip_prefix: "{{ ip_prefixes[0] }}"
+        fqdn: "{{ inventory_hostname }}.openstack.local"
 
     - name: Checking dynamic hostname
       command: "hostname"
       changed_when: false
       register: hostname_result
 
-    - name: Updating /etc/hosts with {{ inventory_hostname }}
+    - name: Updating /etc/hosts with {{ fqdn }}
       replace:
         path: /etc/hosts
         regexp: '(\s+)ubuntu(\s+.*)?$'
-        replace: '\1{{ inventory_hostname }} ubuntu\2'
-      when: hostname_result.stdout != inventory_hostname
+        replace: '\1{{ fqdn }} {{ inventory_hostname }} ubuntu\2'
+      when: hostname_result.stdout != fqdn
 
-    - name: Changing dynamic hostname to {{ inventory_hostname }}
-      command: "hostname {{ inventory_hostname }}"
-      when: hostname_result.stdout != inventory_hostname
+    - name: Changing dynamic hostname to {{ fqdn }}
+      command: "hostname {{ fqdn }}"
+      when: hostname_result.stdout != fqdn
 
-    - name: Updating /etc/hosts with {{ inventory_hostname }}
+    - name: Updating /etc/hosts with {{ fqdn }}
       replace:
         path: /etc/hosts
-        regexp: '(\s+){{ inventory_hostname }} ubuntu(\s+.*)?$'
-        replace: '\1{{ inventory_hostname }}\2'
-      when: hostname_result.stdout != inventory_hostname
+        regexp: '(\s+){{ fqdn }} {{ inventory_hostname }} ubuntu(\s+.*)?$'
+        replace: '\1{{ fqdn }} {{ inventory_hostname }}\2'
+      when: hostname_result.stdout != fqdn
 
-    - name: Updating /etc/hostname with {{ inventory_hostname }}
+    - name: Updating /etc/hostname with {{ fqdn }}
       replace:
         path: /etc/hostname
         regexp: '^ubuntu$'
-        replace: '{{ inventory_hostname }}'
+        replace: '{{ fqdn }}'
 
     - name: Setting proper perms on {{ systemuser }} .ssh
       file:
