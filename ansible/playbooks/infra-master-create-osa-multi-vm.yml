@@ -36,7 +36,7 @@
           bmc: 6001,
         }
         - {
-          name: "node-1",
+          name: "infra1",
           cpus: "{{ osa_nodes_cpus | default(8) | int }}",
           mem: "{{ osa_nodes_mem | default(12) | int }}",
           disks: "{{ osa_nodes_disks | default(3) | int }}",
@@ -45,7 +45,7 @@
           bmc: 6002,
         }
         - {
-          name: "node-2",
+          name: "infra2",
           cpus: "{{ osa_nodes_cpus | default(8) | int }}",
           mem: "{{ osa_nodes_mem | default(12) | int }}",
           disks: "{{ osa_nodes_disks | default(3) | int }}",
@@ -54,7 +54,7 @@
           bmc: 6003,
         }
         - {
-          name: "node-3",
+          name: "infra3",
           cpus: "{{ osa_nodes_cpus | default(8) | int }}",
           mem: "{{ osa_nodes_mem | default(12) | int }}",
           disks: "{{ osa_nodes_disks | default(3) | int }}",

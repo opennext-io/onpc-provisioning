@@ -157,9 +157,9 @@
 
     - name: Setting facts for AIO mode {{ is_aio }} is false
       set_fact:
-        control_match: 'node-.*'
-        cinder_match: 'node-.*'
-        compute_match: 'node-.*'
+        control_match: 'infra.*'
+        cinder_match: 'infra.*'
+        compute_match: 'infra.*'
         shared_infra_hosts_name: 'infra'
         compute_hosts_name: 'infra'
         storage_hosts_name: 'infra'
