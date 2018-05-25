@@ -9,6 +9,7 @@
     state: info
     unit: GB
   register: disk_and_partitions_infos
+  environment: "{{ parted_env | default({}) | combine({ 'LC_ALL': 'C' }) }}"
 
 - name: Setting disk and partitions facts
   set_fact:

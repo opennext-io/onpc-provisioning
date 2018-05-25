@@ -13,6 +13,7 @@
     device: "{{ disk_device }}"
     state: info
     unit: GB
+  environment: "{{ parted_env | default({}) | combine({ 'LC_ALL': 'C' }) }}"
   register: partitions_infos
 
 - name: Setting partitions facts
@@ -47,8 +48,8 @@
 #    flags: [ lvm ]
     align: optimal
     number: "{{ last_partition_id | int + 1 }}"
-    part_start: "{{ last_partition_infos[0].get('end') }}GB"
-    part_end: "{{ last_partition_infos[0].get('end') + partition_setup.get('size') }}GB"
+    part_start: "{{ last_partition_infos[0].get('end') | float }}GB"
+    part_end: "{{ last_partition_infos[0].get('end') | float + partition_setup.get('size') | float }}GB"
   environment: "{{ parted_env | default({}) | combine({ 'LC_ALL': 'C' }) }}"
   when: existing_partition | length == 0
 
