@@ -58,6 +58,7 @@
 
 - name: Checking existence of {{ diskname }} for {{ vmname }}
   command: "virsh vol-list --pool default"
+  changed_when: false
   register: vol_list
 
 - name: Setting fact for disk name
@@ -70,6 +71,7 @@
 
 - name: Retrieving infos on {{ diskname }} for {{ vmname }}
   command: "virsh vol-list --pool default"
+  changed_when: false
   register: vol_list
 
 - fail: msg="Error retrieving {{ diskname }} for {{ vmname }} in default pool for KVM/libvirt"

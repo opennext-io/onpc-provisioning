@@ -116,6 +116,7 @@
   command: "vbmc show {{ vmname }}"
   environment: "{{ vbmc_venv }}"
   ignore_errors: yes
+  changed_when: false
   register: vm_already_running
 
 - name: Registering {{ vmname }} VM to VBMC IPMI agent
