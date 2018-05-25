@@ -20,7 +20,7 @@
       set_fact:
         osa_node_ips: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_create_osa_nodes', {}).get(infra_master_ip, {}).get('node_ips', []) }}"
 
-- hosts: osa-nodes
+- hosts: osa-nodes,osa-master
   become: yes
 
   vars_files:
@@ -372,6 +372,7 @@
         state: directory
       with_items:
         - "/openstack"
+      when: inventory_hostname != 'osa-master'
 
     - include_tasks: ../tasks/disk_partitions.yml
       vars:
@@ -379,10 +380,10 @@
       with_items: "{{ osa_disks }}"
       loop_control:
         loop_var: disk_item
-      when: not is_aio
+      when: not is_aio and inventory_hostname != 'osa-master'
 
     - include_tasks: ../tasks/cinder_loopback.yml
-      when: not is_aio
+      when: not is_aio and inventory_hostname != 'osa-master'
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
