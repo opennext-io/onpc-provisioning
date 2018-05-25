@@ -102,10 +102,11 @@
         src: ../templates/inventory.cfg.j2
         dest: "{{ systemuserhome }}/osa-inventory"
       vars:
-        # TODO next variables to be retrieved from facts
+        # TODO: next variables to be retrieved from facts
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
-        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
-        osa_nodes: "{{ node_names }}"
+        # TODO: be carefull as OSA master is taken as the 1st in the list, should potentially be more predictive
+        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get('osa-master').get('extra/all/interfaces/eth0/ip') }}"
+        osa_nodes: "{{ node_names | difference(['osa-master']) }}"
         bridge_itf: "{{ kvm_bridge_itf }}"
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"
