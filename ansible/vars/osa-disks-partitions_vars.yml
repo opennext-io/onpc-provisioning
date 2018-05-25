@@ -2,30 +2,30 @@
 # OSA disks and partitions configuration
 osa_disks: [
     {
-      device_path: "/dev/sda",
+      device_path: "{{ base_system_disk_device | default('/dev/sda') }}",
       minsize: 60.0,
       partitions: [
           {
             name: "openstack-core",
             lv: "os_core",
-            size: 100.0,
+            size: "{{ base_partition_size | default(100.0) | float }}",
             mountpoint: "/openstack",
           },
           {
             name: "openstack-logs",
             lv: "os_logs",
-            size: 100.0,
+            size: "{{ base_partition_size | default(100.0) | float }}",
             mountpoint: "/openstack/log",
           },
           {
             name: "openstack-varliblxc",
             lv: "os_lxc",
-            size: 100.0,
+            size: "{{ base_partition_size | default(100.0) | float }}",
             mountpoint: "/var/lib/lxc",
           },
           {
             name: "swap",
-            size: 16.0,
+            size: "{{ base_swap_partition_size | default(16.0) | float }}",
             type: "swap",
             fstype: "ext4",
           },
