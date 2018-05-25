@@ -202,6 +202,7 @@
         group: root
         mode: 0644
       vars:
+        bootstrap_host_public_address: "{{ external_public_vip_address.split('/')[0] }}"
         reserved_ips: "{{ osa_ips | sort }}"
         controller_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
         cinder_hosts_ips: "{{ cinder_hosts_ips_l | from_yaml }}"
@@ -214,6 +215,12 @@
         dest: "/tmp/user_variables.yml.j2"
         flat: yes
         fail_on_missing: yes
+
+    - name: Setting OpenNext facts
+      set_fact:
+        hapk_int_vip_cidr: "{{ internal_public_vip_address }}"
+        hapk_ext_vip_cidr: "{{ external_public_vip_address }}"
+        hapk_ext_itf: "{{ external_public_vip_itf }}"
 
     - name: Writing user_variables.yml on osa-master host
       template:

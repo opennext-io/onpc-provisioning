@@ -85,6 +85,8 @@
         node_infos: "{{ hostvars[inventory_hostname].registered_status.json }}"
         node_names: "{{ hostvars[inventory_hostname].registered_status.json | json_query('keys(@)') }}"
         node_ips: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/all/interfaces/eth0/ip') | list }}"
+        int_vip_addr: "{{ hostvars[inventory_hostname].ansible_br_mgmt.ipv4 }}"
+        pub_addr: "{{ hostvars[inventory_hostname].ansible_br_prov.ipv4 }}"
 
     - name: Waiting for VMs to be reachable by SSH
       wait_for:
@@ -108,6 +110,10 @@
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get('osa-master').get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names | difference(['osa-master']) }}"
         bridge_itf: "{{ kvm_bridge_itf }}"
+        ext_pub_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['infra1']['matching_ether_itfs'] }}"
+        ext_pub_vip_addr: "{{ (pub_addr['network'] ~ '/' ~ pub_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
+        int_pub_vip_itf: "br-mgmt"
+        int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"
       vars:

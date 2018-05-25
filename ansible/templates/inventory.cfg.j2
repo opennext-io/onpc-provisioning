@@ -12,3 +12,7 @@ osa-master ansible_host={{ osa_master_ip }}
 [all:vars]
 ansible_user=vagrant
 proxy_host={{ hostvars[inventory_hostname]['ansible_' + bridge_itf | replace('-', '_') ]['ipv4']['address'] }}
+external_public_vip_itf={{ ext_pub_vip_itf }}
+external_public_vip_address={{ ext_pub_vip_addr }}
+internal_public_vip_itf={{ int_pub_vip_itf }}
+internal_public_vip_address={{ int_pub_vip_addr }}

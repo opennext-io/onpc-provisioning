@@ -112,6 +112,8 @@
         node_infos: "{{ hostvars[inventory_hostname].registered_status.json }}"
         node_names: "{{ hostvars[inventory_hostname].registered_status.json | json_query('keys(@)') }}"
         node_ips: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/all/interfaces/eth0/ip') | list }}"
+        int_vip_addr: "{{ hostvars[inventory_hostname].ansible_br_mgmt.ipv4 }}"
+        pub_addr: "{{ hostvars[inventory_hostname].ansible_br_prov.ipv4 }}"
 
     - name: Waiting for baremetal nodes to be reachable by SSH
       wait_for:
@@ -133,6 +135,10 @@
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names }}"
         bridge_itf: "br-host"
+        ext_pub_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['infra1']['matching_ether_itfs'] }}"
+        ext_pub_vip_addr: "{{ (pub_addr['network'] ~ '/' ~ pub_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
+        int_pub_vip_itf: "br-mgmt"
+        int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
 
     - name: Configuring proper SSH access to baremetal nodes
       template:
