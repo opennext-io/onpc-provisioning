@@ -40,6 +40,7 @@
     insertbefore: "{{ rc_local_insert_before }}"
 
 # TODO: fix reentrency (stdout, checks, ..) all over the place
+# TODO: check&fix changed state
 - name: Make LVM physical volume on the cinder device
   command: "{{ item }}"
   when: cinder_create is changed
@@ -47,8 +48,19 @@
     - "pvcreate {{ cinder_losetup.stdout }}"
     - "pvscan"
 
+- name: Retrieve loopback device for cinder file
+  shell: "losetup | grep /openstack/cinder.img | awk '{print $1}'"
+  changed_when: false
+  register: cinder_losetup_final
+
+- name: Retrieve loopback device for cinder file
+  shell: "vgs | grep -q cinder-volumes"
+  failed_when: false
+  changed_when: false
+  register: cinder_vgs
+
 - name: Add cinder-volumes volume group
   lvg:
     vg: cinder-volumes
-    pvs: "{{ cinder_losetup.stdout }}"
-  when: cinder_create is changed
+    pvs: "{{ cinder_losetup.get('stdout', cinder_losetup_final.stdout) }}"
+  when: cinder_create is changed or cinder_vgs.rc == 1
