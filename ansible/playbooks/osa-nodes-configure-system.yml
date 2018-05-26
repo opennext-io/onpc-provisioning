@@ -56,24 +56,25 @@
         path: /etc/hosts
         regexp: '(\s+)ubuntu(\s+.*)?$'
         replace: '\1{{ fqdn }} {{ inventory_hostname }} ubuntu\2'
-      when: hostname_result.stdout != fqdn
+      when: hostname_result.stdout != fqdn and (not is_aio or inventory_hostname != 'osa-master')
 
     - name: Changing dynamic hostname to {{ fqdn }}
       command: "hostname {{ fqdn }}"
-      when: hostname_result.stdout != fqdn
+      when: hostname_result.stdout != fqdn and (not is_aio or inventory_hostname != 'osa-master')
 
     - name: Updating /etc/hosts with {{ fqdn }}
       replace:
         path: /etc/hosts
         regexp: '(\s+){{ fqdn }} {{ inventory_hostname }} ubuntu(\s+.*)?$'
         replace: '\1{{ fqdn }} {{ inventory_hostname }}\2'
-      when: hostname_result.stdout != fqdn
+      when: hostname_result.stdout != fqdn and (not is_aio or inventory_hostname != 'osa-master')
 
     - name: Updating /etc/hostname with {{ fqdn }}
       replace:
         path: /etc/hostname
         regexp: '^ubuntu$'
         replace: '{{ fqdn }}'
+      when: hostname_result.stdout != fqdn and (not is_aio or inventory_hostname != 'osa-master')
 
     - name: Setting proper perms on {{ systemuser }} .ssh
       file:
