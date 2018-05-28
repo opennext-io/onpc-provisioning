@@ -153,6 +153,7 @@
         shared_infra_hosts_name: 'aio'
         compute_hosts_name: 'aio'
         storage_hosts_name: 'aio'
+        external_public_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['osa-master']['matching_ether_itfs'] }}"
       when: is_aio
 
     - name: Setting facts for AIO mode {{ is_aio }} is false
@@ -163,6 +164,7 @@
         shared_infra_hosts_name: 'infra'
         compute_hosts_name: 'infra'
         storage_hosts_name: 'infra'
+        external_public_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['infra1']['matching_ether_itfs'] }}"
       when: not is_aio
 
     - name: Computing OSA deployment nodes facts
