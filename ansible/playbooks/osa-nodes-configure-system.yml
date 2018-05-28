@@ -334,12 +334,13 @@
         remaining_itfs: "{{ cur_interfaces.get('ifaces', {}).keys() | difference(['lo', matching_ether_itfs]) }}"
       when: not is_aio or inventory_hostname != 'osa-master'
 
-    - name: Moving {{ remaining_itfs[0] }} primary ethernet interface to its own config file
+    - name: Moving {{ remaining_itfs[0] }} secondary ethernet interface to its own config file
       interfaces_file:
         src: /etc/network/interfaces
         dest: "/etc/network/interfaces.d/{{ remaining_itfs[0] }}.cfg"
         iface: "{{ remaining_itfs[0] }}"
         state: move
+        method: manual
       register: secondary_changed
       when: (not is_aio or inventory_hostname != 'osa-master') and remaining_itfs | length > 0
 
