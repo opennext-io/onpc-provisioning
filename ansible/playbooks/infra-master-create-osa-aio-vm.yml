@@ -27,7 +27,7 @@
         vmmacprefix: "52:54:00"
       with_items:
         - {
-          name: "osa-aio",
+          name: "aio1",
           cpus: "{{ aio_cpus | default(10) | int }}",
           mem: "{{ aio_mem | default(48) | int }}",
           disks: "{{ aio_disks | default(3) | int }}",

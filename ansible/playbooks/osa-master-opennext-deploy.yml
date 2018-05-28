@@ -147,9 +147,9 @@
 
     - name: Setting facts for AIO mode {{ is_aio }} is true
       set_fact:
-        control_match: 'osa-aio'
-        cinder_match: 'osa-aio'
-        compute_match: 'osa-aio'
+        control_match: 'aio1'
+        cinder_match: 'aio1'
+        compute_match: 'aio1'
         shared_infra_hosts_name: 'aio'
         compute_hosts_name: 'aio'
         storage_hosts_name: 'aio'
