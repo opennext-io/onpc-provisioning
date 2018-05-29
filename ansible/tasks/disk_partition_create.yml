@@ -61,7 +61,7 @@
     unit: GB
     name: "{{ partition_setup.get('name') }}"
     label: gpt
-#    flags: [ lvm ]
+    flags: [ lvm ]
     align: optimal
     number: "{{ last_partition_id | int + 1 }}"
     part_start: "{{ last_partition_infos[0].get('end') | float }}GB"
@@ -81,43 +81,46 @@
     partition_id: "{{ existing_partition[0].get('num') }}"
   when: existing_partition | length > 0
 
-#- name: Creating associated physical volume
-#  lvg:
-#    pvs: "{{ target_partition }}"
-#    vg: "{{ partition_setup.get('vg', 'os') }}-{{ partition_id }}"
-#    state: present
+- name: Creating associated physical volume
+  lvg:
+    pvs: "{{ target_partition }}"
+    vg: "{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}"
+    state: present
+  register: pv_status
 
-#- name: Creating associated logical volume
-#  lvol:
-#    pvs: "{{ target_partition }}"
-#    vg: "{{ partition_setup.get('vg', 'os') }}-{{ partition_id }}"
-#    lv: "{{ partition_setup.get('lv') }}"
-#    size: '100%FREE'
-#    state: present
+- name: Creating associated logical volume
+  lvol:
+    pvs: "{{ target_partition }}"
+    vg: "{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}"
+    lv: "{{ partition_setup.get('lv') }}"
+    size: '100%FREE'
+    state: present
+  when: pv_status is changed
+  register: lv_status
 
 - name: Formating {{ target_partition }} partition as {{ partition_setup.get('fstype', 'xfs') }}
   filesystem:
-    dev: "{{ target_partition }}"
+    dev: "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
     fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
     force: "{{ partition_setup.get('type') == 'swap' | bool }}"
-  when: partition_setup.get('type') != 'swap' and existing_partition | length == 0
+  when: partition_setup.get('type') != 'swap' and existing_partition | length == 0 and lv_status is changed
 
 - name: Creating mount points, fstab entries and mount the filesystem for {{ target_partition }}
   mount:
     name: "{{ partition_setup.get('mountpoint') }}"
-    src: "{{ target_partition }}"
+    src: "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
     fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
     state: mounted
   when: partition_setup.get('mountpoint')
 
 - name: Format the swap partition
-  command: "mkswap {{ target_partition }}"
+  command: "mkswap /dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
   when: partition_setup.get('type') == 'swap' and existing_partition | length == 0
 
 - name: Ensure that the swap partition entry is in /etc/fstab
   mount:
     name: none
-    src: "{{ target_partition }}"
+    src: "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
     fstype: swap
     opts: sw
     passno: 0
@@ -128,8 +131,8 @@
 - name: Bring swap file online
   shell: |
     return_code=0
-    if ! grep "{{ target_partition }}" /proc/swaps; then
-      swapon "{{ target_partition }}"
+    if ! grep "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}" /proc/swaps; then
+      swapon "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
       return_code=2
     fi
     exit ${return_code}
