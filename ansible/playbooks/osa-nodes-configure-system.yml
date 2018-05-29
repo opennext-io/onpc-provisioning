@@ -173,6 +173,13 @@
         }
       when: (not is_aio or inventory_hostname != 'osa-master') and proxy_host is defined
 
+    - name: Saving working initramdisk
+      copy:
+        src: "/boot/initrd.img-{{ ansible_kernel }}"
+        dest: "/boot/initrd.img-{{ ansible_kernel }}-OK"
+        force: no
+        remote_src: yes
+
     - name: Remove known problem packages
       package:
         name: "{{ prohibited_systempkgs }}"
@@ -186,6 +193,20 @@
         state: latest
       environment: "{{ proxy_env | default('{}') }}"
       when: not is_aio or inventory_hostname != 'osa-master'
+
+    - name: Copying modifed initramdisk
+      copy:
+        src: "/boot/initrd.img-{{ ansible_kernel }}"
+        dest: "/boot/initrd.img-{{ ansible_kernel }}-BAD"
+        force: no
+        remote_src: yes
+
+    - name: Restoring working initramdisk
+      copy:
+        src: "/boot/initrd.img-{{ ansible_kernel }}-OK"
+        dest: "/boot/initrd.img-{{ ansible_kernel }}"
+        force: yes
+        remote_src: yes
 
     - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
       with_items:
