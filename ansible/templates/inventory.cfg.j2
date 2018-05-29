@@ -15,3 +15,6 @@ proxy_host={{ hostvars[inventory_hostname]['ansible_' + bridge_itf | replace('-'
 external_public_vip_address={{ ext_pub_vip_addr }}
 internal_public_vip_itf={{ int_pub_vip_itf }}
 internal_public_vip_address={{ int_pub_vip_addr }}
+{% if real_baremetal is defined and real_baremetal | bool %}
+osa_master_runs_on_osa_node=True
+{% endif %}
