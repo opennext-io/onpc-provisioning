@@ -20,7 +20,7 @@
   when: disk_setup.get('minsize') and found_disk_size | float < disk_setup.get('minsize') | float
 
 - fail: msg="Wrong table type {{ found_disk_table_type }}"
-  when: found_disk_table_type != disk_setup.get('disk_table_type', 'gpt')
+  when: found_disk_table_type != disk_setup.get('disk_table_type', 'gpt') and found_disk_table_type != 'unknown'
 
 - include_tasks: ../tasks/disk_partition_create.yml
   vars:
