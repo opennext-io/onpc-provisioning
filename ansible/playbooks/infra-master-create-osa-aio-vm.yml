@@ -30,8 +30,8 @@
           name: "aio1",
           cpus: "{{ aio_cpus | default(10) | int }}",
           mem: "{{ aio_mem | default(48) | int }}",
-          disks: "{{ aio_disks | default(3) | int }}",
-          hdd: "{{ aio_disk_size | default(100) | int }}",
+          disks: "{{ aio_disks | default(2) | int }}",
+          hdd: "{{ aio_disk_size | default(500) | int }}",
           vnc: 5901,
           bmc: 6001,
         }
@@ -77,7 +77,7 @@
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names }}"
         bridge_itf: "{{ kvm_bridge_itf }}"
-        ext_pub_vip_addr: "{{ (pub_addr['network'] ~ '/' ~ pub_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
+        ext_pub_vip_addr: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         int_pub_vip_itf: "br-mgmt"
         int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
 
