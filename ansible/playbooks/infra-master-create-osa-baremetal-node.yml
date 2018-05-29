@@ -113,7 +113,7 @@
         node_names: "{{ hostvars[inventory_hostname].registered_status.json | json_query('keys(@)') }}"
         node_ips: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/all/interfaces/eth0/ip') | list }}"
         int_vip_addr: "{{ hostvars[inventory_hostname].ansible_br_mgmt.ipv4 }}"
-        pub_addr: "{{ hostvars[inventory_hostname].ansible_br_prov.ipv4 }}"
+        pub_addr: "{{ hostvars[inventory_hostname].ansible_default_ipv4 }}"
 
     - name: Waiting for baremetal nodes to be reachable by SSH
       wait_for:
