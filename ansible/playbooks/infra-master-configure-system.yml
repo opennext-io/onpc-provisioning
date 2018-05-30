@@ -34,6 +34,13 @@
       environment:
         https_proxy: ""
 
+    - name: Saving working initramdisk
+      copy:
+        src: "/boot/initrd.img-{{ ansible_kernel }}"
+        dest: "/boot/initrd.img-{{ ansible_kernel }}-OK"
+        force: no
+        remote_src: yes
+
     - name: Verifying all mandatory packages
       package:
         name: "{{ systempkgs | sort }}"
@@ -44,6 +51,20 @@
         name: "{{ kvmsystempkgs | sort }}"
         state: latest
       when: infra_master_running_kvm
+
+    - name: Copying modifed initramdisk
+      copy:
+        src: "/boot/initrd.img-{{ ansible_kernel }}"
+        dest: "/boot/initrd.img-{{ ansible_kernel }}-BAD"
+        force: no
+        remote_src: yes
+
+    - name: Restoring working initramdisk
+      copy:
+        src: "/boot/initrd.img-{{ ansible_kernel }}-OK"
+        dest: "/boot/initrd.img-{{ ansible_kernel }}"
+        force: yes
+        remote_src: yes
 
     - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
       with_items:
