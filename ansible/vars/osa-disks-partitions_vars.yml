@@ -7,24 +7,28 @@ osa_disks: [
       partitions: [
           {
             name: "openstack-core",
+            vg: "os-",
             lv: "core",
             size: "{{ base_partition_size | default(100.0) | float }}",
             mountpoint: "/openstack",
           },
           {
             name: "openstack-logs",
+            vg: "os-",
             lv: "logs",
             size: "{{ base_partition_size | default(100.0) | float }}",
             mountpoint: "/openstack/log",
           },
           {
             name: "openstack-varliblxc",
+            vg: "os-",
             lv: "lxc",
             size: "{{ base_partition_size | default(100.0) | float }}",
             mountpoint: "/var/lib/lxc",
           },
           {
             name: "swap",
+            vg: "os-",
             lv: "swap",
             size: "{{ base_swap_partition_size | default(16.0) | float }}",
             type: "swap",

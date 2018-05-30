@@ -69,7 +69,11 @@
   environment: "{{ parted_env | default({}) | combine({ 'LC_ALL': 'C' }) }}"
   when: existing_partition | length == 0
 
-- name: Setting partition device
+- name: Setting PV name
+  set_fact:
+    target_pv: "{{ partition_setup.get('vg', '') }}{{ partition_setup.get('lv', '') }}"
+
+- name: Setting partition device (empty disk)
   set_fact:
     target_partition: "{{ disk_device }}{{ last_partition_id | int + 1 }}"
     partition_id: "{{ last_partition_id | int + 1 }}"
@@ -84,14 +88,14 @@
 - name: Creating associated physical volume
   lvg:
     pvs: "{{ target_partition }}"
-    vg: "{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}"
+    vg: "{{ target_pv }}"
     state: present
   register: pv_status
 
 - name: Creating associated logical volume
   lvol:
     pvs: "{{ target_partition }}"
-    vg: "{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}"
+    vg: "{{ target_pv }}"
     lv: "{{ partition_setup.get('lv') }}"
     size: '100%FREE'
     state: present
@@ -100,7 +104,7 @@
 
 - name: Formating {{ target_partition }} partition as {{ partition_setup.get('fstype', 'xfs') }}
   filesystem:
-    dev: "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
+    dev: "/dev/{{ target_pv }}/{{ partition_setup.get('lv') }}"
     fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
     force: "{{ partition_setup.get('type') == 'swap' | bool }}"
   when: partition_setup.get('type') != 'swap' and existing_partition | length == 0 and lv_status is changed
@@ -108,19 +112,19 @@
 - name: Creating mount points, fstab entries and mount the filesystem for {{ target_partition }}
   mount:
     name: "{{ partition_setup.get('mountpoint') }}"
-    src: "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
+    src: "/dev/{{ target_pv }}/{{ partition_setup.get('lv') }}"
     fstype: "{{ partition_setup.get('fstype', 'xfs') }}"
     state: mounted
   when: partition_setup.get('mountpoint')
 
 - name: Format the swap partition
-  command: "mkswap /dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
+  command: "mkswap /dev/{{ target_pv }}/{{ partition_setup.get('lv') }}"
   when: partition_setup.get('type') == 'swap' and existing_partition | length == 0
 
 - name: Ensure that the swap partition entry is in /etc/fstab
   mount:
     name: none
-    src: "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
+    src: "/dev/{{ target_pv }}/{{ partition_setup.get('lv') }}"
     fstype: swap
     opts: sw
     passno: 0
@@ -131,8 +135,8 @@
 - name: Bring swap file online
   shell: |
     return_code=0
-    if ! grep "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}" /proc/swaps; then
-      swapon "/dev/{{ partition_setup.get('vg', 'os') }}-{{ partition_setup.get('lv', '') }}/{{ partition_setup.get('lv') }}"
+    if ! grep "/dev/{{ target_pv }}/{{ partition_setup.get('lv') }}" /proc/swaps; then
+      swapon "/dev/{{ target_pv }}/{{ partition_setup.get('lv') }}"
       return_code=2
     fi
     exit ${return_code}
