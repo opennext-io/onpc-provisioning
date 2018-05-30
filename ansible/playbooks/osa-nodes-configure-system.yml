@@ -392,34 +392,7 @@
              (secondary_changed is defined and secondary_changed.changed) or
              (vlan_changed is defined and vlan_changed.changed))
 
-    - name: Disabling existing services for DIB dhcp-all-interfaces
-      shell: systemctl list-unit-files | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl disable -q --force /' | bash
-      ignore_errors: true
-      changed_when: false
-
-    - name: Disabling existing services for DIB dhcp-all-interfaces
-      shell: systemctl list-units | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl disable -q --force /' | bash
-      ignore_errors: true
-      changed_when: false
-
-    - name: Stopping existing services for DIB dhcp-all-interfaces
-      shell: systemctl list-units | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl stop -q --force /' | bash
-      ignore_errors: true
-      changed_when: false
-
-    - name: Removing DIB dhcp-all-interfaces udev item {{ item }}
-      file:
-        path: "{{ item }}"
-        state: absent
-      with_items:
-        - /usr/lib/systemd/system/dhcp-interface@.service
-        - /etc/udev/rules.d/99-dhcp-all-interfaces.rules
-        - /usr/local/sbin/dhcp-all-interfaces.sh
-      register: removed_udev_rules
-
-    - name: Restarting udev service
-      shell: "udevadm control --reload-rules && udevadm trigger"
-      when: removed_udev_rules is changed
+    - include_tasks: ../tasks/clean_udev_rules.yml
 
     - name: Restarting network services
       shell: echo "{{ primary_itf_down | default('') }}{{ secondary_itf_down | default('') }}service networking restart" | at now + 0 min

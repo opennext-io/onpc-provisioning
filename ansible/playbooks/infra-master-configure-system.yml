@@ -251,6 +251,8 @@
              (secondary_changed is defined and secondary_changed.changed) or
              (bridge_changed is defined and bridge_changed.changed))
 
+    - include_tasks: ../tasks/clean_udev_rules.yml
+
     - name: Restarting network services
       shell: echo "{{ itf_down | default('') }}service networking restart" | at now + 0 min
       when: network_reconfig is defined and network_reconfig
