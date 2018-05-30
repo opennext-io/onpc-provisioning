@@ -67,7 +67,7 @@
     </controller>
     <interface type='bridge'>
       <mac address='{{ vmmacprefix | random_mac }}'/>
-      <source bridge='{{ prov_bridge | default("br-prov") }}'/>
+      <source bridge='{{ provbridge | default("br-prov") }}'/>
       <target dev='vnet0'/>
       <model type='virtio'/>
       <alias name='net0'/>
@@ -75,7 +75,7 @@
     </interface>
     <interface type='bridge'>
       <mac address='{{ vmmacprefix | random_mac }}'/>
-      <source bridge='{{ vlan_bridge | default("br-vlan") }}'/>
+      <source bridge='{{ vmsbridge | default("br-vms") }}'/>
       <target dev='vnet1'/>
       <model type='virtio'/>
       <alias name='net1'/>

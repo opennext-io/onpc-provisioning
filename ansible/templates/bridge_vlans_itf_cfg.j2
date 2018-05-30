@@ -4,6 +4,20 @@
 auto {{ prov_itf }}
 iface {{ prov_itf }} inet manual
 
+{% if bridges_list is defined  and bridges_list | length == 1 %}
+# Extra Bridge
+# {{ bridges_list[0].get('bridge_comment', '') }}
+auto {{ bridges_list[0].get('name') }}
+iface {{ bridges_list[0].get('name') }} inet manual
+        bridge_ports {{ prov_itf }}
+        bridge_maxwait 5
+        bridge_stp off
+        bridge_fd 0
+        bridge_waitport 0
+        offload-sg off
+{%- set prov_itf = bridges_list[0].get('name') %}
+{% endif %}
+
 {% if vlans_list is defined %}
 # VLANS
 {% for vlan in vlans_list %}

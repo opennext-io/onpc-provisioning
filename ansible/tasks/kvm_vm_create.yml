@@ -4,7 +4,7 @@
   set_fact:
     vmuuid: "{{ vmname | to_uuid }}"
     provbridge: "{{ prov_bridge | default('br-prov') }}"
-    vlanbridge: "{{ vlan_bridge | default('br-vlan') }}"
+    vmsbridge: "{{ vms_bridge | default('br-vms') }}"
 
 - name: Setting disk names
   set_fact:

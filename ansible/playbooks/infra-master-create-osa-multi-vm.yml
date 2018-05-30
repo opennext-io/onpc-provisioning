@@ -109,7 +109,7 @@
         # TODO: be carefull as OSA master is taken as the 1st in the list, should potentially be more predictive
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get('osa-master').get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names | difference(['osa-master']) }}"
-        bridge_itf: "{{ kvm_bridge_itf }}"
+        bridge_itf: "{{ kvm_prov_bridge_itf }}"
         ext_pub_vip_addr: "{{ (pub_addr['network'] ~ '/' ~ pub_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
         int_pub_vip_itf: "br-mgmt"
         int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"

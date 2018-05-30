@@ -16,43 +16,17 @@
   virt_net:
     command: facts
 
-- name: Creating KVM/libvirt network bridge template & network
-  block:
+- include_tasks: ../tasks/kvm_network_configure.yml
+  vars:
+    network_name: "{{ kvm_prov_network_name }}"
+    kvm_network_name: "{{ kvm_prov_network_name }}"
+    kvm_bridge_itf: "{{ kvm_prov_bridge_itf }}"
 
-    - name: Creating KVM/libvirt network bridge template & network
-      become: no
-      template:
-        src: ../templates/kvm-network-bridge.xml.j2
-        dest: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
-        owner: "{{ systemuser }}"
-        group: "{{ systemuser }}"
-        mode: 0644
-      vars:
-        network_name: "{{ kvm_network_name }}"
-        bridge_interface: "{{ kvm_bridge_itf }}"
-        uuid_seed: "OpenNext"
-
-    - name: Getting XML definition of KVM/libvirt network
-      slurp:
-        src: "{{ systemuserhome }}/kvm-provisioning-network-bridge.xml"
-      register: xml_network
-
-    - name: Creating KVM/libvirt network
-      virt_net:
-        command: define
-        name: "{{ kvm_network_name }}"
-        xml: "{{ xml_network['content'] | b64decode }}"
-  when: ansible_libvirt_networks is defined and kvm_network_name not in ansible_libvirt_networks
-
-- name: Autostarting KVM/libvirt network
-  virt_net:
-    autostart: yes
-    name: "{{ kvm_network_name }}"
-
-- name: Activating KVM/libvirt network
-  virt_net:
-    state: active
-    name: "{{ kvm_network_name }}"
+- include_tasks: ../tasks/kvm_network_configure.yml
+  vars:
+    network_name: "{{ kvm_vms_network_name }}"
+    kvm_network_name: "{{ kvm_vms_network_name }}"
+    kvm_bridge_itf: "{{ kvm_vms_bridge_itf }}"
 
 - name: Retrieving max free space mount point
   set_fact:

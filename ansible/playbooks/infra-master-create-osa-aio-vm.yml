@@ -76,7 +76,7 @@
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names }}"
-        bridge_itf: "{{ kvm_bridge_itf }}"
+        bridge_itf: "{{ kvm_prov_bridge_itf }}"
         ext_pub_vip_addr: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         int_pub_vip_itf: "br-mgmt"
         int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"

@@ -112,7 +112,7 @@
 
     - name: Retrieving provisioning interface from network infos
       set_fact:
-        itf: "{{ kvm_bridge_itf }}"
+        itf: "{{ kvm_prov_bridge_itf }}"
       when: not infra_master_running_kvm and not baremetal_provisioning
 
     - import_tasks: ../tasks/baremetal_bifrost_config.yml

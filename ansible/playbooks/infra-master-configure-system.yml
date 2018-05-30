@@ -15,9 +15,14 @@
     - ../vars/infra-master-pkgs-ubuntu.yml
     - ../vars/infra-master-kvm-pkgs-ubuntu.yml
     - ../vars/osa-briges-vlans_vars.yml
-    - ../vars/opennext-briges-vlans_vars.yml
 
   tasks:
+
+    - include_vars: ../vars/opennext-briges-vlans_vars.yml
+      when: not infra_master_running_kvm
+
+    - include_vars: ../vars/opennext-briges-vlans-with-kvm_vars.yml
+      when: infra_master_running_kvm
 
     - import_tasks: ../tasks/system_infos.yml
 
@@ -215,6 +220,7 @@
       when: secondary_itf is defined
       vars:
         - prov_itf: "{{ secondary_itf.device }}"
+        - bridges_list: "{{ opennext_bridges }}"
 
     - name: Set fact for conditional execution
       set_fact:
