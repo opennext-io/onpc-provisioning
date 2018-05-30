@@ -24,7 +24,6 @@ auto br-{{ vlan.get('name') }}
 iface br-{{ vlan.get('name') }} inet static
         address {{ vlan.get('prefix') }}.{{ ip_suffix | default("1") }}
         netmask {{ vlan.get('netmask') }}
-        network {{ vlan.get('prefix') }}.0
         bridge_ports {{ vitf }}
         bridge_maxwait 5
         bridge_stp off
