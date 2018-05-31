@@ -8,6 +8,7 @@ osa_vlans: [
     bridge_comment: "bridge br-mgmt - management network",
     prefix: "172.29.236",
     netmask: "255.255.252.0",
+    gateway: "172.29.236.1",
   },
   {
     name: "storage",
