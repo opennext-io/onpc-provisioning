@@ -37,6 +37,7 @@
         ip_prefixes: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).values() | selectattr('ip_prefix', 'defined') | map(attribute='ip_prefix') | list | unique }}"
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
         is_aio: "{{ hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1 | bool }}"
+        osa_master_is_also_osa_node: "{{ osa_master_runs_on_osa_node | default(false ) | bool }}"
 
     - fail: msg="Missing ip_prefix information"
       when: ip_prefixes | length != 1
@@ -56,25 +57,25 @@
         path: /etc/hosts
         regexp: '(\s+)ubuntu(\s+.*)?$'
         replace: '\1{{ fqdn }} {{ inventory_hostname }} ubuntu\2'
-      when: (not is_aio or inventory_hostname != 'osa-master') and hostname_result.stdout != fqdn
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and hostname_result.stdout != fqdn
 
     - name: Changing dynamic hostname to {{ fqdn }}
       command: "hostname {{ fqdn }}"
-      when: (not is_aio or inventory_hostname != 'osa-master') and hostname_result.stdout != fqdn
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and hostname_result.stdout != fqdn
 
     - name: Updating /etc/hosts with {{ fqdn }}
       replace:
         path: /etc/hosts
         regexp: '(\s+){{ fqdn }} {{ inventory_hostname }} ubuntu(\s+.*)?$'
         replace: '\1{{ fqdn }} {{ inventory_hostname }}\2'
-      when: (not is_aio or inventory_hostname != 'osa-master') and hostname_result.stdout != fqdn
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and hostname_result.stdout != fqdn
 
     - name: Updating /etc/hostname with {{ fqdn }}
       replace:
         path: /etc/hostname
         regexp: '^ubuntu$'
         replace: '{{ fqdn }}'
-      when: (not is_aio or inventory_hostname != 'osa-master') and hostname_result.stdout != fqdn
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and hostname_result.stdout != fqdn
 
     - name: Setting proper perms on {{ systemuser }} .ssh
       file:
@@ -83,7 +84,7 @@
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
         state: directory
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Creating root .ssh
       file:
@@ -92,7 +93,7 @@
         owner: "root"
         group: "root"
         state: directory
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Configuring SSH defaults for root
       template:
@@ -104,7 +105,7 @@
       vars:
         ips: "{{ hostvars.get('infra-master', {}).get('osa_node_ips', []) }}"
         vlans: "{{ osa_vlans | map(attribute='prefix') | flatten | list }}"
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Copy {{ systemuser }} private SSH key file to root
       copy:
@@ -113,7 +114,7 @@
         owner: "root"
         group: "root"
         mode: 0600
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Copy {{ systemuser }} public SSH key file to root from {{ systemuserhome }})
       copy:
@@ -122,7 +123,7 @@
         owner: "root"
         group: "root"
         mode: 0644
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Copy {{ systemuser }} authorized keys file to root from {{ systemuserhome }})
       copy:
@@ -131,7 +132,7 @@
         owner: "root"
         group: "root"
         mode: 0644
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Configuring SSH defaults for {{ systemuser }}
       template:
@@ -143,7 +144,7 @@
       vars:
         ips: "{{ hostvars.get('infra-master', {}).get('osa_node_ips', []) }}"
         vlans: "{{ osa_vlans | map(attribute='prefix') | flatten | list }}"
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Copy {{ systemuser }} private SSH key file
       copy:
@@ -152,7 +153,7 @@
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
         mode: 0600
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Copy {{ systemuser }} public SSH key file
       copy:
@@ -161,7 +162,7 @@
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
         mode: 0644
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Setting environment facts
       set_fact:
@@ -171,7 +172,7 @@
           'ftp_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
           'no_proxy': 'localhost,127.0.0.1',
         }
-      when: (not is_aio or inventory_hostname != 'osa-master') and proxy_host is defined
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and proxy_host is defined
 
     - name: Saving working initramdisk
       copy:
@@ -185,14 +186,14 @@
         name: "{{ prohibited_systempkgs }}"
         state: absent
       environment: "{{ proxy_env | default('{}') }}"
-      when: (not is_aio or inventory_hostname != 'osa-master') and prohibited_systempkgs is defined and prohibited_systempkgs | length > 0
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and prohibited_systempkgs is defined and prohibited_systempkgs | length > 0
 
     - name: Verifying all mandatory packages
       package:
         name: "{{ systempkgs | sort }}"
         state: latest
       environment: "{{ proxy_env | default('{}') }}"
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Copying modifed initramdisk
       copy:
@@ -215,7 +216,7 @@
         - "br_netfilter"
         - "8021q"
         - "vxlan"
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Configuring IP forwarding via sysctl
       sysctl:
@@ -224,7 +225,7 @@
         sysctl_set: yes
         state: present
         reload: yes
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Configuring Bridges for proper VLAN support via sysctl
       sysctl:
@@ -239,7 +240,7 @@
         - net.bridge.bridge-nf-call-arptables
         - net.bridge.bridge-nf-filter-pppoe-tagged
         - net.bridge.bridge-nf-filter-vlan-tagged
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Setting facts for NTP daemon configuration
       set_fact:
@@ -260,7 +261,7 @@
         - { regexp: '^pool (.*)', line: '#pool \1' }
       notify:
         - restart ntp and stop systemd-timesyncd
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Retrieving remote NTP daemon configuration
       slurp:
@@ -280,7 +281,7 @@
         - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 ntp server as a fallback.' }
       notify:
         - restart ntp and stop systemd-timesyncd
-      when: (not is_aio or inventory_hostname != 'osa-master') and not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line))
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line))
 
     - name: Retrieving remote NTP date configuration
       slurp:
@@ -300,12 +301,12 @@
         - { regexp: '^NTPSERVERS=".*', line: '{{ ntp_date_conf_line }}' }
       notify:
         - restart ntp and stop systemd-timesyncd
-      when: (not is_aio or inventory_hostname != 'osa-master') and not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line))
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line))
 
     - name: Getting interfaces infos
       interfaces_file:
       register: cur_interfaces
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Moving loopback interface to its own config file
       interfaces_file:
@@ -314,7 +315,7 @@
         iface: lo
         state: move
       register: lo_changed
-      when: "(not is_aio or inventory_hostname != 'osa-master') and 'lo' in cur_interfaces.get('ifaces', {})"
+      when: "(not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and 'lo' in cur_interfaces.get('ifaces', {})"
 
     - import_tasks: ../tasks/select_network_interfaces_type.yml
       vars:
@@ -343,17 +344,17 @@
         iface: "{{ matching_ether_itfs }}"
         state: move
       register: primary_changed
-      when: "(not is_aio or inventory_hostname != 'osa-master') and matching_ether_itfs in cur_interfaces.get('ifaces', {})"
+      when: "(not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and matching_ether_itfs in cur_interfaces.get('ifaces', {})"
 
     - name: Bringing down interface and dhcpclient for proper bridging
       set_fact:
         primary_itf_down: "pkill dhclient ; ip addr flush {{ matching_ether_itfs }} ; "
-      when: "(not is_aio or inventory_hostname != 'osa-master') and matching_ether_itfs in cur_interfaces.get('ifaces', {})"
+      when: "(not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and matching_ether_itfs in cur_interfaces.get('ifaces', {})"
 
     - name: Setting remaining interfaces list
       set_fact:
         remaining_itfs: "{{ cur_interfaces.get('ifaces', {}).keys() | difference(['lo', matching_ether_itfs]) }}"
-      when: not is_aio or inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Moving {{ remaining_itfs[0] }} secondary ethernet interface to its own config file
       interfaces_file:
@@ -363,12 +364,12 @@
         state: move
         method: manual
       register: secondary_changed
-      when: (not is_aio or inventory_hostname != 'osa-master') and remaining_itfs | length > 0
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and remaining_itfs | length > 0
 
     - name: Bringing down interface and dhcpclient for proper bridging
       set_fact:
         secondary_itf_down: "pkill dhclient ; ip addr flush {{ remaining_itfs[0] }} ; "
-      when: (not is_aio or inventory_hostname != 'osa-master') and remaining_itfs | length > 0
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and remaining_itfs | length > 0
 
     - name: Configuring {{ remaining_itfs[0] }} VLANs and bridges
       template:
@@ -378,7 +379,7 @@
         group: root
         mode: 0644
       register: vlan_changed
-      when: (not is_aio or inventory_hostname != 'osa-master') and remaining_itfs | length > 0 and (not is_aio or (force_bridges | default(false) | bool))
+      when: (not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master') and remaining_itfs | length > 0 and (not is_aio or (force_bridges | default(false) | bool))
       vars:
         - prov_itf: "{{ remaining_itfs[0] }}"
         - vlans_list: "{{ osa_vlans | default([]) }}"
@@ -392,7 +393,34 @@
              (secondary_changed is defined and secondary_changed.changed) or
              (vlan_changed is defined and vlan_changed.changed))
 
-    - include_tasks: ../tasks/clean_udev_rules.yml
+    - name: Disabling existing services for DIB dhcp-all-interfaces
+      shell: systemctl list-unit-files | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl disable -q --force /' | bash
+      ignore_errors: true
+      changed_when: false
+
+    - name: Disabling existing services for DIB dhcp-all-interfaces
+      shell: systemctl list-units | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl disable -q --force /' | bash
+      ignore_errors: true
+      changed_when: false
+
+    - name: Stopping existing services for DIB dhcp-all-interfaces
+      shell: systemctl list-units | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl stop -q --force /' | bash
+      ignore_errors: true
+      changed_when: false
+
+    - name: Removing DIB dhcp-all-interfaces udev item {{ item }}
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+        - /usr/lib/systemd/system/dhcp-interface@.service
+        - /etc/udev/rules.d/99-dhcp-all-interfaces.rules
+        - /usr/local/sbin/dhcp-all-interfaces.sh
+      register: removed_udev_rules
+
+    - name: Restarting udev service
+      shell: "udevadm control --reload-rules && udevadm trigger"
+      when: removed_udev_rules is changed
 
     - name: Restarting network services
       shell: echo "{{ primary_itf_down | default('') }}{{ secondary_itf_down | default('') }}service networking restart" | at now + 0 min
@@ -414,7 +442,7 @@
         state: directory
       with_items:
         - "/openstack"
-      when: not is_aio and inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) and inventory_hostname != 'osa-master'
 
     - include_tasks: ../tasks/disk_partitions.yml
       vars:
@@ -422,10 +450,10 @@
       with_items: "{{ osa_disks }}"
       loop_control:
         loop_var: disk_item
-      when: not is_aio and inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) and inventory_hostname != 'osa-master'
 
     - include_tasks: ../tasks/cinder_loopback.yml
-      when: not is_aio and inventory_hostname != 'osa-master'
+      when: not (is_aio or osa_master_is_also_osa_node) and inventory_hostname != 'osa-master'
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
