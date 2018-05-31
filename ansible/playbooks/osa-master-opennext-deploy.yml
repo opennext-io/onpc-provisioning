@@ -144,6 +144,8 @@
     - name: Setting remote OSA nodes informations facts
       set_fact:
         osa_nodes_infos: "{{ hostvars.get(inventory_hostname, {}).get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {}) }}"
+        vlans_ips: "{{ osa_vlans | selectattr('prefix', 'defined') | map(attribute='prefix') | flatten | list }}"
+        bridges_vlans_ips: "{{ osa_vlans | selectattr('bridge_prefix', 'defined') | map(attribute='bridge_prefix') | flatten | list }}"
 
     - name: Setting facts for AIO mode {{ is_aio }} is true
       set_fact:
@@ -171,7 +173,7 @@
       set_fact:
         osa_deploy_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
         ip_reject_regex: "{{ '^' ~ ip_prefix ~ '.*' }}"
-        osa_bridges_ips: "{{ osa_vlans | map(attribute='prefix') | flatten | list }}"
+        osa_bridges_ips: "{{ (vlans_ips + bridges_vlans_ips) | unique }}"
         controller_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', control_match) | list }}"
         cinder_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', cinder_match) | list }}"
         compute_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', compute_match) | list }}"

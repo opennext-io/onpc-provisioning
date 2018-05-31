@@ -29,8 +29,9 @@ osa_vlans: [
   {
     name: "vlan",
     bridge_comment: "bridge br-vlan - vlan network",
-    prefix: "172.29.248",
-    netmask: "255.255.252.0",
+    bridge_mode: "manual",
+    bridge_veth: "veth",
+    bridge_veth_itf: "eth12",
+    bridge_prefix: "172.29.248",
   },
 ]
-# gateway: "{{ mgmt_ip_prefix }}.1"

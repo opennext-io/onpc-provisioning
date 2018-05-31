@@ -32,10 +32,11 @@ iface {{ vitf }} inet manual
 {%- set vitf = prov_itf %}
 {% endif %}
 
-{% if vlan.get('prefix') and vlan.get('netmask') %}
+{% if vlan.get('name') %}
 # {{ vlan.get('bridge_comment', '') }}
 auto br-{{ vlan.get('name') }}
-iface br-{{ vlan.get('name') }} inet static
+iface br-{{ vlan.get('name') }} inet {{ vlan.get('bridge_mode', 'static') }}
+{% if vlan.get('prefix') and vlan.get('netmask') %}
         address {{ vlan.get('prefix') }}.{{ ip_suffix | default("1") }}
         netmask {{ vlan.get('netmask') }}
 {% if vlan.get('gateway') %}
@@ -44,12 +45,24 @@ iface br-{{ vlan.get('name') }} inet static
 {% if vlan.get('dns-nameservers') %}
         dns-nameservers {{ vlan.get('dns-nameservers') }}
 {% endif %}
-        bridge_ports {{ vitf }}
         bridge_maxwait 5
+        offload-sg off
+{% endif %}
+{% if vlan.get('bridge_veth') and vlan.get('bridge_veth') | length > 0 %}
+        # Create veth pair, do not abort if already exists
+        pre-up ip link add br-{{ vlan.get('name') }}-{{ vlan.get('bridge_veth') }} type veth peer name {{ vlan.get('bridge_veth_itf', 'eth12') }} || true
+        # Set both ends UP
+        pre-up ip link set br-{{ vlan.get('name') }}-{{ vlan.get('bridge_veth') }} up
+        pre-up ip link set {{ vlan.get('bridge_veth_itf', 'eth12') }} up
+        # Delete veth pair on DOWN
+        post-down ip link del br-{{ vlan.get('name') }}-{{ vlan.get('bridge_veth') }} || true
+        bridge_ports {{ vitf }} br-{{ vlan.get('name') }}-{{ vlan.get('bridge_veth') }}
+{% else %}
+        bridge_ports {{ vitf }}
+{% endif %}
         bridge_stp off
         bridge_fd 0
         bridge_waitport 0
-        offload-sg off
 {% endif %}
 {%- endfor %}
 {%- endif %}

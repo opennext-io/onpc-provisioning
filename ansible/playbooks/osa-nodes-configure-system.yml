@@ -38,6 +38,8 @@
         root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
         is_aio: "{{ hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1 | bool }}"
         osa_master_is_also_osa_node: "{{ osa_master_runs_on_osa_node | default(false ) | bool }}"
+        vlans_ips: "{{ osa_vlans | selectattr('prefix', 'defined') | map(attribute='prefix') | flatten | list }}"
+        bridges_vlans_ips: "{{ osa_vlans | selectattr('bridge_prefix', 'defined') | map(attribute='bridge_prefix') | flatten | list }}"
 
     - fail: msg="Missing ip_prefix information"
       when: ip_prefixes | length != 1
@@ -46,6 +48,7 @@
       set_fact:
         ip_prefix: "{{ ip_prefixes[0] }}"
         fqdn: "{{ inventory_hostname }}.openstack.local"
+        all_vlans_ips: "{{ (vlans_ips + bridges_vlans_ips) | unique }}"
 
     - name: Checking dynamic hostname
       command: "hostname"
@@ -104,7 +107,7 @@
         mode: 0644
       vars:
         ips: "{{ hostvars.get('infra-master', {}).get('osa_node_ips', []) }}"
-        vlans: "{{ osa_vlans | map(attribute='prefix') | flatten | list }}"
+        vlans: "{{ all_vlans_ips }}"
       when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Copy {{ systemuser }} private SSH key file to root
@@ -143,7 +146,7 @@
         mode: 0644
       vars:
         ips: "{{ hostvars.get('infra-master', {}).get('osa_node_ips', []) }}"
-        vlans: "{{ osa_vlans | map(attribute='prefix') | flatten | list }}"
+        vlans: "{{ all_vlans_ips }}"
       when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
     - name: Copy {{ systemuser }} private SSH key file
@@ -461,6 +464,7 @@
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
         keys_to_store:
+          - "^.*vlans_ips"
           - "^cur_interfaces$"
           - "^matching_ether_itfs$"
           - "^remaining_itfs$"
@@ -488,6 +492,7 @@
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
         keys_to_store:
+          - "^.*vlans_ips"
           - "^cur_interfaces$"
           - "^matching_ether_itfs$"
           - "^remaining_itfs$"
