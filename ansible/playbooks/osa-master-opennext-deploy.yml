@@ -272,6 +272,11 @@
         creates: /opt/.osa_playbooks_done
         executable: /bin/bash
 
+- hosts: infra-master
+  become: yes
+
+  tasks:
+
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_master_opennext_deploy"
       vars:
         keys_to_store:
