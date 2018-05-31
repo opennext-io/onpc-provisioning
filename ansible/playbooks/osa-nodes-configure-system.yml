@@ -422,16 +422,19 @@
       shell: "udevadm control --reload-rules && udevadm trigger"
       when: removed_udev_rules is changed
 
-    - name: Restarting network services
-      shell: echo "{{ primary_itf_down | default('') }}{{ secondary_itf_down | default('') }}service networking restart" | at now + 0 min
+    - name: Rebooting nodes
+      shell: echo "reboot" | at now + 0 min
       when: network_reconfig is defined and network_reconfig
 
-    - name: Wait for server come back
+    - name: Waiting for nodes to be reachable again by SSH
       wait_for: >
         host="{{ hostvars.get(inventory_hostname, {}).get('ansible_host') }}"
         port=22
         delay=10
-        timeout=60
+        timeout=3600
+        sleep=20
+        connect_timeout=10
+        search_regex=OpenSSH
       delegate_to: localhost
       become: no
       when: network_reconfig is defined and network_reconfig
