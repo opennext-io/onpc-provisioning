@@ -15,6 +15,26 @@
 
   tasks:
 
+    - name: Retrieving infra-master inventory_hostname
+      set_fact:
+        infra_hostname: "{{ hostvars[inventory_hostname]['groups']['infra-master'][0] }}"
+
+    - name: Retrieving infra-master facts
+      set_fact:
+        br_prov_ip: "{{ hostvars[infra_hostname]['br_prov_ip'] }}"
+        vbmc_venv: "{{ hostvars[infra_hostname].get('vbmc_venv', {}) }}"
+        registration_uri: "{{ hostvars[infra_hostname].get('registration_uri') }}"
+        registration_ip: "{{ hostvars[infra_hostname].get('registration_ip') }}"
+        registration_port: "{{ hostvars[infra_hostname].get('registration_port') }}"
+        status_uri: "{{ hostvars[infra_hostname].get('status_uri') }}"
+        clouds: "{{ hostvars[infra_hostname].get('clouds', {}) }}"
+        ansible_master_running_kvm: "{{ hostvars[infra_hostname]['ansible_local']['opennext_infra_master_configure_system'][infra_hostname].get('ansible_master_running_kvm', false) }}"
+
+    - name: Retrieving infra-master facts
+      set_fact:
+        vbmc_ip: "{{ hostvars[inventory_hostname].ansible_br_prov.ipv4.address }}"
+      when: ansible_master_running_kvm
+
     - include_tasks: ../tasks/kvm_vm_create.yml
       vars:
         vmname: "{{ vm_item.name }}"
