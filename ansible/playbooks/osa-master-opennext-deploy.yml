@@ -56,7 +56,7 @@
         accept_hostkey: yes
         force: yes
         recursive: no
-        version: stable/pike
+        version: "stable/{{ openstack_release | default('pike') }}"
       environment: "{{ proxy_env | default('{}') }}"
 
     - include_tasks: ../tasks/clone_private_git_repo.yml

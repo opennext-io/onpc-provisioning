@@ -13,7 +13,7 @@ keystone_opts: ""
 # DIB golden image parameters
 os_release: "xenial"
 os_flavor: "ubuntu-minimal"
-upstream_release: "stable-pike"
+upstream_release: "stable-{{ openstack_release | default('pike') }}"
 root_part_size_gb: 60
 partitioning_scheme: "partitioning-lvm"
 dibblockdevice: "{{ dib_block_device | default('gpt') }}"

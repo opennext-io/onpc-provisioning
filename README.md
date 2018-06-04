@@ -180,6 +180,15 @@ ssh user@192.168.0.131 -t 'cd ~vagrant/bifrost/playbooks && . ~vagrant/.venv/bif
 this is because the Ansible deployment needs to run on the host where Bifrost
 will be configured and installed.
 
+You can now choose which version of OpenStack you want to deploy by adding an extra deployment variable:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-deploy-bifrost.yml -e openstack_release=queens
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please note that the default used when nothing is specified is pike. You can also put this variable in ansible/inventory/master
+for more safety an not forget it in following steps (see steps 5 and 7 part 2)
+
 ### Step 3: Launch Bifrost deployment using command returned by last debug message of step 2
 
 You could remove the last 2 options `-e enable_keystone=true -e noauth_mode=false` if you
@@ -233,6 +242,9 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-crea
 Anyhow, all VMs will get provisioned with IPA image (Ironic Python Agent) and register
 automatically into ironic to wait for proper provisioning.
 
+IMPORTANT NOTE: if you have specified a value for openstack_release on the command line and not in the Ansible inventory file at step 2 above,
+you MUST add it to any of the command written in this paragraph for step 5.
+
 ### Step 6: OpenNext Bootstrap for final OSA deployment
 
 Now that your VM(s) is(are) available, you need to finalize some modifiations on
@@ -262,6 +274,10 @@ If you want to also run the tempest tests at the very end of the deployment, you
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml -e run_tempest_tests=yes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+IMPORTANT NOTE: if you have specified a value for openstack_release on the command line and not in the Ansible inventory file at step 2 above,
+you MUST add it to any of the command written in this paragraph for step 5. You might also want to make sure it got written appropriately
+into osa-inventory file in which case you do not need to add it on the command lines.
 
 ### Step 8: OpenNext post OSA deployment
 

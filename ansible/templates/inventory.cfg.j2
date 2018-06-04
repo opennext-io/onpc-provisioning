@@ -18,3 +18,6 @@ internal_public_vip_address={{ int_pub_vip_addr }}
 {% if real_baremetal is defined and real_baremetal | bool %}
 osa_master_runs_on_osa_node=True
 {% endif %}
+{% if openstack_release is defined and openstack_release | length > 0 %}
+openstack_release={{ openstack_release }}
+{% endif %}
