@@ -1,0 +1,45 @@
+---
+# OpenNext VPN configuration
+openvpn_enabled: yes
+openvpn_etcdir: /etc/openvpn
+openvpn_keydir: "{{ openvpn_etcdir }}/keys"
+openvpn_use_external_repo: false
+openvpn_use_system_easyrsa: true
+openvpn_host: "{{ inventory_hostname }}"
+openvpn_port: 1194
+openvpn_proto: udp
+openvpn_dev: tun
+openvpn_server: 10.8.0.0 255.255.255.0
+openvpn_max_clients: 10
+openvpn_log: /var/log/openvpn.log
+openvpn_keepalive: "10 120"
+openvpn_ifconfig_pool_persist: ipp.txt
+openvpn_comp_lzo: yes
+openvpn_cipher: BF-CBC
+openvpn_status: openvpn-status.log
+openvpn_verb: 3
+openvpn_user: nobody
+openvpn_group: nogroup
+openvpn_resolv_retry: infinite
+openvpn_server_options: []
+openvpn_client_options: []
+openvpn_key_country: FR
+openvpn_key_province: Isere
+openvpn_key_city: Grenoble
+openvpn_key_org: OpenNext SAS
+openvpn_key_ou: ""
+openvpn_key_email: admin@opennext.io
+openvpn_key_size: 1024
+openvpn_clients: ["clients-{{ inventory_hostname }}"]
+openvpn_clients_revoke: []
+openvpn_use_pam: no
+openvpn_use_pam_users: []
+openvpn_use_ldap: no
+openvpn_ldap_tlsenable: 'no'
+openvpn_ldap_follow_referrals: 'no'
+openvpn_simple_auth: no
+openvpn_unified_client_profiles: no
+#openvpn_client_routes:
+#  - "172.29.236.0 255.255.252.0"
+#  - "172.29.244.0 255.255.252.0"
+#  - "172.29.240.0 255.255.252.0"

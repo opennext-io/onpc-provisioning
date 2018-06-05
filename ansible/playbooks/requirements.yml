@@ -2,3 +2,5 @@
 ---
 - src: https://github.com/obourdon/ansible-squid
   name: kbrebanov.squid
+- src: https://github.com/opennext-io/ansible.openvpn
+  name: ansible.openvpn

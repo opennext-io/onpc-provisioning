@@ -5,8 +5,9 @@
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
     - ../vars/infra-master-deploy-bifrost_vars.yml
+    - ../vars/infra-master-vpn_vars.yml
 
-  tasks:
+  pre_tasks:
 
     - name: Installing Nginx package
       package:
@@ -100,6 +101,14 @@
         infra_master_public_ips_and_or_names:
           - "{{ ansible_default_ipv4.address }}"
           - "{{ ipify_results.get('ansible_facts', {}).get('ipify_public_ip', '') }}"
+        openvpn_client_routes:
+          - "{{ hostvars[inventory_hostname]['ansible_br_host']['ipv4']['network'] }} {{ hostvars[inventory_hostname]['ansible_br_host']['ipv4']['netmask'] }}"
+          - "{{ hostvars[inventory_hostname]['ansible_br_mgmt']['ipv4']['network'] }} {{ hostvars[inventory_hostname]['ansible_br_mgmt']['ipv4']['netmask'] }}"
+
+    - name: Setting some more interesting facts to keep
+      set_fact:
+        openvpn_client_routes: "{{ openvpn_client_routes + [ hostvars[inventory_hostname]['ansible_br_prov']['ipv4']['network'] ~ ' ' ~ hostvars[inventory_hostname]['ansible_br_prov']['ipv4']['netmask'] ] }}"
+      when: real_baremetal | default(false) | bool == False
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_opennext_post_osa_deploy"
       vars:
@@ -110,3 +119,6 @@
   handlers:
     - name: restart nginx
       service: name=nginx state=restarted
+
+  roles:
+    - role: ansible.openvpn
