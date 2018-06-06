@@ -207,7 +207,7 @@
         mode: 0644
       vars:
         bootstrap_host_public_address: "{{ external_public_vip_address.split('/')[0] }}"
-        reserved_ips: "{{ osa_ips | sort }}"
+        reserved_ips: "{{ osa_ips | merge_ip_addresses }}"
         controller_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
         cinder_hosts_ips: "{{ cinder_hosts_ips_l | from_yaml }}"
         compute_hosts_ips: "{{ compute_hosts_ips_l | from_yaml }}"
