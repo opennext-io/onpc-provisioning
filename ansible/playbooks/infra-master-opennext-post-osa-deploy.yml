@@ -104,17 +104,38 @@
         openvpn_client_routes:
           - "{{ hostvars[inventory_hostname]['ansible_br_host']['ipv4']['network'] }} {{ hostvars[inventory_hostname]['ansible_br_host']['ipv4']['netmask'] }}"
           - "{{ hostvars[inventory_hostname]['ansible_br_mgmt']['ipv4']['network'] }} {{ hostvars[inventory_hostname]['ansible_br_mgmt']['ipv4']['netmask'] }}"
+        # Relying on variable format openvpn_server: 10.8.0.0 255.255.255.0
+        vpn_network: "{{ openvpn_server.split(' ') | join('/') | ipaddr('net') | ipaddr('0') }}"
 
     - name: Setting some more interesting facts to keep
       set_fact:
         openvpn_client_routes: "{{ openvpn_client_routes + [ hostvars[inventory_hostname]['ansible_br_prov']['ipv4']['network'] ~ ' ' ~ hostvars[inventory_hostname]['ansible_br_prov']['ipv4']['netmask'] ] }}"
       when: real_baremetal | default(false) | bool == False
 
+    - name: Computing network cidr adresses of client routes
+      set_fact:
+        routed_networks: "{% set sel = [] %} {% for x in openvpn_client_routes %} {% set l = sel.append(x.split(' ') | join('/') | ipaddr('net') | ipaddr('0')) %}{% endfor %}{{ sel | list | to_yaml }}"
+
+    - name: Computing final network cidr adresses of client routes
+      set_fact:
+        routed_networks_list: "{{ routed_networks | from_yaml }}"
+
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_opennext_post_osa_deploy"
       vars:
         keys_to_store:
           - "^osa_infos$"
           - "^infra_master_public_ips_and_or_names$"
+
+  post_tasks:
+
+    - name: Adding iptables masquerading rules
+      iptables:
+        table: nat
+        chain: POSTROUTING
+        source: "{{ vpn_network }}"
+        destination: "{{ item }}"
+        jump: MASQUERADE
+      with_items: "{{ routed_networks_list }}"
 
   handlers:
     - name: restart nginx
