@@ -80,11 +80,3 @@
       mount_point: /var/log
       fstab:
         options: "rw,relatime"
-- mkfs:
-    name: fs_home
-    base: lv_home
-    type: {{ home_fs_type | default('xfs') }}
-    mount:
-      mount_point: /home
-      fstab:
-        options: "rw,nodev,relatime"

@@ -49,11 +49,3 @@
             mount_point: /var/log
             fstab:
               options: "rw,relatime"
-      - name: home
-        size: {{ home_fs_size_gb | default(1) }}G
-        mkfs:
-          type: {{ home_fs_type | default('xfs') }}
-          mount:
-            mount_point: /home
-            fstab:
-              options: "rw,nodev,relatime"
