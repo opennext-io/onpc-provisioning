@@ -6,7 +6,7 @@ To restart clean from a VM based AIO existing deployment
 ### Step 1: Log onto infra-master machine and stop existing VM
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-virsh destroy osa-aio ; virsh undefine osa-aio --snapshots-metadata --remove-all-storage
+virsh destroy aio1 ; virsh undefine aio1 --snapshots-metadata --remove-all-storage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Note that the extra options also remove the existing disk(s) attached the VM from the libvirt pool
@@ -16,7 +16,7 @@ Note that the extra options also remove the existing disk(s) attached the VM fro
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Activate venv
 cd ~vagrant && . .venv/vbmc/bin/activate
-vbmc delete osa-aio
+vbmc delete aio1
 # Verify
 vbmc list
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,6 +51,7 @@ This step is mandatory as today, this utility has no cleanup functionnality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 sudo rm -f /etc/ansible/facts.d/opennext_infra_master_create_osa_nodes* \
            /etc/ansible/facts.d/opennext_osa_nodes_configure_system* \
+           /etc/ansible/facts.d/opennext_osa_master_opennext_deploy* \
            /etc/ansible/facts.d/opennext_infra_master_opennext_post_osa_deploy*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
