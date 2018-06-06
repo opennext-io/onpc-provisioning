@@ -136,6 +136,20 @@
         destination: "{{ item }}"
         jump: MASQUERADE
       with_items: "{{ routed_networks_list }}"
+      register: iptables_result
+
+    - name: Installing netfilter and iptables persistent packages
+      package:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - iptables-persistent
+        - netfilter-persistent
+      register: iptables_packages_result
+
+    - name: Saving iptables for persistence of rules across reboots
+      shell: netfilter-persistent save
+      when: iptables_result is changed or iptables_packages_result is changed
 
   handlers:
     - name: restart nginx
