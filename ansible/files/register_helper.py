@@ -162,6 +162,12 @@ def _patch_machine(uuid, vid, changes):
             'path': '/driver_info/ipmi_port',
             'value': changes['bmc_port']
         })
+    if 'roles' in changes:
+        patch.append({
+            'op': 'add',
+            'path': '/extra/roles',
+            'value': changes['roles']
+        })
     if len(patch) > 0:
         cloud = shade.operator_cloud(**shade_opts)
         cloud.patch_machine(uuid, patch)

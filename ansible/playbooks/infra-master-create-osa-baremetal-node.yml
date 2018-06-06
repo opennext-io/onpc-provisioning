@@ -1,3 +1,4 @@
+# Baremetal node provisioning
 ---
 - hosts: infra-master
   become: yes
@@ -20,6 +21,7 @@
           bmc_host: "{{ node_bmc_ip }}",
           bmc_user: "{{ node_bmc_user | default('admin') }}",
           bmc_password: "{{ node_bmc_passwd | default('password') }}",
+          roles: "{{ roles | default(['control', 'compute', 'storage']) }}"
         }
 
     - name: Retrieving infos from  {{ dnsmasq_conf_file }}

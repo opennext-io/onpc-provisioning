@@ -1,3 +1,4 @@
+# Multi VMs provisioning
 ---
 - hosts: infra-master
   become: no
@@ -45,6 +46,7 @@
         vncport: "{{ vm_item.vnc }}"
         vbmc_port: "{{ vm_item.bmc }}"
         vmmacprefix: "52:54:01"
+        roles: "{{ vm_item.roles }}"
       with_items:
         - {
           name: "osa-master",
@@ -54,6 +56,7 @@
           hdd: "{{ osa_master_disk_size | default(60) | int }}",
           vnc: 5901,
           bmc: 6001,
+          roles: ['osa-master'],
         }
         - {
           name: "infra1",
@@ -63,6 +66,7 @@
           hdd: "{{ osa_nodes_disk_size | default(100) | int }}",
           vnc: 5902,
           bmc: 6002,
+          roles: ['control', 'compute', 'storage'],
         }
         - {
           name: "infra2",
@@ -72,6 +76,7 @@
           hdd: "{{ osa_nodes_disk_size | default(100) | int }}",
           vnc: 5903,
           bmc: 6003,
+          roles: ['control', 'compute', 'storage'],
         }
         - {
           name: "infra3",
@@ -81,6 +86,7 @@
           hdd: "{{ osa_nodes_disk_size | default(100) | int }}",
           vnc: 5904,
           bmc: 6004,
+          roles: ['control', 'compute', 'storage'],
         }
       loop_control:
         loop_var: vm_item
