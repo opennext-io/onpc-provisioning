@@ -288,3 +288,18 @@ like nginx to provide access to Horizon and Grafana
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-post-osa-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This playbook now also install and configure an OpenVPN service on the infra-master node which
+allows complete access to local network, provisioning network and management network (br-mgmt).
+To use this VPN, fetch the zip file created automatically under /etc/openvpn/keys/*.zip and fetch
+it into your prefered VPN client. Example for OpenVPN CLI:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+rsync infra-master:/etc/openvpn/keys/*.zip /tmp
+mkdir /etc/openvpn/infra-master %% cd /etc/openvpn/infra-master
+unzip -q /tmp/*.zip
+openvpn2 /etc/openvpn/infra-master/*.ovpn
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Route to infra-master networks should be added (pushed) automatically and
+you should now be able to access any IP on those networks behind the VPN.
