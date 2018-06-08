@@ -1,5 +1,5 @@
----
 # OpenNext VPN configuration
+---
 openvpn_enabled: yes
 openvpn_etcdir: /etc/openvpn
 openvpn_keydir: "{{ openvpn_etcdir }}/keys"
@@ -21,7 +21,7 @@ openvpn_verb: 3
 openvpn_user: nobody
 openvpn_group: nogroup
 openvpn_resolv_retry: infinite
-openvpn_server_options: []
+openvpn_server_options: ['duplicate-cn']
 openvpn_client_options: []
 openvpn_key_country: FR
 openvpn_key_province: Isere
