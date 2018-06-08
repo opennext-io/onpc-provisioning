@@ -239,6 +239,9 @@ You can also customize the OSA VMs and specify values for #CPUs, memory, #HDDs, 
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml -e osa_nodes_disks=2 -e osa_nodes_disk_size=200
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Please play very close attention also to the IMPORTANT NOTE in step 7 concerning disks partitions in advance
+to specify your disks numbers and sizes.
+
 Anyhow, all VMs will get provisioned with IPA image (Ironic Python Agent) and register
 automatically into ironic to wait for proper provisioning.
 
@@ -269,7 +272,12 @@ Concerning the  1st phase (osa-nodes-configure-system), please note that in case
 and depending on the disk(s) you have specified for you VMs, you might want to customize the base_system_disk_device
 deployment parameter which is used to specify on which disk OSA partitioning requirements will be applied.
 The default value is defined in ansible/vars/osa-disks-partitions_vars.yml and is set to /dev/sda which is
-supposed to be sound for baremetal cases.
+supposed to be sound for baremetal cases. For virtualized environment it should most probably match /dev/vdX.
+
+IMPORTANT NOTE: please pay very close attention to the fact that the partition template defined in
+ansible/vars/osa-disks-partitions_vars.yml should be adapted to the disk(s) you have defined in step
+6 when deploying you VMs. The default template tries to put all partitions in a single disk
+whereas you might want to configure this over several if applicable.
 
 Please note that the final task in osa-master-opennext-deploy.yml can take a very long time to complete.
 If you want to see progress on this task, log into the osa-master node (which IP you will find in ~vagrant/osa-inventory)
