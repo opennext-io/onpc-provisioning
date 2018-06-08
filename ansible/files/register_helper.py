@@ -290,6 +290,15 @@ scheduler = BackgroundScheduler()
 job = scheduler.add_job(_get_shade_infos, 'interval', seconds=30)
 scheduler.start()
 
+# GET full dump of agent infos
+@app.route('/dump')
+@requires_auth
+def get_dump():
+    return jsonify({
+        'todo': todo_machines,
+        'registered': registered_machines,
+    })
+
 # GET request handler to list machines registered but not handled yet by Ironic
 @app.route('/waiting')
 @requires_auth
