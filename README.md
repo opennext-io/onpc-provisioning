@@ -283,13 +283,12 @@ into osa-inventory file in which case you do not need to add it on the command l
 
 Now that OpenStack Ansible is successfully deployed, the following
 command run on your ansible-master node deploys some additional services
-like nginx to provide access to Horizon and Grafana
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-post-osa-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This playbook now also install and configure an OpenVPN service on the infra-master node which
+Namingly, it installs and configures an OpenVPN service on the infra-master node which
 allows complete access to local network, provisioning network and management network (br-mgmt).
 To use this VPN, fetch the zip file created automatically under /etc/openvpn/keys/*.zip and fetch
 it into your prefered VPN client. Example for OpenVPN CLI:
@@ -303,3 +302,7 @@ openvpn2 /etc/openvpn/infra-master/*.ovpn
 
 Route to infra-master networks should be added (pushed) automatically and
 you should now be able to access any IP on those networks behind the VPN.
+
+Note that the previous installation and configuration of Nginx as a reverse proxy
+to access to Horizon and Grafana is now disabled by default and can be reinstated
+using -e opennext_reverse_nginx=True

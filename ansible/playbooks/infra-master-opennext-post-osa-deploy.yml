@@ -5,6 +5,7 @@
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
     - ../vars/infra-master-deploy-bifrost_vars.yml
+    - ../vars/infra-master-nginx_vars.yml
     - ../vars/infra-master-vpn_vars.yml
 
   pre_tasks:
@@ -13,6 +14,7 @@
       package:
         name: nginx
         state: latest
+      when: reverse_nginx_enabled
 
     - import_tasks: ../tasks/ssl_certs.yml
       vars:
@@ -27,6 +29,7 @@
         valid_date: "20181221162800Z"
         invalid_date: "20201221162800Z"
         valid_from_now_secs: "1209600"
+      when: reverse_nginx_enabled
 
     - name: Getting Public IP
       ipify_facts:
@@ -61,6 +64,7 @@
         mode: 0755
       notify:
         - restart nginx
+      when: reverse_nginx_enabled
 
     - name: Creating Nginx configuration file for OpenStack services and Grafana
       template:
@@ -76,6 +80,7 @@
           - "{{ ipify_results.get('ansible_facts', {}).get('ipify_public_ip', '') }}"
       notify:
         - restart nginx
+      when: reverse_nginx_enabled
 
     - name: Retrieving remote OSA user configuration
       slurp:
@@ -93,7 +98,7 @@
         owner: www-data
         group: www-data
         mode: 0644
-      when: not (nginx_info['content'] | b64decode is search (osa_nginx_regex_line))
+      when: reverse_nginx_enabled and not (nginx_info['content'] | b64decode is search (osa_nginx_regex_line))
 
     - name: Setting some interesting facts to keep
       set_fact:

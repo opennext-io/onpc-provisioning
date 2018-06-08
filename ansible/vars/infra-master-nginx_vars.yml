@@ -1,0 +1,3 @@
+# OpenNext Nginx reverse proxy configuration
+---
+reverse_nginx_enabled: "{{ opennext_reverse_nginx | default(false) | bool }}"
