@@ -265,6 +265,12 @@ ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbo
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Concerning the  1st phase (osa-nodes-configure-system), please note that in case of a virtualized environment,
+and depending on the disk(s) you have specified for you VMs, you might want to customize the base_system_disk_device
+deployment parameter which is used to specify on which disk OSA partitioning requirements will be applied.
+The default value is defined in ansible/vars/osa-disks-partitions_vars.yml and is set to /dev/sda which is
+supposed to be sound for baremetal cases.
+
 Please note that the final task in osa-master-opennext-deploy.yml can take a very long time to complete.
 If you want to see progress on this task, log into the osa-master node (which IP you will find in ~vagrant/osa-inventory)
 and, as root, do a tail -f /var/log/osa_run_playbooks*.logs.
