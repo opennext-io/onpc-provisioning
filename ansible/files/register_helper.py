@@ -200,10 +200,16 @@ def _get_shade_infos():
             for key in keys:
                 value = machine[key]
                 if key in ['extra']:
+                    dict_value = {}
                     v = value.get('all', None)
                     if v:
                         v = ast.literal_eval(v)
-                        value = {'all': v}
+                        dict_value['all'] = v
+                    v = value.get('roles')
+                    if v:
+                        dict_value['roles'] = v
+                    value = dict_value
+
                 # Only keep usefull informations
                 if key not in ['links', 'ports']:
                     new_machine[key] = value
@@ -316,7 +322,7 @@ def get_status():
         for f in ['vnc-info', 'virt-uuid', 'power_state', 'target_power_state',
         'provision_state', 'last_error', 'properties/cpus',
         'properties/local_gb', 'properties/memory_mb', 'target_provision_state',
-        'extra/all/macs', 'extra/all/interfaces/eth0/ip',
+        'extra/roles', 'extra/all/macs', 'extra/all/interfaces/eth0/ip',
         ]:
             if '/' not in f:
                 v1 = v.get(f)
