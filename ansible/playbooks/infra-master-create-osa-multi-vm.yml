@@ -108,11 +108,13 @@
 
     - name: Extracting VMs names from facts
       set_fact:
-        node_infos: "{{ hostvars[inventory_hostname].registered_status.json }}"
+        node_infos_init: "{{ hostvars[inventory_hostname].registered_status.json }}"
         node_names: "{{ hostvars[inventory_hostname].registered_status.json | json_query('keys(@)') }}"
         node_ips: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/all/interfaces/eth0/ip') | list }}"
         int_vip_addr: "{{ hostvars[inventory_hostname].ansible_br_mgmt.ipv4 }}"
         pub_addr: "{{ hostvars[inventory_hostname].ansible_br_prov.ipv4 }}"
+        registered_status_init: "{{ registered_status }}"
+        registered_machines_init: "{{ registered_machines }}"
 
     - name: Waiting for VMs to be reachable by SSH
       wait_for:
@@ -140,11 +142,17 @@
         int_pub_vip_itf: "br-mgmt"
         int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
 
+    - import_tasks: ../tasks/nodes_get_status.yml
+
+    - name: Extracting VMs names from facts
+      set_fact:
+        node_infos_init: "{{ hostvars[inventory_hostname].registered_status.json }}"
+
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"
       vars:
         keys_to_store:
-          - "^node_infos$"
+          - "^node_infos.*$"
           - "^node_ips$"
           - "^node_names$"
-          - "^registered_machines$"
-          - "^registered_status$"
+          - "^registered_machines.*$"
+          - "^registered_status.*$"
