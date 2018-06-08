@@ -52,7 +52,7 @@
   when: last_partition_infos | length != 1 and found_disk_partitions | length > 0
 
 - fail: msg="Not enough space remaining on disk for partition {{ partition_setup.get('name') }} required {{ partition_setup.get('size') }} remaining {{ remaining_disk_size }}"
-  when: existing_partition | length == 0 and remaining_disk_size < partition_setup.get('size') | float
+  when: existing_partition | length == 0 and remaining_disk_size | float < partition_setup.get('size') | float
 
 - name: Creating partition {{ partition_setup.get('name') }}
   parted:
