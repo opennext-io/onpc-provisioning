@@ -12,13 +12,22 @@
     - name: Retrieving facts
       setup:
 
-    - name: Setting facts
+    - name: Setting fact for infra-master IP address
       set_fact:
         infra_master_ip: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_create_osa_nodes', {}).keys()[0]}}"
 
-    - name: Setting facts
+    - name: Setting facts for all OSA nodes IP addresses and registration status
       set_fact:
-        osa_node_ips: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_create_osa_nodes', {}).get(infra_master_ip, {}).get('node_ips', []) }}"
+        osa_nodes_ips: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_create_osa_nodes', {}).get(infra_master_ip, {}).get('node_ips', []) }}"
+        osa_nodes_statii: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_create_osa_nodes', {}).get(infra_master_ip, {}).get('registered_status', {}).get('json', {}) }}"
+
+    - name: Setting fact for all OSA nodes roles
+      set_fact:
+        osa_nodes_roles: "{% set sel = {} %} {% for x in osa_nodes_statii | json_query('keys(@)') %}{% set l = sel.update({x: osa_nodes_statii.get(x, {}).get('extra/roles', [])}) %}{% endfor %}{{ sel | to_yaml }}"
+
+    - name: Setting fact for all OSA nodes roles
+      set_fact:
+        osa_nodes_roles: "{{ osa_nodes_roles | from_yaml }}"
 
 - hosts: osa-nodes,osa-master
   become: yes
@@ -106,7 +115,7 @@
         group: "root"
         mode: 0644
       vars:
-        ips: "{{ hostvars.get('infra-master', {}).get('osa_node_ips', []) }}"
+        ips: "{{ hostvars.get('infra-master', {}).get('osa_nodes_ips', []) }}"
         vlans: "{{ all_vlans_ips }}"
       when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
@@ -145,7 +154,7 @@
         group: "{{ systemuser }}"
         mode: 0644
       vars:
-        ips: "{{ hostvars.get('infra-master', {}).get('osa_node_ips', []) }}"
+        ips: "{{ hostvars.get('infra-master', {}).get('osa_nodes_ips', []) }}"
         vlans: "{{ all_vlans_ips }}"
       when: not (is_aio or osa_master_is_also_osa_node) or inventory_hostname != 'osa-master'
 
@@ -448,18 +457,16 @@
         state: directory
       with_items:
         - "/openstack"
-      when: not (is_aio or osa_master_is_also_osa_node) and inventory_hostname != 'osa-master'
+      when: (not (is_aio or osa_master_is_also_osa_node) or force_partitioning | default(false) | bool) and inventory_hostname != 'osa-master'
 
     - include_tasks: ../tasks/disk_partitions.yml
       vars:
         disk_setup: "{{ disk_item }}"
+        node_roles: "{{ hostvars.get('infra-master', {}).get('osa_nodes_roles', {}).get(inventory_hostname, []) }}"
       with_items: "{{ osa_disks }}"
       loop_control:
         loop_var: disk_item
-      when: not (is_aio or osa_master_is_also_osa_node) and inventory_hostname != 'osa-master'
-
-    - include_tasks: ../tasks/cinder_loopback.yml
-      when: not (is_aio or osa_master_is_also_osa_node) and inventory_hostname != 'osa-master'
+      when: (not (is_aio or osa_master_is_also_osa_node) or force_partitioning | default(false) | bool) and inventory_hostname != 'osa-master'
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:

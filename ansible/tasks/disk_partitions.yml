@@ -24,6 +24,7 @@
 
 - include_tasks: ../tasks/disk_partition_create.yml
   vars:
+    input_node_roles: "{{ node_roles }}"
     disk_device: "{{ disk_setup.get('device_path') }}"
     partition_setup: "{{ part_item }}"
   with_items: "{{  disk_setup.get('partitions', []) }}"
