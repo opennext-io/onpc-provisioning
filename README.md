@@ -283,10 +283,10 @@ Please note that the final task in osa-master-opennext-deploy.yml can take a ver
 If you want to see progress on this task, log into the osa-master node (which IP you will find in ~vagrant/osa-inventory)
 and, as root, do a tail -f /var/log/osa_run_playbooks*.logs.
 
-If you want to also run the tempest tests at the very end of the deployment, you can add the following option:
+If you do NOT want to run the tempest tests at the very end of the deployment, you can add the following option:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml -e run_tempest_tests=yes
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml -e run_tempest_tests=no
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IMPORTANT NOTE: if you have specified a value for openstack_release on the command line and not in the Ansible inventory file at step 2 above,
