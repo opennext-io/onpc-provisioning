@@ -111,7 +111,7 @@
         # Could also be /etc/network/interfaces.d/osa_interfaces.cfg
       environment: "{{ proxy_env | default({}) | combine({ 'TMPDIR': '/var/tmp', 'BOOTSTRAP_OPTS': 'bootstrap_host_data_disk_device=vdb' }) }}"
       register: bootstrap_aio_result
-      when: is_aio
+      when: is_aio and not ((force_networking| default(false) | bool) and (force_partitioning | default(false) | bool))
 
     - name: Creating mandatory directories
       file:
@@ -121,7 +121,7 @@
         - "{{ osa_deploy_conf_path }}"
         - "{{ osa_deploy_conf_path }}/conf.d"
         - "{{ osa_deploy_conf_path }}/env.d"
-      when: not is_aio
+      when: not is_aio or ((force_networking| default(false) | bool) and (force_partitioning | default(false) | bool))
 
     - name: Checking existence of user_secrets.yml
       stat:
@@ -168,7 +168,7 @@
         shared_infra_hosts_name: 'aio'
         compute_hosts_name: 'aio'
         storage_hosts_name: 'aio'
-        external_public_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['osa-master']['matching_ether_itfs'] }}"
+        external_public_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['aio1']['matching_ether_itfs'] }}"
       when: is_aio
 
     - name: Setting facts for AIO mode {{ is_aio }} is false
@@ -250,7 +250,7 @@
         backup: yes
         group: root
         mode: 0644
-      when: not is_aio
+      when: not is_aio or ((force_networking| default(false) | bool) and (force_partitioning | default(false) | bool))
 
     - name: Setting facts for OSA user configuration file
       set_fact:
