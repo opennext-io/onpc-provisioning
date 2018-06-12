@@ -23,6 +23,13 @@ osa_vlans: [
     prefix: "172.29.236",
     netmask: "255.255.252.0",
     gateway: "172.29.236.1",
+    roles: [
+      { name: "compute", assign_address: True },
+      { name: "control", assign_address: True },
+      { name: "infra-master", assign_address: True },
+      { name: "osa-master", assign_address: True },
+      { name: "storage", assign_address: True },
+    ],
   },
   {
     name: "storage",
@@ -31,6 +38,11 @@ osa_vlans: [
     bridge_comment: "bridge br-storage - storage network",
     prefix: "172.29.244",
     netmask: "255.255.252.0",
+    roles: [
+      { name: "compute", assign_address: True },
+      { name: "control", assign_address: False },
+      { name: "storage", assign_address: True },
+    ],
   },
   {
     name: "vxlan",
@@ -39,13 +51,22 @@ osa_vlans: [
     bridge_comment: "bridge br-vxlan - vxlan network",
     prefix: "172.29.240",
     netmask: "255.255.252.0",
+    roles: [
+      { name: "compute", assign_address: True },
+      { name: "control", assign_address: False },
+      { name: "network", assign_address: True },
+    ],
   },
   {
     name: "vlan",
     bridge_comment: "bridge br-vlan - vlan network",
-    bridge_mode: "manual",
     bridge_veth: "veth",
     bridge_veth_itf: "eth12",
-    bridge_prefix: "172.29.248",
+    prefix: "172.29.248",
+    netmask: "255.255.252.0",
+    roles: [
+      { name: "compute", assign_address: True },
+      { name: "control", assign_address: False },
+    ],
   },
 ]

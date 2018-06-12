@@ -410,6 +410,7 @@
         - prov_itf: "{{ remaining_itfs[0] }}"
         - vlans_list: "{{ osa_vlans | default([]) }}"
         - ip_suffix: "{{ ansible_host.split('.')[-1] }}"
+        - node_roles: "{{ hostvars.get('infra-master', {}).get('osa_nodes_roles', {}).get(inventory_hostname, []) }}"
 
     - name: Set fact for conditional execution
       set_fact:

@@ -16,11 +16,20 @@ iface {{ bridges_list[0].get('name') }} inet manual
         bridge_waitport 0
         offload-sg off
 {%- set prov_itf = bridges_list[0].get('name') %}
-{% endif %}
+{% endif %}{# if bridges_list is defined  and bridges_list | length == 1 #}
 
 {% if vlans_list is defined %}
 # VLANS
 {% for vlan in vlans_list %}
+{%- set vlan_roles = vlan.get('roles', []) %}
+{%- set matching_roles = vlan_roles | json_query('[*].name') | intersect(node_roles) %}
+{% if matching_roles | length > 0 %}
+{%- set roles_assign_address = (True in (vlan_roles | selectattr('name', 'in', matching_roles) | map(attribute='assign_address') | list)) %}
+{% if roles_assign_address %}
+{%- set itf_mode = 'static' %}
+{% else %}{# if roles_assign_address #}
+{%- set itf_mode = 'manual' %}
+{% endif %}{# if roles_assign_address #}
 {% if vlan.get('id') %}
 {%- set vitf = prov_itf ~ '.' ~ vlan.get('id') %}
 
@@ -28,26 +37,26 @@ iface {{ bridges_list[0].get('name') }} inet manual
 auto {{ vitf }}
 iface {{ vitf }} inet manual
         vlan_raw_device {{ prov_itf }}
-{% else %}
+{% else %}{# if vlan.get('id') #}
 {%- set vitf = prov_itf %}
-{% endif %}
+{% endif %}{# if vlan.get('id') #}
 
 {% if vlan.get('name') %}
 # {{ vlan.get('bridge_comment', '') }}
 auto br-{{ vlan.get('name') }}
-iface br-{{ vlan.get('name') }} inet {{ vlan.get('bridge_mode', 'static') }}
-{% if vlan.get('prefix') and vlan.get('netmask') %}
+iface br-{{ vlan.get('name') }} inet {{ itf_mode }}
+{% if vlan.get('prefix') and vlan.get('netmask') and roles_assign_address | bool %}
         address {{ vlan.get('prefix') }}.{{ ip_suffix | default("1") }}
         netmask {{ vlan.get('netmask') }}
 {% if vlan.get('gateway') %}
         gateway {{ vlan.get('gateway') }}
-{% endif %}
+{% endif %}{# if vlan.get('gateway') #}
 {% if vlan.get('dns-nameservers') %}
         dns-nameservers {{ vlan.get('dns-nameservers') }}
-{% endif %}
+{% endif %}{# if vlan.get('dns-nameservers') #}
         bridge_maxwait 5
         offload-sg off
-{% endif %}
+{% endif %}{# if vlan.get('prefix') and vlan.get('netmask') #}
 {% if vlan.get('bridge_veth') and vlan.get('bridge_veth') | length > 0 %}
         # Create veth pair, do not abort if already exists
         pre-up ip link add br-{{ vlan.get('name') }}-{{ vlan.get('bridge_veth') }} type veth peer name {{ vlan.get('bridge_veth_itf', 'eth12') }} || true
@@ -57,12 +66,13 @@ iface br-{{ vlan.get('name') }} inet {{ vlan.get('bridge_mode', 'static') }}
         # Delete veth pair on DOWN
         post-down ip link del br-{{ vlan.get('name') }}-{{ vlan.get('bridge_veth') }} || true
         bridge_ports {{ vitf }} br-{{ vlan.get('name') }}-{{ vlan.get('bridge_veth') }}
-{% else %}
+{% else %}{# if vlan.get('bridge_veth') and vlan.get('bridge_veth') | length > 0 #}
         bridge_ports {{ vitf }}
-{% endif %}
+{% endif %}{# if vlan.get('bridge_veth') and vlan.get('bridge_veth') | length > 0 #}
         bridge_stp off
         bridge_fd 0
         bridge_waitport 0
-{% endif %}
-{%- endfor %}
-{%- endif %}
+{% endif %}{# if vlan.get('name') #}
+{% endif %}{# if matching_roles | length > 0 #}
+{%- endfor %}{# for vlan in vlans_list #}
+{%- endif %}{# if vlans_list is defined #}

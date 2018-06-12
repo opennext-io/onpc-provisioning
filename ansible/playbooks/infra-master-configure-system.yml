@@ -256,6 +256,7 @@
       vars:
         - prov_itf: "{{ secondary_itf.device }}"
         - bridges_list: "{{ opennext_bridges }}"
+        - node_roles: ['infra-master']
 
     - name: Set fact for conditional execution
       set_fact:
