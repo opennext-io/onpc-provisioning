@@ -21,3 +21,4 @@ osa_master_runs_on_osa_node=True
 {% if openstack_release is defined and openstack_release | length > 0 %}
 openstack_release={{ openstack_release }}
 {% endif %}
+force_partitioning={{ no_templated_partitioning | default(true) | bool }}
