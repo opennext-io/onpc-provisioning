@@ -38,12 +38,11 @@
     found_disk_partitions: "{{ partitions_infos.get('partitions', []) }}"
     found_disk_size: "{{ partitions_infos.get('disk', {}).get('size') }}"
     partition_roles: "{{ partition_setup.get('roles', []) }}"
-#    node_roles: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get() }}"
 
 - name: Setting partitions role facts
   set_fact:
     is_partition_for_all_roles: "{{ (partition_roles | length == 0) | bool }}"
-    is_role_match: "{{ ((partition_roles | json_query('[*].keys(@)') | flatten | intersect(input_node_roles)) | length > 0) | bool }}"
+    is_role_match: "{{ ((partition_roles | json_query('[*].name') | intersect(input_node_roles)) | length > 0) | bool }}"
 
 - name: Setting partitions role final test facts
   set_fact:
