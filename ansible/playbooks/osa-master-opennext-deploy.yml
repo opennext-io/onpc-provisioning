@@ -168,6 +168,8 @@
         shared_infra_hosts_name: 'aio'
         compute_hosts_name: 'aio'
         storage_hosts_name: 'aio'
+        image_hosts_name: 'aio'
+        log_hosts_name: 'aio'
         external_public_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['aio1']['matching_ether_itfs'] }}"
       when: is_aio
 
@@ -229,6 +231,8 @@
         cinder_hosts_ips: "{{ cinder_hosts_ips_l | from_yaml }}"
         compute_hosts_ips: "{{ compute_hosts_ips_l | from_yaml }}"
         neutron_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
+        image_hosts_ips: ["{{ cinder_hosts_ips_l | from_yaml | first }}"]
+        log_hosts_ips: ["{{ controller_hosts_ips_l | from_yaml | first }}"]
 
     - name: Retrieving OpenNext user_variables.yml template from osa-master host
       fetch:
