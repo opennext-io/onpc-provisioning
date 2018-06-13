@@ -143,6 +143,23 @@
       changed_when: false
       when: not user_secrets_info.stat.exists
 
+    - name: Checking existence of user_onpc_secrets.yml
+      stat:
+        path: "{{ osa_deploy_conf_path }}/user_onpc_secrets.yml"
+      register: user_onpc_secrets_info
+
+    - name: Copying template of user_onpc_secrets.yml
+      copy:
+        src: "/opt/onpc-basic-model/etc/openstack_deploy/user_onpc_secrets.yml"
+        dest: "{{ osa_deploy_conf_path }}/user_onpc_secrets.yml"
+        remote_src: yes
+      when: not user_onpc_secrets_info.stat.exists
+
+    - name: Generating any missing values in user_onpc_secrets
+      command: "/opt/ansible-runtime/bin/python /opt/openstack-ansible/scripts/pw-token-gen.py --file {{ osa_deploy_conf_path }}/user_onpc_secrets.yml"
+      changed_when: false
+      when: not user_onpc_secrets_info.stat.exists
+
 - hosts: osa-nodes
 
   tasks:
