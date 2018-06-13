@@ -190,7 +190,9 @@
         storage_hosts_name: 'aio'
         image_hosts_name: 'aio'
         log_hosts_name: 'aio'
-        external_public_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['aio1']['matching_ether_itfs'] }}"
+        external_public_vip_itf: "{{ osa_nodes_infos['aio1']['matching_ether_itfs'] }}"
+        internal_public_vip_address: "{{ hostvars['aio1']['internal_public_vip_address'] }}"
+        external_public_vip_address: "{{ hostvars['aio1']['external_public_vip_address'] }}"
       when: is_aio
 
     - name: Setting facts for AIO mode {{ is_aio }} is false
@@ -201,7 +203,9 @@
         shared_infra_hosts_name: 'infra'
         compute_hosts_name: 'infra'
         storage_hosts_name: 'infra'
-        external_public_vip_itf: "{{ hostvars[inventory_hostname].get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {})['infra1']['matching_ether_itfs'] }}"
+        external_public_vip_itf: "{{ osa_nodes_infos['infra1']['matching_ether_itfs'] }}"
+        internal_public_vip_address: "{{ hostvars['infra1']['internal_public_vip_address'] }}"
+        external_public_vip_address: "{{ hostvars['infra1']['external_public_vip_address'] }}"
       when: not is_aio
 
     - name: Computing OSA deployment nodes facts
@@ -246,6 +250,7 @@
         mode: 0644
       vars:
         bootstrap_host_public_address: "{{ external_public_vip_address.split('/')[0] }}"
+        internal_vip_address: "{{ internal_public_vip_address | ipaddr('address') }}"
         reserved_ips: "{{ osa_ips | merge_ip_addresses(osa_networks | from_yaml) }}"
         controller_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
         cinder_hosts_ips: "{{ cinder_hosts_ips_l | from_yaml }}"
@@ -264,7 +269,7 @@
     - name: Setting OpenNext facts
       set_fact:
         hapk_int_vip_cidr: "{{ internal_public_vip_address }}"
-        hapk_ext_vip_cidr: "{{ external_public_vip_address }}"
+        hapk_ext_vip_cidr: "{{ external_public_vip_address }}/32"
         hapk_ext_itf: "{{ external_public_vip_itf }}"
 
     - name: Writing user_variables.yml on osa-master host
