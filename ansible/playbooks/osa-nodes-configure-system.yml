@@ -67,6 +67,9 @@
     - fail: msg="Missing ip_prefix information"
       when: ip_prefixes | length != 1
 
+    - fail: msg="isolated_network option can only be used in AIO mode"
+      when: not is_aio and isolated_network is defined and isolated_network | bool
+
     - name: Setting facts
       set_fact:
         ip_prefix: "{{ ip_prefixes[0] }}"

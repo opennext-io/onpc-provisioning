@@ -30,7 +30,9 @@ iface {{ bridges_list[0].get('name') }} inet manual
 {% else %}{# if roles_assign_address #}
 {%- set itf_mode = 'manual' %}
 {% endif %}{# if roles_assign_address #}
-{% if vlan.get('id') %}
+{% if isolated_network is defined and isolated_network | bool %}
+{%- set vitf = 'none' %}
+{% elif vlan.get('id') %}{# if isolated is defined and isolated | bool #}
 {%- set vitf = prov_itf ~ '.' ~ vlan.get('id') %}
 
 # {{ vlan.get('vlan_comment', '') }}
