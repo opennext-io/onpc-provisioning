@@ -417,7 +417,7 @@
         group: root
         mode: 0644
       register: vlan_changed
-      when: is_host_to_be_modified and remaining_itfs | length > 0 and (not is_aio or (force_networking| default(false) | bool))
+      when: is_host_to_be_modified and remaining_itfs | length > 0 and (not is_aio or (force_networking | default(false) | bool))
       vars:
         - prov_itf: "{{ remaining_itfs[0] }}"
         - vlans_list: "{{ osa_vlans | default([]) }}"
