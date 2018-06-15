@@ -39,13 +39,10 @@
         extents: {{ tmp_fs_size_percent | default(10) }}%VG
       - name: lv_var
         base: vg
-        extents: {{ var_fs_size_percent | default(35) }}%VG
+        extents: {{ var_fs_size_percent | default(40) }}%VG
       - name: lv_log
         base: vg
         extents: {{ log_fs_size_percent | default(20) }}%VG
-      - name: lv_home
-        base: vg
-        extents: {{ home_fs_size_percent | default(5) }}%VG
 - mkfs:
     name: fs_root
     base: lv_root
