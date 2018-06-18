@@ -488,7 +488,7 @@
         state: directory
       with_items:
         - "/openstack"
-      when: is_host_to_be_modified or ((force_partitioning | default(false) | bool) and inventory_hostname != 'osa-master')
+      when: is_host_to_be_modified and inventory_hostname != 'osa-master' and force_partitioning | default(false) | bool
 
     - include_tasks: ../tasks/disk_partitions.yml
       vars:
@@ -497,7 +497,7 @@
       with_items: "{{ osa_disks }}"
       loop_control:
         loop_var: disk_item
-      when: is_host_to_be_modified or ((force_partitioning | default(false) | bool) and inventory_hostname != 'osa-master')
+      when: is_host_to_be_modified and inventory_hostname != 'osa-master' and force_partitioning | default(false) | bool
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_nodes_configure_system"
       vars:
