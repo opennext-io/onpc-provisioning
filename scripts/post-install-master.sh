@@ -130,15 +130,17 @@ _EOF
 }
 
 # Virtualization specific tasks
-virtualization=$(type virt-what >/dev/null 2>&1 && virt-what | tr '\n' ' ' | sed -e 's/  *$//')
-hosttype=$(type dmidecode >/dev/null 2>&1 && dmidecode -s system-product-name)
-# dmidecode is available and output is used to do some virtualization specific steps
-if [ $? -eq 0 ]; then
-	case $hosttype in
-		VirtualBox) vbox;;
-		*)      echo -e "\nWARNING $(basename $0): unsupported platform $hosttype\n";;
-	esac
+if type virt-what >/dev/null 2>&1; then
+	virtualization=$(virt-what | tr '\n' ' ' | sed -e 's/  *$//')
 fi
+if type dmidecode >/dev/null 2>&1; then
+	hosttype=$(dmidecode -s system-product-name)
+fi
+# dmidecode is available and output is used to do some virtualization specific steps
+case "$hosttype" in
+	VirtualBox) vbox;;
+	*)      echo -e "\nWARNING $(basename $0): unsupported platform $hosttype\n";;
+esac
 
 # Regenerate some initrd files if missing
 regen=""
