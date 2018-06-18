@@ -204,14 +204,6 @@
         }
       when: is_host_to_be_modified and proxy_host is defined
 
-    - name: Saving working initramdisk
-      copy:
-        src: "/boot/initrd.img-{{ ansible_kernel }}"
-        dest: "/boot/initrd.img-{{ ansible_kernel }}-OK"
-        force: no
-        remote_src: yes
-      when: is_host_to_be_modified
-
     - name: Remove known problem packages
       package:
         name: "{{ prohibited_systempkgs }}"
@@ -224,22 +216,6 @@
         name: "{{ systempkgs | sort }}"
         state: latest
       environment: "{{ proxy_env | default('{}') }}"
-      when: is_host_to_be_modified
-
-    - name: Copying modifed initramdisk
-      copy:
-        src: "/boot/initrd.img-{{ ansible_kernel }}"
-        dest: "/boot/initrd.img-{{ ansible_kernel }}-BAD"
-        force: no
-        remote_src: yes
-      when: is_host_to_be_modified
-
-    - name: Restoring working initramdisk
-      copy:
-        src: "/boot/initrd.img-{{ ansible_kernel }}-OK"
-        dest: "/boot/initrd.img-{{ ansible_kernel }}"
-        force: yes
-        remote_src: yes
       when: is_host_to_be_modified
 
     - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
