@@ -135,7 +135,7 @@
     - name: Retrieving all deploy options
       set_fact:
         all_args: "-e network_interface={{ itf }}{{ keystone_opts }}{{ os_opts }}{{ opennext_opts }}"
-        args_file: "{{ systemuserhome }}/deploy_args.yml"
+        args_file: "{{ bifrost_env_vars_file }}"
 
     - name: Populating remote configuration file
       template:

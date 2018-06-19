@@ -24,7 +24,7 @@
 
     - name: Retrieving Remote Deploy Informations
       slurp:
-        src: "{{ systemuserhome }}/deploy_args.yml"
+        src: "{{ bifrost_env_vars_file }}"
       register:
         deploy_info
 
