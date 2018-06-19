@@ -22,6 +22,9 @@ opennext_vlans: [
     bridge_comment: "bridge br-prov - infrastructure provisioning network",
     prefix: "{{ ip_prefix | default('20.20.20') }}",
     netmask: "{{ ip_netmask | default('255.255.255.0') }}",
+    roles: [
+      { name: "infra-master", assign_address: True },
+    ],
   },
 ]
 opennext_bridges: [
