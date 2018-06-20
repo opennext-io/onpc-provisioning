@@ -78,7 +78,7 @@
     - name: Getting Setup Result
       set_fact:
         todo: "{{ setup_result.stdout.split('\n')[-3:-1] | join(' && ') | replace('source','.') | replace('env-vars','../env-vars') }}"
-        dib_std_options: " -e deploy_image_filename={{ deployimagefilename }} -e dib_init_element=dhcp-all-interfaces -e dib_image_type=bootloader -e extra_dib_elements='dracut-regenerate devuser openssh-server' -e dib_packages=python,python3-yaml,dracut,dnsutils,net-tools,netcat,iputils-ping,traceroute,curl"
+        dib_std_options: " -e deploy_image_filename={{ deployimagefilename }} -e dib_init_element=dhcp-all-interfaces -e dib_image_type=bootloader -e extra_dib_elements='devuser openssh-server' -e dib_packages=python,python3-yaml,dnsutils,net-tools,netcat,iputils-ping,traceroute,curl,lvm2,xfsprogs,initramfs-tools"
 
     - name: Setting partitioning informations
       set_fact:
@@ -98,7 +98,7 @@
     - name: Computing OS Image Options
       set_fact:
         os_opts: "{{ dib_std_options | default('') }}{{ dib_partitioning_infos | default('') }} -e dib_imagesize={{ root_part_size_gb | default(60) }} -e dib_os_release={{ os_release | default('xenial') }} -e dib_os_element={{ os_flavor | default('ubuntu-minimal') }} -e ipa_upstream_release={{ upstream_release | default('stable-queens') }}"
-        opennext_opts: " -e use_symlinks=true{{ opennext_ipa | default('') }}{{ opennext_ipxe | default('') }}"
+        opennext_opts: " -e ironic_tftp_master_path=/httpboot/master_images{{ opennext_ipa | default('') }}{{ opennext_ipxe | default('') }}"
 
     - name: Computing Keystone Options
       set_fact:
