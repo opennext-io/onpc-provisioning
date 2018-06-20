@@ -78,7 +78,7 @@
     - name: Getting Setup Result
       set_fact:
         todo: "{{ setup_result.stdout.split('\n')[-3:-1] | join(' && ') | replace('source','.') | replace('env-vars','../env-vars') }}"
-        dib_std_options: " -e deploy_image_filename={{ deployimagefilename }} -e dib_init_element=dhcp-all-interfaces -e dib_image_type=bootloader -e extra_dib_elements=dracut-regenerate,devuser,openssh-server -e dib_packages=python,python3-yaml,dracut,dnsutils,net-tools,netcat,iputils-ping,traceroute,curl"
+        dib_std_options: " -e deploy_image_filename={{ deployimagefilename }} -e dib_init_element=dhcp-all-interfaces -e dib_image_type=bootloader -e extra_dib_elements='dracut-regenerate devuser openssh-server' -e dib_packages=python,python3-yaml,dracut,dnsutils,net-tools,netcat,iputils-ping,traceroute,curl"
 
     - name: Setting partitioning informations
       set_fact:
@@ -139,13 +139,13 @@
 
     - name: Populating remote configuration file
       template:
-        src: ../templates/extra_deployment_args.j2
+        src: ../templates/bifrost_extra_deployment_args.j2
         dest: "{{ args_file }}"
         owner: "{{ systemuser }}"
         group: "{{ systemuser }}"
         mode: 0644
       vars:
-        args: "{{ all_args.split(' ') | reject('equalto', '-e') | list }}"
+        args: "{{ (all_args | replace(' -e ', '\n') | replace('-e ', '')).split('\n') | list }}"
 
     - name: Setting fact for command line to execute on remote
       set_fact:
