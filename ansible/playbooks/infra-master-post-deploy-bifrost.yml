@@ -178,7 +178,7 @@
         name:
           - flask
           - apscheduler
-          - git+https://github.com/obourdon/shade
+          - git+https://github.com/openstack-infra/shade
           - flask_httpauth
 
     - name: Copying Register Helper Python Code
