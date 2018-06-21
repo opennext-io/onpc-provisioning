@@ -17,7 +17,7 @@
 - fail: msg="Node name can not be empty"
   when: node_name is defined and node_name | length == 0
 
-- name: Getting status from register-helper utility agent (by count)
+- name: Waiting for status availability from register-helper utility agent (by node count)
   uri:
     url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
     force_basic_auth: yes
@@ -29,12 +29,55 @@
   retries: "{{ node_status_retries | default(8) }}"
   when: node_name is undefined
 
-- name: Storing status result (by count)
+- name: Waiting for proper status from register-helper utility agent (by node count)
+  uri:
+    url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+    force_basic_auth: yes
+    user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+    password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+  register: tmp_registered_status
+  until: ((tmp_registered_status.content_length | int > 3) and (
+   (tmp_registered_status.get('json', {}).values() | selectattr('provision_state', 'defined') | selectattr('provision_state', 'equalto', 'active') | map(attribute='provision_state') | list | length >= nodes_nb | default(1))
+   or
+   (tmp_registered_status.get('json', {}).values() | selectattr('provision_state', 'defined') | selectattr('provision_state', 'equalto', 'deploy failed') | map(attribute='provision_state') | list | length >= 1)
+   ))
+  delay: "{{ node_prov_status_delay | default(30) }}"
+  retries: "{{ node_prov_status_retries | default(30) }}"
+  when: node_name is undefined
+
+- block:
+  - name: Waiting for error to be available in status from register-helper utility agent (by node count)
+    uri:
+      url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+      force_basic_auth: yes
+      user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+      password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+    register: error_status
+    until: (error_status.content_length | int > 3) and (error_status.get('json', {}).values() | selectattr('last_error', 'defined') | list | length >= 1)
+    delay: "{{ node_error_status_delay | default(15) }}"
+    retries: "{{ node_error_status_retries | default(12) }}"
+
+  - name: Storing error(s) as facts
+    set_fact:
+      deploy_errors: "{{ error_status.get('json', {}).values() | selectattr('last_error', 'defined') | map(attribute='last_error') | list }}"
+
+  - include_tasks: ../tasks/ironic_print_deploy_error.yml
+    vars:
+      ironic_error: "{{ error_item }}"
+    with_items: "{{ deploy_errors }}"
+    loop_control:
+      loop_var: error_item
+
+  - debug: msg="{{ ironic_error_msg_dict }}"
+  - fail: msg="Deploy failed (see debug message above)"
+  when: node_name is undefined and (tmp_registered_status.get('json', {}).values() | selectattr('provision_state', 'defined') | selectattr('provision_state', 'equalto', 'deploy failed') | map(attribute='provision_state') | list | length >= 1)
+
+- name: Storing status result (by node count)
   set_fact:
     registered_status: "{{ tmp_registered_status }}"
   when: not tmp_registered_status.get('skipped', False)
 
-- name: Getting status from register-helper utility agent (by name)
+- name: Waiting for status availability from register-helper utility agent (by node name)
   uri:
     url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
     force_basic_auth: yes
@@ -46,7 +89,7 @@
   retries: "{{ node_status_retries | default(8) }}"
   when: node_name is defined
 
-- name: Storing status result (by name)
+- name: Storing status result (by node name)
   set_fact:
     registered_status: "{{ tmp_registered_status }}"
   when: not tmp_registered_status.get('skipped', False)
