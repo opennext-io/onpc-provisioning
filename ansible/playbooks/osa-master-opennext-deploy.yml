@@ -68,7 +68,7 @@
 
     - name: Retrieving OSA GitHub Repository
       git:
-        repo: "https://github.com/obourdon/openstack-ansible"
+        repo: "https://github.com/opennext-io/openstack-ansible"
         dest: "{{ dest_repo_dir }}/openstack-ansible"
         accept_hostkey: yes
         force: yes

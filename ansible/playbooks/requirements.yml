@@ -1,6 +1,6 @@
 # Role requirements to be installed from Ansible Galaxy
 ---
-- src: https://github.com/obourdon/ansible-squid
+- src: https://github.com/opennext-io/ansible.squid
   name: kbrebanov.squid
 - src: https://github.com/opennext-io/ansible.openvpn
   name: ansible.openvpn

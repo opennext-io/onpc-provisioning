@@ -24,7 +24,7 @@
 
     - name: Retrieving Bifrost GitHub Repository
       git:
-        repo: https://github.com/obourdon/bifrost
+        repo: https://github.com/opennext-io/bifrost
         dest: "{{ git }}"
         update: no
 
