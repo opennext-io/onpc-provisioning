@@ -119,6 +119,8 @@
         node_status_delay: 30
         node_status_retries: 20
         nodes_nb: 4
+        node_prov_status_delay: 30
+        node_prov_status_retries: 80
 
     - name: Extracting VMs names from facts
       set_fact:
