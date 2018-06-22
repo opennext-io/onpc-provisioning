@@ -14,9 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Set facts from input variable
 - set_fact:
     ironic_error_msg: "{{ ironic_error | regex_replace('^([^{]*) {.*', '\\1') }}"
     ironic_error_dict: "{{ ironic_error | regex_replace('^[^{]* ({.*)$', '\\1') }}"
 
+# Pretty print strings with \n's converting to list of strings
 - set_fact:
-    ironic_error_msg_dict: "{{ {'error': ironic_error_msg } | combine(ironic_error_dict) }}"
+    ironic_error_pretty_dict: "{% set sel = {} %}{% for k,v in ironic_error_dict.iteritems() %}{% if v is string %}{% set v1=v.split('\n') %}{% else %}{% set v1=v %}{% endif %}{% set l = sel.update({k: v1}) %}{% endfor %}{{ sel }}"
+
+# Compose final result
+- set_fact:
+    ironic_error_msg_dict: "{{ {'error': ironic_error_msg } | combine(ironic_error_pretty_dict) }}"
