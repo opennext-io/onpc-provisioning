@@ -50,11 +50,27 @@
     command: status
   register: vm_status
 
+# This is required so as to not restart a VM with failed deploy status
+# if the VM is restarted it will run into the followin code
+# https://github.com/openstack/ironic/blob/ce9bdbffb13eed27439d7a70666d29c782256635/ironic/conductor/utils.py#L285:L291
+# which will reset the last_error field to None
+- name: Checking {{ vmname }} VM status in register-helper utility agent
+  uri:
+    url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+    force_basic_auth: yes
+    user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+    password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+    status_code: 200
+  register: vm_register_status
+
 - name: Starting {{ vmname }} VM
   virt:
     name: "{{ vmname }}"
     command: start
-  when: vm_status.get('status', '') != 'running'
+  when: (vm_status.get('status', '') != 'running' and
+    vm_register_status is defined and (
+      vmname not in vm_register_status.json or
+      vm_register_status.json.get(vmname, {}).get('provision_state', '') != 'deploy failed'))
 
 - name: Getting informations on {{ vmname }} VM
   virt:
