@@ -36,11 +36,34 @@
     dest: "/etc/network/interfaces.d/{{ itf_name }}.cfg"
   register: prov_interface_infos
 
-- name: Setting additionial baremetal provisioning options (router)
+- name: Setting additionial baremetal provisioning options (router, DNS servers, IP prefix)
   set_fact:
     default_router: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('gateway', '') }}"
-    dns_servers: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('dns-nameservers', '').split(' ') | list }}"
+    # Need to reject empty strings from splitted results
+    dns_servers: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('dns-nameservers', '').split(' ') | reject('equalto', '') | list }}"
     itf_ip_prefix: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('address', '').split('.')[0:3] | join('.') }}"
+
+# Some networking informations can be empty if using DHCP for instance
+# therefore we need to take care of these cases by checking that values
+# are not empty/0-in-length and if yes retrieve the informations from
+# somewhere else
+
+# When interface IP prefix is empty retrieve from running system informations
+- name: Setting additionial baremetal provisioning options (router)
+  set_fact:
+    itf_ip_prefix: "{{ prov_sys_infos.get('ipv4', {}).get('address', '').split('.')[0:3] | join('.') }}"
+  when: itf_ip_prefix | length == 0
+
+# When router info is empty retrieve from running system informations
+- block:
+  - name: Retrieving default router informations
+    shell: awk '$2=="00000000"{for (i=7;i>=0;i-=2) printf "%d.",strtonum("0x" substr($3,i,2));exit}' /proc/net/route | sed -e 's/\.$//'
+    register: default_router_infos
+
+  - name: Setting additionial baremetal provisioning options (router)
+    set_fact:
+      default_router: "{{ default_router_infos.stdout }}"
+  when: default_router | length == 0
 
 - name: Checking existence of {{ resolv_conf_file }}
   stat:
@@ -55,8 +78,14 @@
 
 - name: Retrieving nameservers defined in {{ resolv_conf_file }}
   set_fact:
-    resolv_conf_dns: "{{ resolv_conf_contents['content'] | b64decode | regex_findall('nameserver .*') | map('replace', 'nameserver ', '') | list }}"
+    resolv_conf_dns: "{{ (resolv_conf_contents['content'] | b64decode).split('\n') | select('match', '^nameserver .*$') | map('replace', 'nameserver ', '') | list }}"
   when: resolv_conf_stat.stat.exists
+
+# When DNS servers info is empty retrieve from running system informations
+- name: Using nameservers defined in {{ resolv_conf_file }}
+  set_fact:
+    dns_servers: "{{ resolv_conf_dns }}"
+  when: dns_servers | length == 0
 
 - name: Checking existence of {{ ntp_conf_file }}
   stat:
@@ -69,10 +98,25 @@
   register: ntp_conf_contents
   when: ntp_conf_stat.stat.exists
 
-- name: Retrieving servers defined in {{ ntp_conf_file }}
+- name: Retrieving NTP servers defined in {{ ntp_conf_file }}
   set_fact:
-    ntp_servers: "{{ (ntp_conf_contents['content'] | b64decode).split('\n') | select('match', '^server') | map('replace', 'server ', '') | list }}"
+    ntp_servers: "{{ (ntp_conf_contents['content'] | b64decode).split('\n') | select('match', '^server ') | map('replace', 'server ', '') | list }}"
   when: ntp_conf_stat.stat.exists
+
+# When NTP servers info is empty set from pool list
+- block:
+  - name: Using pool list of NTP servers
+    set_fact:
+      ntp_servers_names: "{{ (ntp_conf_contents['content'] | b64decode).split('\n') | select('match', '^pool ') | map('regex_replace', '^pool (\\S+).*', '\\1') | list }}"
+  - name: Converting NTP servers to IP addresses
+    set_fact:
+      ntp_server_ip: "{{ lookup('dig', item, wantlist=True)[0] }}"
+    with_items: "{{ ntp_servers_names }}"
+    register: ntp_servers_ips
+  - name: Retrieving NTP servers defined in {{ ntp_conf_file }}
+    set_fact:
+      ntp_servers: "{{ ntp_servers_ips.get('results', []) | map(attribute='ansible_facts') | map(attribute='ntp_server_ip') | list }}"
+  when: ntp_servers | length == 0
 
 - name: Setting extra option for default router in Bifrost/Ironic dnsmasq configuration
   set_fact:
