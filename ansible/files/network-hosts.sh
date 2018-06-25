@@ -9,7 +9,7 @@ fqdn=${host}${domain}
 echo "$fqdn" >/etc/hostname
 
 (echo "# Dynamically added at startup by $0 script" ; \
- ip a | awk -v h=${fqdn}=${host} 'BEGIN{n=0;split(h,a,"=");} /^[1-9][0-9]*: .* state UP/{ok=1;itf=$2;gsub(":$","",itf);next} /^[1-9]/{ok=0} ok && /inet /{split($2,b,"/");n++;printf "%s\t",b[1]; if (n==1) {printf "%s ",a[1]; };printf "%s-%s\n",a[2],itf}' ; \
+ ip a | awk -v h=${fqdn}=${host} 'BEGIN{n=0;split(h,a,"=");} /^[1-9][0-9]*: .* state UP/{ok=1;itf=$2;gsub(":$","",itf);next} /^[1-9]/{ok=0} ok && /inet /{split($2,b,"/");n++;printf "%s\t",b[1]; if (n==1) {printf "%s %s ",a[1],a[2]; };printf "%s-%s\n",a[2],itf}' ; \
  echo '# Standard entries' ; \
  cat /etc/hosts.tmpl \
 ) | sed -e 's/=/ /g' >/etc/hosts
