@@ -11,6 +11,13 @@ VirtualBox or KVM VM:
 PROXY=http://192.168.0.116:8080/ ./scripts/create_infra_master_vm.sh
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Creating the ISO for lab machines with static IP adress and network information, use
+something like follows:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ISO_ONLY=y STATICIP=172.31.0.58 NETMASK=255.255.255.0 GATEWAY=172.31.0.254 DNSSERVERS=213.246.33.144,213.246.36.14,80.93.83.11 NTPSERVERS=213.246.33.221 ./scripts/create_infra_master_vm.sh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Look at the first lines of the file to have an idea on which parameters can be
 customized.
 
