@@ -68,7 +68,7 @@
 
     - name: Retrieving OSA GitHub Repository
       git:
-        repo: "https://github.com/opennext-io/openstack-ansible"
+        repo: "https://github.com/openstack/openstack-ansible"
         dest: "{{ dest_repo_dir }}/openstack-ansible"
         accept_hostkey: yes
         force: yes
@@ -103,7 +103,7 @@
       args:
         chdir: "/opt/openstack-ansible"
         creates: "/opt/ansible-runtime/bin/ansible-playbook"
-      environment: "{{ proxy_env | default({}) | combine({ 'TMPDIR': '/var/tmp' }) }}"
+      environment: "{{ proxy_env | default({}) | combine({ 'TMPDIR': '/var/tmp', 'ANSIBLE_PACKAGE': 'git+https://github.com/obourdon/ansible@6783b173bd8d7fcfb3abe7007a482a9b322b01c7' }) }}"
       register: bootstrap_ansible_result
 
     - name: Boostrapping AIO for OSA
