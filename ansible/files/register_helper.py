@@ -11,6 +11,7 @@
 import os
 import pprint
 import ast
+import time
 
 # Flask web service imports
 from flask import Flask, jsonify, request, abort
@@ -22,8 +23,14 @@ from flask_httpauth import HTTPBasicAuth
 # Asynchronous "background" job(s) imports
 from apscheduler.schedulers.background import BackgroundScheduler
 
-# Import shade Cloud library
+# Shade Cloud library
 import shade
+
+# Light Persistence
+import shelve
+
+# JSON library
+import json
 
 # Main Flask application handle
 app = Flask(__name__)
@@ -33,6 +40,9 @@ auth = HTTPBasicAuth()
 # List of (un)registered machines
 registered_machines = {}
 todo_machines = {}
+first_call_to_shade = True
+shelve_db = None
+
 
 # Get shade library credentials
 def _get_shade_auth():
@@ -52,8 +62,10 @@ def _get_shade_auth():
         )
     return options
 
+
 # Compute it only once
 shade_opts = _get_shade_auth()
+
 
 # HTTP Authentication
 @auth.verify_password
@@ -119,8 +131,9 @@ def _find_machine(mac_addr):
 
 
 def _patch_machine(uuid, vid, changes):
+    global registered_machines
     # Convert unicode to string
-    #uuid = uuid.encode('ascii', 'ignore')
+    # uuid = uuid.encode('ascii', 'ignore')
     app.logger.error('==================== _patch_machine {} {} {}'.format(uuid, vid, changes))
     patch = []
     if 'name' in changes:
@@ -129,7 +142,7 @@ def _patch_machine(uuid, vid, changes):
         registered_machines[uuid]['virt-uuid'] = changes['virt-uuid']
     if 'vnc_host' in changes and 'vnc_port' in changes:
         registered_machines[uuid]['vnc-info'] = "{}:{}".format(
-            changes['vnc_host'],changes['vnc_port'])
+            changes['vnc_host'], changes['vnc_port'])
 
     # TODO: see later as it seems like changing name always lead to error 406
     if 'name1' in changes:
@@ -173,8 +186,10 @@ def _patch_machine(uuid, vid, changes):
         cloud.patch_machine(uuid, patch)
     return True
 
+
 # Retrieve baremetal informations via shade library
 def _get_shade_infos():
+    global registered_machines, todo_machines
     """Retrieve inventory utilizing Shade"""
     app.logger.error('==================== _get_shade_infos')
     try:
@@ -213,7 +228,7 @@ def _get_shade_infos():
                 # Only keep usefull informations
                 if key not in ['links', 'ports']:
                     new_machine[key] = value
-                    app.logger.debug('Parsing key={} Value={}'.format(key,value))
+                    app.logger.debug('Parsing key={} Value={}'.format(key, value))
 
             # NOTE(TheJulia): Collect network information, enumerate through
             # and extract important values, presently MAC address. Once done,
@@ -259,8 +274,8 @@ def _get_shade_infos():
             for key in modified:
                 del todo_machines[key]
 
-        for uuid,machine in registered_machines.items():
-            app.logger.error('Checking machine uuid {}  => {}'.format(uuid,pprint.pformat(machine)))
+        for uuid, machine in registered_machines.items():
+            app.logger.error('Checking machine uuid {}  => {}'.format(uuid, pprint.pformat(machine)))
             mstate = machine.get('provision_state', None)
             app.logger.error('Checking for state: {}'.format(mstate))
             try:
@@ -279,16 +294,86 @@ def _get_shade_infos():
             except Exception as e:
                 app.logger.error('Got exception changing node to state {}: {}'.format(mstate, e))
     except Exception as e:
-        app.logger.error('Got exception: {}'.format(e))
+        app.logger.error('Got exception in _get_shade_infos: {}'.format(e))
+
+
+# Try to restore state from shelve backup or JSON bootstrapping file
+try:
+    # Retrieve base directory of Python script
+    script_base_dir = os.path.dirname(os.path.realpath(__file__))
+    # Shelve file will be stored in same directory with the prefix of Python
+    # script name (without .py extension) with additional .db extension
+    shelve_file = os.path.join(script_base_dir, os.path.splitext(__file__)[0] + ".db")
+    has_shelve = os.path.isfile(shelve_file)
+    shelve_db = shelve.open(shelve_file, writeback=True)
+    # Retrieve saved variables if they exist in shelve store
+    if has_shelve:
+        if not os.access(shelve_file, os.R_OK):
+            app.logger.error('Can not read saved state from: {}'.format(shelve_file))
+        else:
+            app.logger.error('Restoring saved state from: {}'.format(shelve_file))
+            registered_machines = shelve_db.get('registered_machines', {})
+            todo_machines = shelve_db.get('todo_machines', {})
+            if len(registered_machines.keys()) == 0 and first_call_to_shade:
+                _get_shade_infos()
+                first_call_to_shade = False
+                shelve_db['registered_machines'] = registered_machines
+    else:
+        # No shelve backup but may be a JSON bootstrapping file can be found
+        bootstrap_file = os.path.join(script_base_dir, os.path.splitext(__file__)[0] + ".json")
+        has_bootstrap = os.path.isfile(bootstrap_file)
+        if has_bootstrap:
+            if not os.access(bootstrap_file, os.R_OK):
+                app.logger.error('Can not read bootstrap state from: {}'.format(bootstrap_file))
+            else:
+                app.logger.error('Restoring bootstrap state from: {}'.format(bootstrap_file))
+                data = {}
+                with open(bootstrap_file) as bootstrap_fd:
+                    data = json.load(bootstrap_fd)
+                    bak_extension = time.strftime("_%Y-%m-%d-%H-%M-%S.bak")
+                    # Moving file so it does not get reparsed on next restart
+                    os.rename(bootstrap_file, os.path.splitext(bootstrap_file)[0] + bak_extension)
+                app.logger.debug('Restored bootstrap data: {}'.format(pprint.pformat(data)))
+                # 1st call performed right away at start
+                if first_call_to_shade:
+                    _get_shade_infos()
+                    first_call_to_shade = False
+                    # JSON needs to be merged into
+                    if len(data.keys()) != 0:
+                        for k, v in data.items():
+                            machine_uuid = v.get('ironic-uuid')
+                            if not machine_uuid:
+                                app.logger.error('Can not process machine {}: (missing ironic-uuid) {}'.format(k, pprint.pformat(v)))
+                            else:
+                                shade_machine = registered_machines.get(machine_uuid)
+                                if not shade_machine:
+                                    app.logger.error('Can not retrieve machine {} UUID {}'.format(k, machine_uuid))
+                                else:
+                                    m_changes = {'name': k, 'virt-uuid': v.get('virt-uuid')}
+                                    vnc_infos = v.get('vnc-info', '').split(':')
+                                    if len(vnc_infos) == 2:
+                                        m_changes['vnc_host'] = vnc_infos[0]
+                                        m_changes['vnc_port'] = vnc_infos[1]
+                                    app.logger.debug('Updating bootstrap registered_machines: {}'.format(pprint.pformat(m_changes)))
+                                    _patch_machine(machine_uuid, v.get('virt-uuid'), m_changes)
+                                    app.logger.debug('Restored bootstrap registered_machines: {}'.format(pprint.pformat(shade_machine)))
+    app.logger.debug('Restored registered_machines: {}'.format(pprint.pformat(registered_machines)))
+    app.logger.debug('Restored todo_machines: {}'.format(pprint.pformat(todo_machines)))
+except Exception as e:
+    app.logger.error('Got exception while restoring state: {}'.format(e))
 
 # 1st call performed right away at start
-_get_shade_infos()
+if first_call_to_shade:
+    _get_shade_infos()
+    first_call_to_shade = False
+    shelve_db['registered_machines'] = registered_machines
 
 # Define and  start asynchronous scheduler after
 # registering job
 scheduler = BackgroundScheduler()
 job = scheduler.add_job(_get_shade_infos, 'interval', seconds=30)
 scheduler.start()
+
 
 # GET full dump of agent infos
 @app.route('/dump')
@@ -299,11 +384,13 @@ def get_dump():
         'registered': registered_machines,
     })
 
+
 # GET request handler to list machines registered but not handled yet by Ironic
 @app.route('/waiting')
 @requires_auth
 def get_waiting():
     return jsonify(todo_machines)
+
 
 # GET request handler to list already registered machines
 @app.route('/machines')
@@ -311,28 +398,29 @@ def get_waiting():
 def get_machines():
     # Copy dictionnary
     ret = {}
-    for k,v in registered_machines.items():
+    for k, v in registered_machines.items():
         vname = v.get('kvm-name')
         if not vname:
             continue
         ret[vname] = v
     return jsonify(ret)
 
+
 # GET request handler to get current status of machines
 @app.route('/status')
 @requires_auth
 def get_status():
     ret = {}
-    for k,v in registered_machines.items():
+    for k, v in registered_machines.items():
         vname = v.get('kvm-name')
         if not vname:
             continue
         ret[vname] = {'ironic-uuid': k}
         for f in ['vnc-info', 'virt-uuid', 'power_state', 'target_power_state',
-        'provision_state', 'last_error', 'properties/cpus',
-        'properties/local_gb', 'properties/memory_mb', 'target_provision_state',
-        'extra/roles', 'extra/all/macs', 'extra/all/interfaces/eth0/ip',
-        ]:
+                  'provision_state', 'last_error', 'properties/cpus',
+                  'properties/local_gb', 'properties/memory_mb', 'target_provision_state',
+                  'extra/roles', 'extra/all/macs', 'extra/all/interfaces/eth0/ip',
+                  ]:
             if '/' not in f:
                 v1 = v.get(f)
             else:
@@ -354,18 +442,28 @@ def get_status():
                 ret[vname][f] = v1
     return jsonify(ret)
 
+
 # POST request handler to register new machines
 @app.route('/register', methods=['POST'])
 @requires_auth
 def add_machine():
     app.logger.error("Request headers: {}".format(pprint.pformat(request.headers)))
     app.logger.error("Request data: {}".format(pprint.pformat(request.get_data())))
-    mime_header = request.headers.get('Content-Type',"dummy/dummy").split('/')
-    #return '', 301
+    mime_header = request.headers.get('Content-Type', "dummy/dummy").split('/')
+    # return '', 301
     newm = request.get_json()
     app.logger.error("adding machine: {}".format(newm))
     todo_machines[newm['virt-uuid']] = newm
     return '', 201
+
+
+# PUT request handler to modify machines
+@app.route('/update/<machineid>', methods=['PUT'])
+@requires_auth
+def update_machine(machineid):
+    app.logger.debug("updating machine: {}".format(machineid))
+    return '', 204
+
 
 # DELETE request handler to unregister machines
 @app.route('/unregister/<machineid>', methods=['DELETE'])
@@ -374,6 +472,7 @@ def delete_machine(machineid):
     app.logger.debug("removing machine: {}".format(machineid))
     return '', 200
 
+
 # Called on each incoming request
 @app.before_request
 def _log_request_info():
@@ -381,7 +480,7 @@ def _log_request_info():
     app.logger.debug('Headers: %s', request.headers)
     app.logger.debug('Body: %s', request.get_data())
     if request.method in ['DELETE', 'POST', 'PUT']:
-        mime_header = request.headers.get('Content-Type',"dummy/dummy").split('/')
+        mime_header = request.headers.get('Content-Type', "dummy/dummy").split('/')
         if (mime_header[0] not in ['text', 'application'] or
-            mime_header[1] not in ['csv', 'x-csv', 'json', 'yaml', 'x-yaml']):
+                mime_header[1] not in ['csv', 'x-csv', 'json', 'yaml', 'x-yaml']):
             abort(400)
