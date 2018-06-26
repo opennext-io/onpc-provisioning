@@ -1,6 +1,6 @@
 # {{ ansible_managed }}
 
-infra-master ansible_host={{ infra_master_ip }}
+infra-master ansible_host={{ hostvars[inventory_hostname]['ansible_' + bridge_itf | replace('-', '_') ]['ipv4']['address'] }}
 
 osa-master ansible_host={{ osa_master_ip }}
 
