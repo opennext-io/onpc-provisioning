@@ -66,6 +66,15 @@
         }
       when: proxy_host is defined
 
+    - name: Setting ansible environment fact (conditional)
+      set_fact:
+        ansible_release_env: { 'ANSIBLE_PACKAGE': 'git+https://github.com/obourdon/ansible@6783b173bd8d7fcfb3abe7007a482a9b322b01c7' }
+      when: openstack_release | default('pike') == 'pike'
+
+    - name: Setting ansible environment fact
+      set_fact:
+        ansible_environment: "{{ proxy_env | default({}) | combine({ 'TMPDIR': '/var/tmp' }) | combine(ansible_release_env | default({})) }}"
+
     - name: Retrieving OSA GitHub Repository
       git:
         repo: "https://github.com/openstack/openstack-ansible"
@@ -103,7 +112,7 @@
       args:
         chdir: "/opt/openstack-ansible"
         creates: "/opt/ansible-runtime/bin/ansible-playbook"
-      environment: "{{ proxy_env | default({}) | combine({ 'TMPDIR': '/var/tmp', 'ANSIBLE_PACKAGE': 'git+https://github.com/obourdon/ansible@6783b173bd8d7fcfb3abe7007a482a9b322b01c7' }) }}"
+      environment: "{{ ansible_environment }}"
       register: bootstrap_ansible_result
 
     - name: Boostrapping AIO for OSA
