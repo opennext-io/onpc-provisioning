@@ -44,6 +44,13 @@ first_call_to_shade = True
 shelve_db = None
 
 
+# Update objects to be persisted
+def _update_persisted_objects():
+    global shelve_db
+    shelve_db['registered_machines'] = registered_machines
+    shelve_db['todo_machines'] = todo_machines
+
+
 # Get shade library credentials
 def _get_shade_auth():
     """Return shade credentials"""
@@ -293,6 +300,10 @@ def _get_shade_infos():
                     app.logger.error('Changing node state {} gave {}'.format(uuid, pprint.pformat(state_res)))
             except Exception as e:
                 app.logger.error('Got exception changing node to state {}: {}'.format(mstate, e))
+
+        # Update objects to be persisted
+        _update_persisted_objects()
+
     except Exception as e:
         app.logger.error('Got exception in _get_shade_infos: {}'.format(e))
 
@@ -308,18 +319,20 @@ try:
     shelve_db = shelve.open(shelve_file, writeback=True)
     # Retrieve saved variables if they exist in shelve store
     if has_shelve:
+        # Check proper access (but may be this should have failed in the shelve.open call above)
         if not os.access(shelve_file, os.R_OK):
             app.logger.error('Can not read saved state from: {}'.format(shelve_file))
         else:
             app.logger.error('Restoring saved state from: {}'.format(shelve_file))
+            # Restore persited objects into current memory
             registered_machines = shelve_db.get('registered_machines', {})
             todo_machines = shelve_db.get('todo_machines', {})
+            # Empty list of machines, call shade to get update from Ironic current state
             if len(registered_machines.keys()) == 0 and first_call_to_shade:
                 _get_shade_infos()
                 first_call_to_shade = False
-                shelve_db['registered_machines'] = registered_machines
     else:
-        # No shelve backup but may be a JSON bootstrapping file can be found
+        # No shelve backup but may be a JSON bootstrapping status file can be found
         bootstrap_file = os.path.join(script_base_dir, os.path.splitext(__file__)[0] + ".json")
         has_bootstrap = os.path.isfile(bootstrap_file)
         if has_bootstrap:
@@ -328,33 +341,39 @@ try:
             else:
                 app.logger.error('Restoring bootstrap state from: {}'.format(bootstrap_file))
                 data = {}
+                # Load JSON informations into local data object
                 with open(bootstrap_file) as bootstrap_fd:
                     data = json.load(bootstrap_fd)
                     bak_extension = time.strftime("_%Y-%m-%d-%H-%M-%S.bak")
                     # Moving file so it does not get reparsed on next restart
                     os.rename(bootstrap_file, os.path.splitext(bootstrap_file)[0] + bak_extension)
                 app.logger.debug('Restored bootstrap data: {}'.format(pprint.pformat(data)))
-                # 1st call performed right away at start
+                # 1st call performed right away at start call shade to get update from Ironic current state
                 if first_call_to_shade:
                     _get_shade_infos()
                     first_call_to_shade = False
-                    # JSON needs to be merged into
+                    # JSON needs to be merged into Ironic structures
                     if len(data.keys()) != 0:
                         for k, v in data.items():
                             machine_uuid = v.get('ironic-uuid')
+                            # We can not do much without ironic-uuid information
                             if not machine_uuid:
                                 app.logger.error('Can not process machine {}: (missing ironic-uuid) {}'.format(k, pprint.pformat(v)))
                             else:
+                                # Get the Ironic informations corresponding to current UUID
                                 shade_machine = registered_machines.get(machine_uuid)
                                 if not shade_machine:
                                     app.logger.error('Can not retrieve machine {} UUID {}'.format(k, machine_uuid))
                                 else:
+                                    # Restore defaults attributes
                                     m_changes = {'name': k, 'virt-uuid': v.get('virt-uuid')}
                                     vnc_infos = v.get('vnc-info', '').split(':')
+                                    # If VNC information is retrieved it need to be re-splitted for proper processing
                                     if len(vnc_infos) == 2:
                                         m_changes['vnc_host'] = vnc_infos[0]
                                         m_changes['vnc_port'] = vnc_infos[1]
                                     app.logger.debug('Updating bootstrap registered_machines: {}'.format(pprint.pformat(m_changes)))
+                                    # Call same procedure than when machine is 1st registered into register-helper utility
                                     _patch_machine(machine_uuid, v.get('virt-uuid'), m_changes)
                                     app.logger.debug('Restored bootstrap registered_machines: {}'.format(pprint.pformat(shade_machine)))
     app.logger.debug('Restored registered_machines: {}'.format(pprint.pformat(registered_machines)))
@@ -362,11 +381,13 @@ try:
 except Exception as e:
     app.logger.error('Got exception while restoring state: {}'.format(e))
 
-# 1st call performed right away at start
+# 1st call performed right away at start call shade to get update from Ironic current state
 if first_call_to_shade:
     _get_shade_infos()
     first_call_to_shade = False
-    shelve_db['registered_machines'] = registered_machines
+
+# Update objects to be persisted
+_update_persisted_objects()
 
 # Define and  start asynchronous scheduler after
 # registering job
@@ -447,6 +468,7 @@ def get_status():
 @app.route('/register', methods=['POST'])
 @requires_auth
 def add_machine():
+    global todo_machines
     app.logger.error("Request headers: {}".format(pprint.pformat(request.headers)))
     app.logger.error("Request data: {}".format(pprint.pformat(request.get_data())))
     mime_header = request.headers.get('Content-Type', "dummy/dummy").split('/')
@@ -454,6 +476,8 @@ def add_machine():
     newm = request.get_json()
     app.logger.error("adding machine: {}".format(newm))
     todo_machines[newm['virt-uuid']] = newm
+    # Update objects to be persisted
+    _update_persisted_objects()
     return '', 201
 
 
