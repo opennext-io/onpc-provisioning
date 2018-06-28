@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- fail: msg="Node name can not be empty"
-  when: node_name is defined and node_name | length == 0
+# Handling node(s) by count
 
 - name: Waiting for status availability from register-helper utility agent (by node count)
   uri:
@@ -77,6 +76,11 @@
     registered_status: "{{ tmp_registered_status }}"
   when: not tmp_registered_status.get('skipped', False)
 
+# Handling node(s) by name
+
+- fail: msg="Node name can not be empty"
+  when: node_name is defined and node_name | length == 0
+
 - name: Waiting for status availability from register-helper utility agent (by node name)
   uri:
     url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
@@ -89,10 +93,26 @@
   retries: "{{ node_status_retries | default(8) }}"
   when: node_name is defined
 
+- name: Waiting for proper status from register-helper utility agent (by node name)
+  uri:
+    url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+    force_basic_auth: yes
+    user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+    password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+  register: tmp_registered_status
+  until: ((tmp_registered_status.content_length | int > 3) and
+   (tmp_registered_status.get('json', {}).get(node_name, {}).get('provision_state', '') in ['active', 'deploy failed'])
+   )
+  delay: "{{ node_prov_status_delay | default(30) }}"
+  retries: "{{ node_prov_status_retries | default(30) }}"
+  when: node_name is defined
+
 - name: Storing status result (by node name)
   set_fact:
     registered_status: "{{ tmp_registered_status }}"
   when: not tmp_registered_status.get('skipped', False)
+
+# Retrieve "final" status(es) from utility
 
 - name: Fetching detailed informations from register-helper utility agent
   uri:
