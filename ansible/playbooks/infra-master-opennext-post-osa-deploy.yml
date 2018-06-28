@@ -131,13 +131,20 @@
         openvpn_client_routes: "{{ openvpn_client_routes + [ hostvars[inventory_hostname]['ansible_br_prov']['ipv4']['network'] ~ ' ' ~ hostvars[inventory_hostname]['ansible_br_prov']['ipv4']['netmask'] ] }}"
       when: real_baremetal | default(false) | bool == False
 
+    - name: Setting some more interesting facts to keep
+      set_fact:
+        openvpn_client_routes: "{{ openvpn_client_routes }} + {{ additional_openvpn_client_routes | default([]) }}"
+
     - name: Computing network cidr adresses of client routes
       set_fact:
-        routed_networks: "{% set sel = [] %} {% for x in openvpn_client_routes %} {% set l = sel.append(x.split(' ') | join('/') | ipaddr('net') | ipaddr('0')) %}{% endfor %}{{ sel | list | to_yaml }}"
+        routed_networks: "{% set sel = [] %} {% for x in openvpn_client_routes %} {% set l = sel.append(x.split(' ') | join('/') | ipaddr('net') | ipaddr('0')) %}{% endfor %}{{ sel | reject('equalto', false) | list | to_yaml }}"
 
     - name: Computing final network cidr adresses of client routes
       set_fact:
         routed_networks_list: "{{ routed_networks | from_yaml }}"
+
+    - fail: msg="Some networks are badly expressed {{ routed_networks }} vs {{ openvpn_client_routes }}"
+      when: routed_networks_list | length != openvpn_client_routes | length
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_opennext_post_osa_deploy"
       vars:

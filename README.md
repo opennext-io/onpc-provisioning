@@ -324,6 +324,10 @@ openvpn2 /etc/openvpn/infra-master/*.ovpn
 Route to infra-master networks should be added (pushed) automatically and
 you should now be able to access any IP on those networks behind the VPN.
 
+You might want to add additional routes to some other networks
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-post-osa-deploy.yml -e additional_openvpn_client_routes="['172.29.248.0 255.255.252.0','1.2.3.4 255.255.255.0']"
+Be carefull however to NOT add spaces before or after the comma in the list
+
 Note that the previous installation and configuration of Nginx as a reverse proxy
 to access to Horizon and Grafana is now disabled by default and can be reinstated
 using -e opennext_reverse_nginx=True
