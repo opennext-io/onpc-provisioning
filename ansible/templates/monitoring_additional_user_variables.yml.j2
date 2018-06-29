@@ -1,0 +1,9 @@
+proxy_env_url: "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}"
+
+{%- raw %}
+
+onpc_environment_variables:
+  http_proxy: "{{ proxy_env_url }}"
+  https_proxy: "{{ proxy_env_url }}"
+  no_proxy: "localhost,127.0.0.1,{{ internal_lb_vip_address }},{{ external_lb_vip_address }},{% for host in groups['monitoring_all'] %}{{ hostvars[host]['container_address'] }}{% if not loop.last %},{% endif %}{% endfor %}"
+{%- endraw %}

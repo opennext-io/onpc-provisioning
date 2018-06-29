@@ -48,6 +48,8 @@
     - name: Setting extra facts
       set_fact:
         osa_user_conf_file: "{{ osa_deploy_conf_path }}/user_variables.yml"
+        onpc_user_conf_file: "{{ osa_deploy_conf_path }}/user_onpc_variables.yml"
+        onpc_model_repo_dir: "{{ dest_repo_dir }}/onpc-basic-model"
 
     - fail: msg="Missing ip_prefix information"
       when: ip_prefixes | length != 1
@@ -135,6 +137,10 @@
         - "{{ osa_deploy_conf_path }}/env.d"
       when: not is_aio or ((force_networking | default(false) | bool) and (force_partitioning | default(false) | bool))
 
+    - name: Cleaning up AIO bootstraped files
+      shell: "rm -f /etc/openstack_deploy/conf.d/* /etc/openstack_deploy/env.d/*"
+      when: is_aio and bootstrap_aio_result is changed
+
     - name: Checking existence of user_secrets.yml
       stat:
         path: "{{ osa_deploy_conf_path }}/user_secrets.yml"
@@ -159,7 +165,7 @@
 
     - name: Copying template of user_onpc_secrets.yml
       copy:
-        src: "/opt/onpc-basic-model/etc/openstack_deploy/user_onpc_secrets.yml"
+        src: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/user_onpc_secrets.yml"
         dest: "{{ osa_deploy_conf_path }}/user_onpc_secrets.yml"
         remote_src: yes
       when: not user_onpc_secrets_info.stat.exists
@@ -168,6 +174,31 @@
       command: "/opt/ansible-runtime/bin/python /opt/openstack-ansible/scripts/pw-token-gen.py --file {{ osa_deploy_conf_path }}/user_onpc_secrets.yml"
       changed_when: false
       when: not user_onpc_secrets_info.stat.exists
+
+    - name: Retrieving onpc-basic-model env.d files
+      find:
+        paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/env.d"
+      register: onpc_model_envd_files
+
+    - name: Copying env.d files from onpc-basic-model to {{ osa_deploy_conf_path }}/env.d
+      copy:
+        src: "{{ item }}"
+        dest: "{{ osa_deploy_conf_path }}/env.d/{{ item | basename }}"
+        remote_src: yes
+      with_items: "{{ onpc_model_envd_files.get('files', []) | map(attribute='path') | list }}"
+
+    - name: Retrieving onpc-basic-model env.d templates
+      find:
+        paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/env.d"
+        patterns: '^.*\.j2$'
+        use_regex: yes
+      register: onpc_model_envd_templates
+
+    - include_tasks: ../tasks/remote_templating.yml
+      vars:
+        in_file: "{{ item }}"
+        out_file: "{{ osa_deploy_conf_path }}/env.d/{{ (item | basename).split('.')[:-1] | join('.') }}"
+      with_items: "{{ onpc_model_envd_templates.get('files', []) | map(attribute='path') | list }}"
 
 - hosts: osa-nodes
 
@@ -194,11 +225,13 @@
         control_match: 'aio1'
         cinder_match: 'aio1'
         compute_match: 'aio1'
+        monitoring_match: 'aio1'
         shared_infra_hosts_name: 'aio'
         compute_hosts_name: 'aio'
         storage_hosts_name: 'aio'
         image_hosts_name: 'aio'
         log_hosts_name: 'aio'
+        monitoring_hosts_name: 'aio'
         external_public_vip_itf: "{{ osa_nodes_infos['aio1']['matching_ether_itfs'] }}"
         internal_public_vip_address: "{{ hostvars['aio1']['internal_public_vip_address'] }}"
         external_public_vip_address: "{{ hostvars['aio1']['external_public_vip_address'] }}"
@@ -209,9 +242,11 @@
         control_match: 'infra.*'
         cinder_match: 'infra.*'
         compute_match: 'infra.*'
+        monitoring_match: 'infra.*'
         shared_infra_hosts_name: 'infra'
         compute_hosts_name: 'infra'
         storage_hosts_name: 'infra'
+        monitoring_hosts_name: 'infra'
         external_public_vip_itf: "{{ osa_nodes_infos['infra1']['matching_ether_itfs'] }}"
         internal_public_vip_address: "{{ hostvars['infra1']['internal_public_vip_address'] }}"
         external_public_vip_address: "{{ hostvars['infra1']['external_public_vip_address'] }}"
@@ -225,6 +260,7 @@
         controller_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', control_match) | list }}"
         cinder_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', cinder_match) | list }}"
         compute_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', compute_match) | list }}"
+        monitoring_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', monitoring_match) | list }}"
 #        neutron_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
 
     - name: Computing OSA deployment nodes additional facts
@@ -234,6 +270,7 @@
         controller_hosts_ips_l: "{% set sel = [] %} {% for x in controller_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
         cinder_hosts_ips_l: "{% set sel = [] %} {% for x in cinder_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
         compute_hosts_ips_l: "{% set sel = [] %} {% for x in compute_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
+        monitoring_hosts_ips_l: "{% set sel = [] %} {% for x in monitoring_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
 
     - name: Setting final IPs facts
       set_fact:
@@ -243,21 +280,24 @@
       set_fact:
         osa_networks: "{% set sel = [] %} {% for x in osa_bridges_ips %} {% for y in osa_vlans %} {% if y.get('prefix', '') == x %}{% set l = sel.append(x ~ '.0/' ~ y.get('netmask', '255.255.255.0')) %}{% endif %}{% endfor %}{% endfor %}{{ sel | list | to_yaml }}"
 
-    - name: Retrieving OpenNext openstack_user_config.yml template from osa-master host
-      fetch:
-        src: "/opt/onpc-basic-model/etc/openstack_deploy/templates/openstack_user_config.yml.j2"
-        dest: "/tmp/openstack_user_config.yml.j2"
-        flat: yes
-        fail_on_missing: yes
+    - name: Retrieving onpc-basic-model conf.d templates
+      find:
+        paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/conf.d"
+        patterns: '^.*\.j2$'
+        use_regex: yes
+      register: onpc_model_confd_templates
 
-    - name: Writing openstack_user_config.yml on osa-master host
-      template:
-        src: "/tmp/openstack_user_config.yml.j2"
-        dest: "{{ osa_deploy_conf_path }}/openstack_user_config.yml"
-        backup: yes
-        group: root
-        mode: 0644
+    - include_tasks: ../tasks/remote_templating.yml
       vars:
+        in_file: "{{ item }}"
+        out_file: "{{ osa_deploy_conf_path }}/conf.d/{{ (item | basename).split('.')[:-1] | join('.') }}"
+        monitoring_hosts_ips: "{{ monitoring_hosts_ips_l | from_yaml }}"
+      with_items: "{{ onpc_model_confd_templates.get('files', []) | map(attribute='path') | list }}"
+
+    - include_tasks: ../tasks/remote_templating.yml
+      vars:
+        in_file: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/openstack_user_config.yml.j2"
+        out_file: "{{ osa_deploy_conf_path }}/openstack_user_config.yml"
         bootstrap_host_public_address: "{{ external_public_vip_address.split('/')[0] }}"
         internal_vip_address: "{{ internal_public_vip_address | ipaddr('address') }}"
         reserved_ips: "{{ osa_ips | merge_ip_addresses(osa_networks | from_yaml) }}"
@@ -268,32 +308,29 @@
         image_hosts_ips: ["{{ cinder_hosts_ips_l | from_yaml | first }}"]
         log_hosts_ips: ["{{ controller_hosts_ips_l | from_yaml | first }}"]
 
-    - name: Retrieving OpenNext user_variables.yml template from osa-master host
-      fetch:
-        src: "/opt/onpc-basic-model/etc/openstack_deploy/templates/user_variables.yml.j2"
-        dest: "/tmp/user_variables.yml.j2"
-        flat: yes
-        fail_on_missing: yes
-
     - name: Setting OpenNext facts
       set_fact:
         hapk_int_vip_cidr: "{{ internal_public_vip_address }}"
         hapk_ext_vip_cidr: "{{ external_public_vip_address }}/32"
         hapk_ext_itf: "{{ external_public_vip_itf }}"
 
-    - name: Writing user_variables.yml on osa-master host
-      template:
-        src: "/tmp/user_variables.yml.j2"
-        dest: "{{ osa_user_conf_file }}"
-        backup: yes
-        group: root
-        mode: 0644
+    - include_tasks: ../tasks/remote_templating.yml
+      vars:
+        in_file: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/user_variables.yml.j2"
+        out_file: "{{ osa_user_conf_file }}"
       when: not is_aio or ((force_networking | default(false) | bool) and (force_partitioning | default(false) | bool))
+
+    - include_tasks: ../tasks/remote_templating.yml
+      vars:
+        in_file: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/user_onpc_variables.yml.j2"
+        out_file: "{{ onpc_user_conf_file }}"
 
     - name: Setting facts for OSA user configuration file
       set_fact:
         osa_vars_additions: "{%- raw %}{{ lookup('template', '../templates/osa_additional_user_variables.yml.j2') }}{%- endraw %}"
+        onpc_vars_additions: "{%- raw %}{{ lookup('template', '../templates/monitoring_additional_user_variables.yml.j2') }}{%- endraw %}"
         onpc_osa_user_config: "{%- raw %}{{ lookup('template', '/tmp/user_variables.yml.j2') }}{%- endraw %}"
+        onpc_onpc_user_config: "{%- raw %}{{ lookup('template', '/tmp/user_onpc_variables.yml.j2') }}{%- endraw %}"
 
     - name: Retrieving OSA user configuration from osa-master host
       slurp:
@@ -313,6 +350,24 @@
         group: root
         mode: 0644
 
+    - name: Retrieving Monitoring user configuration from osa-master host
+      slurp:
+        src: "{{ onpc_user_conf_file }}"
+      register: onpc_user_info
+
+    - name: Setting fact for Monitoring user configuration contents
+      set_fact:
+        onpc_user_config: "{{ onpc_user_info['content'] | b64decode | from_yaml }}"
+
+    - name: Storing new {{ onpc_user_conf_file }} on osa-master host
+      copy:
+        dest: "{{ onpc_user_conf_file }}"
+        content: "{{ onpc_user_config | combine(onpc_onpc_user_config | from_yaml) | combine(onpc_vars_additions | from_yaml) | to_nice_yaml(indent=4) }}"
+        backup: yes
+        owner: root
+        group: root
+        mode: 0644
+
     - name: Adding OSA final deployment script
       copy:
         src: ../files/osa_run_playbooks.sh
@@ -321,10 +376,39 @@
         group: root
         mode: 0755
 
+    - name: Adding ONPC Ansible roles retrieval script
+      copy:
+        src: ../files/onpc_get_roles.sh
+        dest: /opt/onpc_get_roles.sh
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Adding ONPC final deployment script
+      copy:
+        src: ../files/onpc_run_playbooks.sh
+        dest: /opt/onpc_run_playbooks.sh
+        owner: root
+        group: root
+        mode: 0755
+
     - name: Executing OSA final deployment script
       shell: /opt/osa_run_playbooks.sh
       args:
         creates: /opt/.osa_playbooks_done
+        executable: /bin/bash
+
+    - name: Executing Ansible roles retrieval script
+      shell: /opt/onpc_get_roles.sh
+      args:
+        creates: /opt/.onpc_roles_done
+        executable: /bin/bash
+      environment: "{{ proxy_env | default('{}') }}"
+
+    - name: Executing ONPC final deployment script
+      shell: /opt/onpc_run_playbooks.sh
+      args:
+        creates: /opt/.onpc_playbooks_done
         executable: /bin/bash
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_osa_master_opennext_deploy"
