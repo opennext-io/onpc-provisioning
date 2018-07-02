@@ -113,7 +113,24 @@
         - ../templates/partitioning-std.yml
         - ../templates/partitioning-lvm.yml
 
-    - name: Configuring DIB_DEV_USER_* and DIB_DHCP_TIMEOUT
+    - name: DIB elements (DIB_DEV_USER_*, DIB_DHCP_TIMEOUT, ...)
+      set_fact:
+        dib_elements:
+          - { regexp: '^DIB_DEV_USER_USERNAME=.*$', line: 'DIB_DEV_USER_USERNAME="{{ systemuser }}"' }
+          - { regexp: '^DIB_DEV_USER_PASSWORD=.*$', line: 'DIB_DEV_USER_PASSWORD="{{ systempasswd }}"' }
+          - { regexp: '^DIB_DEV_USER_PWDLESS_SUDO=.*$', line: 'DIB_DEV_USER_PWDLESS_SUDO=true' }
+          - { regexp: '^DIB_DEV_USER_AUTHORIZED_KEYS=.*$', line: 'DIB_DEV_USER_AUTHORIZED_KEYS="{{ systemuserhome }}/.ssh/authorized_keys"' }
+          - { regexp: '^DIB_DEV_USER_SHELL=.*$', line: 'DIB_DEV_USER_SHELL="/bin/bash"' }
+          - { regexp: '^DIB_DHCP_TIMEOUT=.*$', line: 'DIB_DHCP_TIMEOUT={{ dhcptimeout }}' }
+          - { regexp: '^DIB_BLOCK_DEVICE=.*$', line: 'DIB_BLOCK_DEVICE={{ dibblockdevice | default("gpt") }}' }
+
+    - name: DIB distribution specific elements
+      set_fact:
+        dib_distro_elements:
+          - { regexp: '^DIB_DISTRIBUTION_MIRROR=.*$', line: 'DIB_DISTRIBUTION_MIRROR={{ dibdistribmirror | default("http://fr.archive.ubuntu.com/ubuntu") }}' }
+      when: distribution == 'ubuntu'
+
+    - name: Configuring DIB elements (DIB_DEV_USER_*, DIB_DHCP_TIMEOUT, ...)
       lineinfile:
         path: /etc/environment
         regexp: "{{ item.regexp }}"
@@ -122,12 +139,4 @@
         owner: root
         group: root
         mode: 0644
-      with_items:
-        - { regexp: '^DIB_DEV_USER_USERNAME=.*$', line: 'DIB_DEV_USER_USERNAME="{{ systemuser }}"' }
-        - { regexp: '^DIB_DEV_USER_PASSWORD=.*$', line: 'DIB_DEV_USER_PASSWORD="{{ systempasswd }}"' }
-        - { regexp: '^DIB_DEV_USER_PWDLESS_SUDO=.*$', line: 'DIB_DEV_USER_PWDLESS_SUDO=true' }
-        - { regexp: '^DIB_DEV_USER_AUTHORIZED_KEYS=.*$', line: 'DIB_DEV_USER_AUTHORIZED_KEYS="{{ systemuserhome }}/.ssh/authorized_keys"' }
-        - { regexp: '^DIB_DEV_USER_SHELL=.*$', line: 'DIB_DEV_USER_SHELL="/bin/bash"' }
-        - { regexp: '^DIB_DHCP_TIMEOUT=.*$', line: 'DIB_DHCP_TIMEOUT={{ dhcptimeout }}' }
-        - { regexp: '^DIB_BLOCK_DEVICE=.*$', line: 'DIB_BLOCK_DEVICE={{ dibblockdevice | default("gpt") }}' }
-        - { regexp: '^DIB_DISTRIBUTION_MIRROR=.*$', line: 'DIB_DISTRIBUTION_MIRROR={{ dibdistribmirror | default("http://fr.archive.ubuntu.com/ubuntu") }}' }
+      with_items: "{{ dib_elements + (dib_distro_elements | default([])) }}"

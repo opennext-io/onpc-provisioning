@@ -75,10 +75,15 @@
         LC_ALL: C
         https_proxy: ""
 
-    - name: Getting Setup Result
+    - name: Getting Setup Result and set DIB options
       set_fact:
         todo: "{{ setup_result.stdout.split('\n')[-3:-1] | join(' && ') | replace('source','.') | replace('env-vars','../env-vars') }}"
-        dib_std_options: " -e deploy_image_filename={{ deployimagefilename }} -e dib_init_element=dhcp-all-interfaces -e dib_image_type=bootloader -e extra_dib_elements='devuser openssh-server' -e dib_packages=python,python3-yaml,dnsutils,net-tools,netcat,iputils-ping,traceroute,curl,lvm2,xfsprogs,initramfs-tools"
+        dib_std_options: >-
+          -e deploy_image_filename={{ distrib_infos.get(distribution).get('deployimagefilename') }}
+          -e dib_init_element=dhcp-all-interfaces
+          -e dib_image_type=bootloader
+          -e extra_dib_elements='devuser openssh-server{{ distrib_infos.get(distribution).get("dib_elements","") }}'
+          -e dib_packages=python,python3-yaml,dnsutils,net-tools,netcat,iputils-ping,traceroute,curl{{ distrib_infos.get(distribution).get("dib_packages","") }}
 
     - name: Setting partitioning informations
       set_fact:
@@ -97,8 +102,17 @@
 
     - name: Computing OS Image Options
       set_fact:
-        os_opts: "{{ dib_std_options | default('') }}{{ dib_partitioning_infos | default('') }} -e dib_imagesize={{ root_part_size_gb | default(60) }} -e dib_os_release={{ os_release | default('xenial') }} -e dib_os_element={{ os_flavor | default('ubuntu-minimal') }} -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}"
         opennext_opts: " -e ironic_tftp_master_path=/httpboot/master_images{{ opennext_ipa | default('') }}{{ opennext_ipxe | default('') }}"
+        os_opts: >-
+          {{ dib_std_options | default('') }}{{ dib_partitioning_infos | default('') }}
+          -e dib_imagesize={{ root_part_size_gb | default(60) }}
+          -e dib_os_element={{ distrib_infos.get(distribution).get('dib_os_element') }}
+          -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}
+
+    - name: Adding Specific OS Image Options
+      set_fact:
+        os_opts: "{{ os_opts + ' -e dib_os_release=' + distrib_infos.get(distribution).get('dib_os_release') }}"
+      when: distrib_infos.get(distribution).get('dib_os_release') and distrib_infos.get(distribution).get('dib_os_release') | length > 0
 
     - name: Computing Keystone Options
       set_fact:
@@ -134,7 +148,7 @@
 
     - name: Retrieving all deploy options
       set_fact:
-        all_args: "-e network_interface={{ itf }}{{ keystone_opts }}{{ os_opts }}{{ opennext_opts }}"
+        all_args: "-e network_interface={{ itf }}{{ keystone_opts }} {{ os_opts }}{{ opennext_opts }}"
         args_file: "{{ bifrost_env_vars_file }}"
 
     - name: Populating remote configuration file

@@ -29,15 +29,34 @@ keystone: true
 keystone_opts: ""
 
 # DIB golden image parameters
-os_release: "xenial"
-os_flavor: "ubuntu-minimal"
 upstream_release: "stable-{{ openstack_release | default('pike') }}"
 root_part_size_gb: 60
 partitioning_scheme: "partitioning-lvm"
 dibblockdevice: "{{ dib_block_device | default('gpt') }}"
-dibdistribmirror: "{{ dib_distrib_mirror | default('http://fr.archive.ubuntu.com/ubuntu') }}"
-deployimagefilename: on-os-ubuntu-xenial.qcow2
 ipa_ramdisk_upstream_url: http://www.olivierbourdon.com/IPA/{{ upstream_release }}/ipa.initramfs
+
+# Distribution specificities
+distribution: "{{ deployed_distribution | default('ubuntu') }}"
+distrib_infos: {
+  centos: {
+    dib_os_element: "centos-minimal",
+    deployimagefilename: on-os-centos-7.qcow2,
+    # IMPORTANT NOTE: do not forget the leading space !!!!!
+    dib_elements: " dracut-regenerate manifests",
+    # IMPORTANT NOTE: do not forget the leading comma !!!!!
+    dib_packages: ",lvm2,xfsprogs,dracut"
+  },
+  ubuntu: {
+    dib_os_release: "xenial",
+    dib_os_element: "ubuntu-minimal",
+    dibdistribmirror: "{{ dib_distrib_mirror | default('http://fr.archive.ubuntu.com/ubuntu') }}",
+    deployimagefilename: on-os-ubuntu-xenial.qcow2,
+    # IMPORTANT NOTE: do not forget the leading space !!!!!
+    dib_elements: " lvm",
+    # IMPORTANT NOTE: do not forget the leading comma !!!!!
+    dib_packages: ",lvm2,xfsprogs,initramfs-tools"
+  }
+}
 
 # (i)PXE parameters
 download_latest_ipxe: true

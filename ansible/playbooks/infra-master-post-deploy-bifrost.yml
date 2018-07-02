@@ -69,7 +69,7 @@
       find:
         paths: "{{ ironic_httpboot_path }}"
         follow: yes
-        patterns: "^{{ deployimagefilename }}$"
+        patterns: "^{{ distrib_infos.get(distribution).get('deployimagefilename') }}$"
         use_regex: yes
       register: di_infos
 

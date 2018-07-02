@@ -101,6 +101,15 @@ you are now able to launch the infra-master configuration via:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+You can now customize the distribution which will be used in Ironic "reference images" aka the
+image which will be deployed on the future OpenStack Ansible nodes:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml -e distribution=centos
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default Ubuntu (xenial) is used, using centos will install CentOS 7 on OSA nodes.
+
 If you launch the playbook from a node where KVM/libvirt is already installed and on which infra-master and other
 VMs will be spawned, you need to change kvm_on_ansible_master variable to true:
 
