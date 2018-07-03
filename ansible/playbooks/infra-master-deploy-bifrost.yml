@@ -68,6 +68,15 @@
         mode: 0646
       when: ansible_env | length > 0 and env_already_set | length == 0
 
+    - name: Configuring VENV for later usage
+      lineinfile:
+        path: "{{ git }}/env-vars"
+        line: "export VENV=\"{{ venv }}\""
+        state: present
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        mode: 0646
+
     - name: Getting Public IP
       ipify_facts:
       register: ipify_results
