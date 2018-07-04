@@ -222,6 +222,17 @@ but again this is not supported at this point in time.
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post-deploy-bifrost.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This step will add some informations into Ironic database like checksum of image to deploy,
+Ironic introspection rules.
+
+It will also place the openNext customized ipxe executables which wait a bit longer
+for network connectivity and also for network switches to propagate packets
+(debug messages on deployed VM/baremetal machine console).
+
+Finally, it will also install and launch the register-helper utility which is
+responsible for changing the Ironic states of registered machines automatically and
+provide a REST API for VM/machines registration as well as status information.
+
 ### Step 5: Launch VMs to be provisioned
 
 IMPORTANT NOTE: like explained in Step 0 above, some of the tasks executed by the
@@ -273,7 +284,18 @@ infra-master node prior to launch the effective OSA deployment:
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-pre-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This step install Squid on infra-master system for VM based (aka non-baremetal) usage.
+
+It also retrieve the OpenNext onpc-provisioning Github repository which will be used in step 7 below.
+
+Finally, it creates the ansible virtualenv which will be used in step 7 below for further machine
+deployments.
+
 ### Step 7: Configure system of VMs to be deployed
+
+IMPORTANT NOTE: this step has to occur when logged onto infra-master node. You will
+also need to activate the ansible virtualenv which has been setup by step 6 above using:
+. ~/.venv/ansible/bin/activate
 
 Now that your VM(s) is(are) available, you need to finalize some modifiations on
 it(them) prior to launch the effective OSA deployment. To do so, you need to log
