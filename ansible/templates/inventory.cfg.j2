@@ -26,3 +26,24 @@ force_networking={{ no_templated_networking | default(true) | bool }}
 {% if base_system_disk_device is defined and base_system_disk_device | length > 0 %}
 base_system_disk_device={{ base_system_disk_device }}
 {% endif %}
+{% if base_system_disk_space is defined and base_system_disk_space | float > 0.0 %}
+base_system_disk_space={{ base_system_disk_space }}
+{% endif %}
+{% if osa_partition_size is defined and osa_partition_size | float > 0.0 %}
+osa_partition_size={{ osa_partition_size }}
+{% endif %}
+{% if osa_logs_partition_size is defined and osa_logs_partition_size | float > 0.0 %}
+osa_logs_partition_size={{ osa_logs_partition_size }}
+{% endif %}
+{% if lxc_partition_size is defined and lxc_partition_size | float > 0.0 %}
+lxc_partition_size={{ lxc_partition_size }}
+{% endif %}
+{% if storage_partition_size is defined and storage_partition_size | float > 0.0 %}
+storage_partition_size={{ storage_partition_size }}
+{% endif %}
+{% if compute_partition_size is defined and compute_partition_size | float > 0.0 %}
+compute_partition_size={{ compute_partition_size }}
+{% endif %}
+{% if swap_partition_size is defined and swap_partition_size | float > 0.0 %}
+swap_partition_size={{ swap_partition_size }}
+{% endif %}

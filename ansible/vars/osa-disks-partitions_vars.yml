@@ -19,41 +19,41 @@ osa_disks: [
       device_path: "{{ base_system_disk_device | default('/dev/sda') }}",
       # The min size should be at least the sum of all partitions
       # defined hereafter
-      minsize: 720.0,
+      minsize: "{{ base_system_disk_space | default(720.0) | float }}",
       partitions: [
           {
             name: "openstack-core",
             vg: "os-",
             lv: "core",
-            size: "{{ base_partition_size | default(100.0) | float }}",
+            size: "{{ osa_partition_size | default(100.0) | float }}",
             mountpoint: "/openstack",
           },
           {
             name: "openstack-logs",
             vg: "os-",
             lv: "logs",
-            size: "{{ base_partition_size | default(100.0) | float }}",
+            size: "{{ osa_logs_partition_size | default(100.0) | float }}",
             mountpoint: "/openstack/log",
           },
           {
             name: "openstack-varliblxc",
             vg: "os-",
             lv: "lxc",
-            size: "{{ base_partition_size | default(100.0) | float }}",
+            size: "{{ lxc_partition_size | default(100.0) | float }}",
             mountpoint: "/var/lib/lxc",
           },
           {
             name: "swap",
             vg: "os-",
             lv: "swap",
-            size: "{{ base_swap_partition_size | default(16.0) | float }}",
+            size: "{{ swap_partition_size | default(16.0) | float }}",
             type: "swap",
             fstype: "ext4",
           },
           {
             name: "cinder-volumes",
             vg: "cinder-volumes",
-            size: "{{ base_partition_size | default(200.0) | float }}",
+            size: "{{ storage_partition_size | default(200.0) | float }}",
             type: "vgonly",
             roles: [
               { "name": "storage" },
@@ -63,7 +63,7 @@ osa_disks: [
             name: "openstack-novainstances",
             vg: "os-",
             lv: "nova",
-            size: "{{ base_partition_size | default(200.0) | float }}",
+            size: "{{ compute_partition_size | default(200.0) | float }}",
             mountpoint: "/var/lib/nova/instances",
             roles: [
               { "name": "compute" },
