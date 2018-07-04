@@ -97,6 +97,13 @@
         registered_machines_init: "{{ registered_machines }}"
         # This should be in sync with the disks: parameter number passed to kvm_vm_create.yml task
         base_system_disk_device: /dev/vdb
+        base_system_disk_space: 520.0
+        osa_partition_size: 80.0
+        osa_logs_partition_size: 90.0
+        lxc_partition_size: 100.0
+        cinder_partition_size: 110.0
+        nova_partition_size: 120.0
+        swap_partition_size: 16.0
 
     - name: Waiting for VMs to be reachable by SSH
       wait_for:
