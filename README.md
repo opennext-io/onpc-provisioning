@@ -105,7 +105,7 @@ You can now customize the distribution which will be used in Ironic "reference i
 image which will be deployed on the future OpenStack Ansible nodes:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml -e distribution=centos
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-configure-system.yml -e deployed_distribution=centos
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default Ubuntu (xenial) is used, using centos will install CentOS 7 on OSA nodes.
