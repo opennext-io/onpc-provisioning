@@ -2,7 +2,7 @@
 INFRA_MASTER_IP kvm_on_infra_master=false kvm_on_ansible_master=true ip_suffix=254 prov_vlan_id=999
 
 [kvm-master]
-KVM_HOST_IP ansible_user=MY_USER prov_bridge=virbr2 vlan_bridge=virbr1
+KVM_HOST_IP ansible_user=MY_USER prov_bridge=br-prov
 
 [all:vars]
 ansible_user=vagrant
