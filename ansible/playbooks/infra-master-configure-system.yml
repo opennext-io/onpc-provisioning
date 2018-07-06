@@ -32,11 +32,17 @@
 
   tasks:
 
-    - include_vars: ../vars/opennext-briges-vlans_vars.yml
-      when: not infra_master_running_kvm
+    - fail: msg="infra_master_running_kvm and ansible_master_running_kvm can not be both set to true"
+      when: infra_master_running_kvm and ansible_master_running_kvm
 
-    - include_vars: ../vars/opennext-briges-vlans-with-kvm_vars.yml
+    - include_vars: ../vars/opennext-briges-vlans_vars.yml
+      when: not infra_master_running_kvm and not ansible_master_running_kvm
+
+    - include_vars: ../vars/opennext-briges-vlans-with-kvm-on-infra-master_vars.yml
       when: infra_master_running_kvm
+
+    - include_vars: ../vars/opennext-briges-vlans-with-kvm-on-ansible-master_vars.yml
+      when: ansible_master_running_kvm
 
     - import_tasks: ../tasks/system_infos.yml
 
