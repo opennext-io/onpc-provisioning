@@ -108,6 +108,10 @@
         nova_partition_size: 120.0
         swap_partition_size: 16.0
 
+    - name: Extracting extra VMs infos from facts
+      set_fact:
+        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
+
     - name: Waiting for VMs to be reachable by SSH
       wait_for:
         connect_timeout: 10
@@ -125,12 +129,11 @@
       vars:
         # TODO next variables to be retrieved from facts
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
-        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names }}"
         bridge_itf: "{{ kvm_prov_bridge_itf }}"
-        ext_pub_vip_addr: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
+        ext_pub_vip_addr: "{{ osa_master_ip }}"
         int_pub_vip_itf: "br-mgmt"
-        int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
+        int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr(osa_master_ip.split('.')[-1]) }}"
 
     - import_tasks: ../tasks/nodes_get_status.yml
 
