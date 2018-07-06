@@ -1,4 +1,4 @@
-# OpenNext nodes bridges and VLANs configuration
+# OpenNext nodes bridges and VLANs configuration when KVM host is infra-master
 ---
 # Copyright (c) 2018, OpenNext SAS
 #

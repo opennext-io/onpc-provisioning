@@ -206,7 +206,7 @@ elif [ "$virtprovider" == "kvm" ]; then
 	# Start VM
 	$virtinstallcmd -v --virt-type kvm --name $vmname --ram $vmmem --vcpus $vmcpus --os-type linux --os-variant ubuntu16.04 \
 		--disk path=/var/lib/libvirt/images/$vmname.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
-		--network bridge=br0,model=virtio --network bridge=br-prov,model=virtio --network bridge=br-vms,model=virtio \
+		--network bridge=br0,model=virtio --network bridge=br-prov,model=virtio \
 		--cdrom $iso --graphics vnc,listen=$vmvncbindip,port=$vmvncport
 	ip=$(arp -e | grep $(virsh domiflist $vmname | grep vnet0 | awk '{print $NF}') | awk '{print $1}')
 fi
