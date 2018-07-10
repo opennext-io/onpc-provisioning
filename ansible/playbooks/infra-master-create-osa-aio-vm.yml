@@ -85,6 +85,9 @@
   tasks:
 
     - import_tasks: ../tasks/nodes_get_status.yml
+      vars:
+        node_prov_status_delay: 30
+        node_prov_status_retries: 40
 
     - name: Extracting VMs names from facts
       set_fact:
@@ -97,6 +100,17 @@
         registered_machines_init: "{{ registered_machines }}"
         # This should be in sync with the disks: parameter number passed to kvm_vm_create.yml task
         base_system_disk_device: /dev/vdb
+        base_system_disk_space: 520.0
+        osa_partition_size: 80.0
+        osa_logs_partition_size: 90.0
+        lxc_partition_size: 100.0
+        cinder_partition_size: 110.0
+        nova_partition_size: 120.0
+        swap_partition_size: 16.0
+
+    - name: Extracting extra VMs infos from facts
+      set_fact:
+        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
 
     - name: Waiting for VMs to be reachable by SSH
       wait_for:
@@ -115,12 +129,11 @@
       vars:
         # TODO next variables to be retrieved from facts
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
-        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names }}"
         bridge_itf: "{{ kvm_prov_bridge_itf }}"
-        ext_pub_vip_addr: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
+        ext_pub_vip_addr: "{{ osa_master_ip }}"
         int_pub_vip_itf: "br-mgmt"
-        int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
+        int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr(osa_master_ip.split('.')[-1]) }}"
 
     - import_tasks: ../tasks/nodes_get_status.yml
 

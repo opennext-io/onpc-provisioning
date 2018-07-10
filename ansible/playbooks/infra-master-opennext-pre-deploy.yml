@@ -18,6 +18,7 @@
 
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
+    - ../vars/infra-master-deploy-bifrost_vars.yml
 
   pre_tasks:
 
@@ -47,6 +48,12 @@
         recursive: no
       with_items:
         - "onpc-provisioning"
+
+    - name: Setting up Ansible in virtualenv
+      become: no
+      pip:
+        virtualenv: "{{ systemuserhome }}/.venv/ansible"
+        requirements: "{{ dest_repo_dir }}/onpc-provisioning/requirements.txt"
 
     - name: Setting default facts for Squid ACLs
       set_fact:

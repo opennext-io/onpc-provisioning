@@ -220,57 +220,44 @@
         osa_nodes_infos: "{{ hostvars.get(inventory_hostname, {}).get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {}) }}"
         vlans_ips: "{{ osa_vlans | selectattr('prefix', 'defined') | map(attribute='prefix') | flatten | list }}"
 
-    - name: Setting facts for AIO mode {{ is_aio }} is true
+    - name: Setting remote OSA nodes roles informations facts
       set_fact:
-        control_match: 'aio1'
-        cinder_match: 'aio1'
-        compute_match: 'aio1'
-        monitoring_match: 'aio1'
-        shared_infra_hosts_name: 'aio'
-        compute_hosts_name: 'aio'
-        storage_hosts_name: 'aio'
-        image_hosts_name: 'aio'
-        log_hosts_name: 'aio'
-        monitoring_hosts_name: 'aio'
-        external_public_vip_itf: "{{ osa_nodes_infos['aio1']['matching_ether_itfs'] }}"
-        internal_public_vip_address: "{{ hostvars['aio1']['internal_public_vip_address'] }}"
-        external_public_vip_address: "{{ hostvars['aio1']['external_public_vip_address'] }}"
-      when: is_aio
+        osa_nodes_roles: "{{ osa_nodes_infos.get('infra-master', {}).get('osa_nodes_roles', {}) }}"
 
-    - name: Setting facts for AIO mode {{ is_aio }} is false
+    - name: Setting remote OSA nodes roles informations facts
       set_fact:
-        control_match: 'infra.*'
-        cinder_match: 'infra.*'
-        compute_match: 'infra.*'
-        monitoring_match: 'infra.*'
-        shared_infra_hosts_name: 'infra'
-        compute_hosts_name: 'infra'
-        storage_hosts_name: 'infra'
-        monitoring_hosts_name: 'infra'
-        external_public_vip_itf: "{{ osa_nodes_infos['infra1']['matching_ether_itfs'] }}"
-        internal_public_vip_address: "{{ hostvars['infra1']['internal_public_vip_address'] }}"
-        external_public_vip_address: "{{ hostvars['infra1']['external_public_vip_address'] }}"
-      when: not is_aio
+        controller_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'control' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+        cinder_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'storage' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+        compute_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'compute' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+#        neutron_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'compute' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+        monitoring_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'monitoring' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+        logging_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'logging' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+
+    - name: Setting remote OSA nodes names informations facts
+      set_fact:
+        osa_first_controller_node_name:  "{{ controller_hosts_list | sort | first }}"
+
+    - name: Setting VIP facts
+      set_fact:
+        external_public_vip_itf: "{{ osa_nodes_infos[osa_first_controller_node_name]['matching_ether_itfs'] }}"
+        internal_public_vip_address: "{{ hostvars[osa_first_controller_node_name]['internal_public_vip_address'] }}"
+        external_public_vip_address: "{{ hostvars[osa_first_controller_node_name]['external_public_vip_address'] }}"
 
     - name: Computing OSA deployment nodes facts
       set_fact:
         osa_deploy_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
         ip_reject_regex: "{{ '^' ~ ip_prefix ~ '.*' }}"
         osa_bridges_ips: "{{ vlans_ips | unique }}"
-        controller_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', control_match) | list }}"
-        cinder_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', cinder_match) | list }}"
-        compute_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', compute_match) | list }}"
-        monitoring_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | select('match', monitoring_match) | list }}"
-#        neutron_hosts: "{{ osa_nodes_infos.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | difference(['master-osa']) | list }}"
 
     - name: Computing OSA deployment nodes additional facts
       set_fact:
         osa_deploy_hosts_ips_infos: "{% set sel = [] %} {% for x in osa_deploy_hosts %} {% set l = sel.append(hostvars.get(x)) %}{% endfor %}{{ sel | map(attribute='ansible_all_ipv4_addresses') | flatten | reject('match', ip_reject_regex) | list | to_yaml }}"
         osa_bridges_ips_ranges: "{% set sel = [] %} {% for x in osa_bridges_ips %} {% set l = sel.append(x + '.1,' + x + '.50') %}{% endfor %}{{ sel | to_yaml }}"
-        controller_hosts_ips_l: "{% set sel = [] %} {% for x in controller_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
-        cinder_hosts_ips_l: "{% set sel = [] %} {% for x in cinder_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
-        compute_hosts_ips_l: "{% set sel = [] %} {% for x in compute_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
-        monitoring_hosts_ips_l: "{% set sel = [] %} {% for x in monitoring_hosts %} {% set l = sel.append(hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']) %}{% endfor %}{{ sel | list | to_yaml }}"
+        controller_hosts_l: "{% set sel = [] %} {% for x in controller_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
+        cinder_hosts_l: "{% set sel = [] %} {% for x in cinder_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
+        compute_hosts_l: "{% set sel = [] %} {% for x in compute_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
+        monitoring_hosts_l: "{% set sel = [] %} {% for x in monitoring_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
+        logging_hosts_l: "{% set sel = [] %} {% for x in logging_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
 
     - name: Setting final IPs facts
       set_fact:
@@ -291,7 +278,8 @@
       vars:
         in_file: "{{ item }}"
         out_file: "{{ osa_deploy_conf_path }}/conf.d/{{ (item | basename).split('.')[:-1] | join('.') }}"
-        monitoring_hosts_ips: "{{ monitoring_hosts_ips_l | from_yaml }}"
+        monitoring_hosts: "{{ monitoring_hosts_l | from_yaml }}"
+        logging_hosts: "{{ logging_hosts_l | from_yaml }}"
       with_items: "{{ onpc_model_confd_templates.get('files', []) | map(attribute='path') | list }}"
 
     - include_tasks: ../tasks/remote_templating.yml
@@ -301,12 +289,14 @@
         bootstrap_host_public_address: "{{ external_public_vip_address.split('/')[0] }}"
         internal_vip_address: "{{ internal_public_vip_address | ipaddr('address') }}"
         reserved_ips: "{{ osa_ips | merge_ip_addresses(osa_networks | from_yaml) }}"
-        controller_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
-        cinder_hosts_ips: "{{ cinder_hosts_ips_l | from_yaml }}"
-        compute_hosts_ips: "{{ compute_hosts_ips_l | from_yaml }}"
-        neutron_hosts_ips: "{{ controller_hosts_ips_l | from_yaml }}"
-        image_hosts_ips: ["{{ cinder_hosts_ips_l | from_yaml | first }}"]
-        log_hosts_ips: ["{{ controller_hosts_ips_l | from_yaml | first }}"]
+        infrastructure_hosts: "{{ controller_hosts_l | from_yaml }}"
+        controller_hosts: "{{ controller_hosts_l | from_yaml }}"
+        lvm_iscsi_hosts: "{{ cinder_hosts_l | from_yaml }}"
+        compute_hosts: "{{ compute_hosts_l | from_yaml }}"
+        neutron_hosts: "{{ controller_hosts_l | from_yaml }}"
+        image_hosts: ["{{ cinder_hosts_l | from_yaml | first }}"]
+        monitoring_hosts: "{{ monitoring_hosts_l | from_yaml }}"
+        logging_hosts: "{{ logging_hosts_l | from_yaml }}"
 
     - name: Setting OpenNext facts
       set_fact:
