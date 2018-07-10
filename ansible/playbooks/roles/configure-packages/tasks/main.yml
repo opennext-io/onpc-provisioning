@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+- name: Include OS version-specific defaults
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "../defaults/osa-nodes-pkgs-{{ ansible_distribution | lower }}-{{ ansible_distribution_release | lower }}-{{ ansible_distribution_major_version }}.yml"
+    - "../defaults/osa-nodes-pkgs-{{ ansible_distribution | lower }}-{{ ansible_distribution_release | lower }}.yml"
+    - "../defaults/osa-nodes-pkgs-{{ ansible_distribution | lower }}.yml"
+
 - name: Setting environment facts
   set_fact:
     proxy_env: {

@@ -1,4 +1,4 @@
-# Bifrost slave nodes mandatory packages for Ubuntu
+# Bifrost OSA nodes mandatory packages for CentOS
 ---
 # Copyright (c) 2018, OpenNext SAS
 #
@@ -29,110 +29,80 @@ systempkgs: "{{
 system:
   - acl
   - acpid
-  - apport
-  - apt-utils
-  - apt-transport-https
-  - aptitude
   - at
-  - debootstrap
-  - eatmydata
-  - ipython
-  - linux-image-extra-{{ ansible_kernel }}
-  - linux-virtual
-  - overlayroot
-  - parted
-  - pollinate
-  - software-properties-common
-  - sosreport
   - sshpass
-  - ubuntu-cloudimage-keyring
-  - ubuntu-core-launcher
-  - ubuntu-server
+  - sed
+  - tar
   - unzip
-  - xfsprogs
+  - util-linux
 
 dev:
   - autoconf
-  - build-essential
+  - bash
+  - coreutils
+  - diffutils
+  - findutils
+  - gawk
+  - gcc
+  - gcc-c++
   - git
-  - git-core
-  - libsystemd-dev
-  - python-dev
+  - glibc-devel
+  - grep
+  - kernel-headers
+  - libselinux-devel
+  - openssl-devel
+  - pcre-devel
+  - python-devel
+  - systemd-devel
+  - zlib-devel
 
 disk:
-  - btrfs-tools
+  - btrfs-progs
   - cryptsetup
+  - e2fsprogs
   - gdisk
   - mdadm
+  - parted
   - squashfs-tools
   - xfsprogs
 
 monitoring:
   - arpwatch
-  - atop
-  - bwm-ng
-  - cbm
-  - ctop
   - dstat
-  - htop
-  - iftop
-  - ioping
   - iotop
-  - iptraf
-  - itop
-  - netdiag
-  - nethogs
-  - nload
+  - iptraf-ng
   - nmap
-  - nmon
-  - pktstat
-  - saidar
-  - slurm
-  - speedometer
   - sysstat
-  - tcptrack
-  - tshark
+  - wireshark
 
 network:
   - bridge-utils
-  - dnsmasq-base
-  - ifenslave
-  - ifenslave-2.6
-  - ifstat
-  - iputils-tracepath
-  - netcat
+  - iputils
+  - iscsi-initiator-utils
+  - nc
   - ntp
   - ntpdate
-  - open-iscsi
   - openssh-server
-  - vlan
 
 proxy:
-  - connect-proxy
   - socat
-  - proxytunnel
 
 python:
-  - python-pip
-  - python-selinux
   - python-virtualenv
-  - virtualenv
 
 user:
-  - byobu
-  - gawk
-  - pastebinit
   - screen
-  - tmate
   - tmux
   - tree
   - vim
 
 virtualization:
-  - lxd
+  - libvirt-daemon-lxc
   - open-vm-tools
   - virt-what
 
 prohibited_systempkgs:
-  - libmysqlclient18
-  - mysql-common
+  - centos-openstack-release-*
+  - centos-release-ceph-jewel
+  - centos-release-qemu-ev
+  - centos-release-storage-common

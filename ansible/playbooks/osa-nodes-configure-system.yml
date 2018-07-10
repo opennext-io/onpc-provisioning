@@ -49,7 +49,6 @@
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
     - ../vars/infra-master-deploy-bifrost_vars.yml
-    - ../vars/slaves-pkgs-ubuntu.yml
     - ../vars/osa-briges-vlans_vars.yml
     - ../vars/osa-disks-partitions_vars.yml
 
