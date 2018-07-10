@@ -1,5 +1,5 @@
-# OSA disks and partitions configuration
 ---
+# OSA disks and partitions configuration
 # Copyright (c) 2018, OpenNext SAS
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,7 +53,7 @@ osa_disks: [
           {
             name: "cinder-volumes",
             vg: "cinder-volumes",
-            size: "{{ base_partition_size | default(200.0) | float }}",
+            size: "{{ storage_partition_size | default(200.0) | float }}",
             type: "vgonly",
             roles: [
               { "name": "storage" },
@@ -63,7 +63,7 @@ osa_disks: [
             name: "openstack-novainstances",
             vg: "os-",
             lv: "nova",
-            size: "{{ base_partition_size | default(200.0) | float }}",
+            size: "{{ compute_partition_size | default(200.0) | float }}",
             mountpoint: "/var/lib/nova/instances",
             roles: [
               { "name": "compute" },
