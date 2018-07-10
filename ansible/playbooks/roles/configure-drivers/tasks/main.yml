@@ -1,0 +1,48 @@
+# Tasks for configuring system drivers and modules
+---
+# Copyright (c) 2018, OpenNext SAS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
+  with_items:
+    - "bonding"
+    - "bridge"
+    - "br_netfilter"
+    - "8021q"
+    - "vxlan"
+  when: is_host_to_be_modified
+
+- name: Configuring IP forwarding via sysctl
+  sysctl:
+    name: "net.ipv4.ip_forward"
+    value: 1
+    sysctl_set: yes
+    state: present
+    reload: yes
+  when: is_host_to_be_modified
+
+- name: Configuring Bridges for proper VLAN support via sysctl
+  sysctl:
+    name: "{{ item }}"
+    value: 0
+    sysctl_set: yes
+    state: present
+    reload: yes
+  with_items:
+    - net.bridge.bridge-nf-call-ip6tables
+    - net.bridge.bridge-nf-call-iptables
+    - net.bridge.bridge-nf-call-arptables
+    - net.bridge.bridge-nf-filter-pppoe-tagged
+    - net.bridge.bridge-nf-filter-vlan-tagged
+  when: is_host_to_be_modified
