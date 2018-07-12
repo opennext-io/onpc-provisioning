@@ -284,8 +284,8 @@ If you are provisioning baremetal machines the playbook to be used is
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-baremetal-node.yml -e node_name="<NODE_NAME>" \
     -e node_ip="<NODE_IP>" -e node_mac_address="<NODE_MAC_@>" -e node_bmc_ip="<NODE_BMC_IP>" -e node_bmc_user="<NODE_BMC_USER>" \
     -e node_bmc_passwd="<NODE_BMC_PASSWD>" -e node_roles="['compute','ceph']" \
-    -e storage_partition_size="<CINDER_LVM_SIZE_GB>" | ceph_partition_size="<CEPH_OSD_SIZE_GB>" \
-    -e compute_partition_size="<NOVA_INSTANCE_SIZE_GB>"
+    -e storage_partition_size=<CINDER_LVM_SIZE_GB> | ceph_partition_size=<CEPH_OSD_SIZE_GB> \
+    -e compute_partition_size=<NOVA_INSTANCE_SIZE_GB>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 and it is to be called for each machine you want to add in your final infrastructure.
@@ -334,6 +334,12 @@ into infra-master and launch the following:
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-nodes-configure-system.yml
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+IMPORT NOTE: If you'd like to limit the execution of the osa-nodes-configure-system.yml to a set of node targets
+like compute you must nonetheless include infra-master and osa-master to allow a proper generation of facts like in:
+
+ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-nodes-configure-system.yml \
+    --limit compute1,infra-master,osa-master  
 
 Concerning the  1st phase (osa-nodes-configure-system), please note that in case of a virtualized environment,
 and depending on the disk(s) you have specified for you VMs, you might want to customize the base_system_disk_device
