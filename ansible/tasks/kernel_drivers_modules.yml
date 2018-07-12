@@ -14,17 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Setting fact for Ubuntu
+- name: Setting fact (Ubuntu)
   set_fact:
     modules_file: /etc/modules
   when: ansible_distribution | lower == 'ubuntu'
 
-- name: Setting fact for CentOS
+- name: Setting fact (CentOS)
   set_fact:
     modules_file: /etc/modules-load.d/bridges.conf
   when: ansible_distribution | lower == 'centos'
 
-- name: Ensure that {{ modules_file }} exists on CentOS
+- name: Ensure that {{ modules_file }} exists (CentOS)
   file:
     path: "{{ modules_file }}"
     state: touch
