@@ -277,7 +277,7 @@ you MUST add it to any of the command written in this paragraph for step 5.
 
 ### Step 6: OpenNext Bootstrap for final OSA deployment
 
-Now that your VM(s) is(are) available, you need to finalize some modifiations on
+Now that your VM(s) is(are) available, you need to finalize some modifications on
 infra-master node prior to launch the effective OSA deployment:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
