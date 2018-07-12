@@ -16,10 +16,28 @@
 
 - name: Setting facts for NTP daemon configuration
   set_fact:
-      ntp_daemon_conf_line: "server {{ proxy_host }}"
-      ntp_daemon_conf_file: "/etc/ntp.conf"
-      ntp_date_conf_line: "NTPSERVERS=\"{{ proxy_host }}\""
-      ntp_date_conf_file: "/etc/default/ntpdate"
+    ntp_daemon_conf_line: "server {{ proxy_host }}"
+    ntp_daemon_conf_file: "/etc/ntp.conf"
+
+- name: Setting facts for NTP daemon configuration (Ubuntu)
+  set_fact:
+    ntp_date_conf_line: "NTPSERVERS=\"{{ proxy_host }}\""
+    ntp_date_conf_file: "/etc/default/ntpdate"
+    ntp_patterns_to_comment:
+      - { regexp: '^pool (.*)', line: '#pool \1' }
+    ntp_anchor_pattern:
+      - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 ntp server as a fallback.' }
+    ntp_service_handler: "restart ntp and stop systemd-timesyncd"
+  when: ansible_distribution | lower == 'ubuntu'
+
+- name: Setting facts for NTP daemon configuration (CentOS)
+  set_fact:
+    ntp_patterns_to_comment:
+      - { regexp: '^server (.*.centos.pool.ntp.org.*)', line: '#server \1' }
+    ntp_anchor_pattern:
+      - { regexp: '^(.*) Hosts on local network are less restricted\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 Hosts on local network are less restricted.' }
+    ntp_service_handler: "restart ntpd"
+  when: ansible_distribution | lower == 'centos'
 
 - name: Configuring NTP daemon (removing default pools)
   replace:
@@ -29,10 +47,9 @@
     owner: root
     group: root
     mode: 0644
-  with_items:
-    - { regexp: '^pool (.*)', line: '#pool \1' }
+  with_items: "{{ ntp_patterns_to_comment }}"
   notify:
-    - restart ntp and stop systemd-timesyncd
+    - "{{ ntp_service_handler }}"
   when: is_host_to_be_modified
 
 - name: Retrieving remote NTP daemon configuration
@@ -49,17 +66,16 @@
     owner: root
     group: root
     mode: 0644
-  with_items:
-    - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 ntp server as a fallback.' }
+  with_items: "{{ ntp_anchor_pattern }}"
   notify:
-    - restart ntp and stop systemd-timesyncd
+    - "{{ ntp_service_handler }}"
   when: is_host_to_be_modified and not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line))
 
 - name: Retrieving remote NTP date configuration
   slurp:
     src: "{{ ntp_date_conf_file }}"
-  register:
-    ntp_date_info
+  register: ntp_date_info
+  when: ansible_distribution | lower == 'ubuntu'
 
 - name: Configuring NTP date (inserting infra-master as NTP server)
   replace:
@@ -72,5 +88,5 @@
   with_items:
     - { regexp: '^NTPSERVERS=".*', line: '{{ ntp_date_conf_line }}' }
   notify:
-    - restart ntp and stop systemd-timesyncd
-  when: is_host_to_be_modified and not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line))
+    - "{{ ntp_service_handler }}"
+  when: ansible_distribution | lower == 'ubuntu' and is_host_to_be_modified and not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line))

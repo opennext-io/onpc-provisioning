@@ -19,3 +19,8 @@
   with_items:
     - { name: ntp, state: restarted }
     - { name: systemd-timesyncd, state: stopped }
+
+- name: restart ntpd
+  service: name={{ item.name }} state={{ item.state }}
+  with_items:
+    - { name: ntpd, state: restarted }
