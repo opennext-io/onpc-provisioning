@@ -281,7 +281,11 @@ you MUST add it to any of the command written in this paragraph for step 5.
 If you are provisioning baremetal machines the playbook to be used is
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-baremetal-node.yml -e node_name="<NODE_NAME>" -e node_ip="<NODE_IP>" -e node_mac_address="<NODE_MAC_@>" -e node_bmc_ip="<NODE_BMC_IP>" -e node_bmc_user="<NODE_BMC_USER>" -e node_bmc_passwd="<NODE_BMC_PASSWD>" -e node_roles="['compute','ceph']"
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-baremetal-node.yml -e node_name="<NODE_NAME>" \
+    -e node_ip="<NODE_IP>" -e node_mac_address="<NODE_MAC_@>" -e node_bmc_ip="<NODE_BMC_IP>" -e node_bmc_user="<NODE_BMC_USER>" \
+    -e node_bmc_passwd="<NODE_BMC_PASSWD>" -e node_roles="['compute','ceph']" \
+    -e storage_partition_size="<CINDER_LVM_SIZE_GB>" | ceph_partition_size="<CEPH_OSD_SIZE_GB>" \
+    -e compute_partition_size="<NOVA_INSTANCE_SIZE_GB>"
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 and it is to be called for each machine you want to add in your final infrastructure.

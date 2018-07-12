@@ -41,6 +41,9 @@ lxc_partition_size={{ lxc_partition_size }}
 {% if storage_partition_size is defined and storage_partition_size | float > 0.0 %}
 storage_partition_size={{ storage_partition_size }}
 {% endif %}
+{% if ceph_partition_size is defined and ceph_partition_size | float > 0.0 %}
+ceph_partition_size={{ ceph_partition_size }}
+{% endif %}
 {% if compute_partition_size is defined and compute_partition_size | float > 0.0 %}
 compute_partition_size={{ compute_partition_size }}
 {% endif %}
