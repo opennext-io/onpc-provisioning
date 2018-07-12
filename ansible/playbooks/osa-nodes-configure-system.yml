@@ -37,7 +37,7 @@
 
     - name: Setting fact for all OSA nodes roles
       set_fact:
-        osa_nodes_roles: "{% set sel = {} %} {% for x in osa_nodes_statii | json_query('keys(@)') %}{% set l = sel.update({x: osa_nodes_statii.get(x, {}).get('extra/roles', [])}) %}{% endfor %}{{ sel | to_yaml }}"
+        osa_nodes_roles: "{% set sel = {} %} {% for x in osa_nodes_statii | json_query('keys(@)') %}{% set l = sel.update({x: osa_nodes_statii.get(x, {}).get('extra/roles', [])}) %}{% endfor %}{{ sel | to_yaml  | from_yaml }}"
 
     - name: Setting fact for all OSA nodes roles
       set_fact:
