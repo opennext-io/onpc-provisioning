@@ -14,10 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+- name: Setting fact for Ubuntu
+  set_fact:
+    modules_file: /etc/modules
+  when: ansible_distribution | lower == 'ubuntu'
+
+- name: Setting fact for CentOS
+  set_fact:
+    modules_file: /etc/modules-load.d/bridges.conf
+  when: ansible_distribution | lower == 'centos'
+
+- name: Ensure that {{ modules_file }} exists on CentOS
+  file:
+    path: "{{ modules_file }}"
+    state: touch
+    owner: root
+    group: root
+    mode: 0644
+  when: ansible_distribution | lower == 'centos'
+
 # Add the specified module into configuration
 - name: Configuring system module {{ module }}
   lineinfile:
-    path: /etc/modules
+    path: "{{ modules_file }}"
     line: "{{ module }}"
     state: present
     owner: root
