@@ -1,0 +1,32 @@
+# Tasks for configuring disk, partitions and directories
+---
+# Copyright (c) 2018, OpenNext SAS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Creating mandatory directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "/openstack"
+  when: is_host_to_be_modified and inventory_hostname != 'osa-master' and force_partitioning | default(false) | bool
+
+- include_tasks: ../tasks/disk_partitions.yml
+  vars:
+    disk_setup: "{{ disk_item }}"
+    node_roles: "{{ hostvars.get('infra-master', {}).get('osa_nodes_roles', {}).get(inventory_hostname, []) }}"
+  with_items: "{{ osa_disks }}"
+  loop_control:
+    loop_var: disk_item
+  when: is_host_to_be_modified and inventory_hostname != 'osa-master' and force_partitioning | default(false) | bool

@@ -104,8 +104,8 @@
         osa_partition_size: 80.0
         osa_logs_partition_size: 90.0
         lxc_partition_size: 100.0
-        cinder_partition_size: 110.0
-        nova_partition_size: 120.0
+        storage_partition_size: 110.0
+        compute_partition_size: 120.0
         swap_partition_size: 16.0
 
     - name: Extracting extra VMs infos from facts

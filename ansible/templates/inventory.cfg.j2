@@ -38,11 +38,11 @@ osa_logs_partition_size={{ osa_logs_partition_size }}
 {% if lxc_partition_size is defined and lxc_partition_size | float > 0.0 %}
 lxc_partition_size={{ lxc_partition_size }}
 {% endif %}
-{% if cinder_partition_size is defined and cinder_partition_size | float > 0.0 %}
-cinder_partition_size={{ cinder_partition_size }}
+{% if storage_partition_size is defined and storage_partition_size | float > 0.0 %}
+storage_partition_size={{ storage_partition_size }}
 {% endif %}
-{% if nova_partition_size is defined and nova_partition_size | float > 0.0 %}
-nova_partition_size={{ nova_partition_size }}
+{% if compute_partition_size is defined and compute_partition_size | float > 0.0 %}
+compute_partition_size={{ compute_partition_size }}
 {% endif %}
 {% if swap_partition_size is defined and swap_partition_size | float > 0.0 %}
 swap_partition_size={{ swap_partition_size }}

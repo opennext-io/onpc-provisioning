@@ -372,6 +372,9 @@ try:
                                     if len(vnc_infos) == 2:
                                         m_changes['vnc_host'] = vnc_infos[0]
                                         m_changes['vnc_port'] = vnc_infos[1]
+                                    roles = v.get('extra/roles')
+                                    if roles:
+                                        m_changes['roles'] = roles
                                     app.logger.debug('Updating bootstrap registered_machines: {}'.format(pprint.pformat(m_changes)))
                                     # Call same procedure than when machine is 1st registered into register-helper utility
                                     _patch_machine(machine_uuid, v.get('virt-uuid'), m_changes)

@@ -1,0 +1,46 @@
+# Tasks for configuring packages
+---
+# Copyright (c) 2018, OpenNext SAS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Include OS version-specific defaults
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "../defaults/osa-nodes-pkgs-{{ ansible_distribution | lower }}-{{ ansible_distribution_release | lower }}-{{ ansible_distribution_major_version }}.yml"
+    - "../defaults/osa-nodes-pkgs-{{ ansible_distribution | lower }}-{{ ansible_distribution_release | lower }}.yml"
+    - "../defaults/osa-nodes-pkgs-{{ ansible_distribution | lower }}.yml"
+
+- name: Setting environment facts
+  set_fact:
+    proxy_env: {
+      'http_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+      'https_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+      'ftp_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
+      'no_proxy': 'localhost,127.0.0.1',
+    }
+  when: is_host_to_be_modified and proxy_host is defined
+
+- name: Remove known problem packages
+  package:
+    name: "{{ prohibited_systempkgs }}"
+    state: absent
+  environment: "{{ proxy_env | default('{}') }}"
+  when: is_host_to_be_modified and prohibited_systempkgs is defined and prohibited_systempkgs | length > 0
+
+- name: Verifying all mandatory packages
+  package:
+    name: "{{ systempkgs | sort }}"
+    state: latest
+  environment: "{{ proxy_env | default('{}') }}"
+  when: is_host_to_be_modified

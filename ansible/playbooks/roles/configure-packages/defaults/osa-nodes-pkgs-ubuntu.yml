@@ -1,0 +1,138 @@
+# Bifrost OSA nodes mandatory packages for Ubuntu
+---
+# Copyright (c) 2018, OpenNext SAS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+systempkgs: "{{
+  system +
+  dev +
+  disk +
+  monitoring +
+  network +
+  proxy +
+  python +
+  user +
+  virtualization
+  }}"
+
+system:
+  - acl
+  - acpid
+  - apport
+  - apt-utils
+  - apt-transport-https
+  - aptitude
+  - at
+  - debootstrap
+  - eatmydata
+  - ipython
+  - linux-image-extra-{{ ansible_kernel }}
+  - linux-virtual
+  - overlayroot
+  - parted
+  - pollinate
+  - software-properties-common
+  - sosreport
+  - sshpass
+  - ubuntu-cloudimage-keyring
+  - ubuntu-core-launcher
+  - ubuntu-server
+  - unzip
+  - xfsprogs
+
+dev:
+  - autoconf
+  - build-essential
+  - git
+  - git-core
+  - libsystemd-dev
+  - python-dev
+
+disk:
+  - btrfs-tools
+  - cryptsetup
+  - gdisk
+  - mdadm
+  - squashfs-tools
+  - xfsprogs
+
+monitoring:
+  - arpwatch
+  - atop
+  - bwm-ng
+  - cbm
+  - ctop
+  - dstat
+  - htop
+  - iftop
+  - ioping
+  - iotop
+  - iptraf
+  - itop
+  - netdiag
+  - nethogs
+  - nload
+  - nmap
+  - nmon
+  - pktstat
+  - saidar
+  - slurm
+  - speedometer
+  - sysstat
+  - tcptrack
+  - tshark
+
+network:
+  - bridge-utils
+  - dnsmasq-base
+  - ifenslave
+  - ifenslave-2.6
+  - ifstat
+  - iputils-tracepath
+  - netcat
+  - ntp
+  - ntpdate
+  - open-iscsi
+  - openssh-server
+  - vlan
+
+proxy:
+  - connect-proxy
+  - socat
+  - proxytunnel
+
+python:
+  - python-pip
+  - python-selinux
+  - python-virtualenv
+  - virtualenv
+
+user:
+  - byobu
+  - gawk
+  - pastebinit
+  - screen
+  - tmate
+  - tmux
+  - tree
+  - vim
+
+virtualization:
+  - lxd
+  - open-vm-tools
+  - virt-what
+
+prohibited_systempkgs:
+  - libmysqlclient18
+  - mysql-common

@@ -53,7 +53,7 @@ osa_disks: [
           {
             name: "cinder-volumes",
             vg: "cinder-volumes",
-            size: "{{ cinder_partition_size | default(200.0) | float }}",
+            size: "{{ storage_partition_size | default(200.0) | float }}",
             type: "vgonly",
             roles: [
               { "name": "storage" },
@@ -63,7 +63,7 @@ osa_disks: [
             name: "openstack-novainstances",
             vg: "os-",
             lv: "nova",
-            size: "{{ nova_partition_size | default(200.0) | float }}",
+            size: "{{ compute_partition_size | default(200.0) | float }}",
             mountpoint: "/var/lib/nova/instances",
             roles: [
               { "name": "compute" },
