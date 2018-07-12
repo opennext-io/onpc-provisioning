@@ -4,6 +4,9 @@ onpc-provisioning
 Node provisioning automation to get hosts and network ready to install OpenStack
 with OSA
 
+You can also have a look at the file scripts/complete_scenario.sh to have a less
+detailed version of the steps to be carried out during provisioning phase.
+
 `create_infra_master_vm.sh` is a script used to bootstrap the infra-master/config node as a
 VirtualBox or KVM VM:
 
@@ -274,6 +277,28 @@ automatically into ironic to wait for proper provisioning.
 
 IMPORTANT NOTE: if you have specified a value for openstack_release on the command line and not in the Ansible inventory file at step 2 above,
 you MUST add it to any of the command written in this paragraph for step 5.
+
+If you are provisioning baremetal machines the playbook to be used is
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-baremetal-node.yml -e node_name="<NODE_NAME>" -e node_ip="<NODE_IP>" -e node_mac_address="<NODE_MAC_@>" -e node_bmc_ip="<NODE_BMC_IP>" -e node_bmc_user="<NODE_BMC_USER>" -e node_bmc_passwd="<NODE_BMC_PASSWD>" -e node_roles="['compute','ceph']"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+and it is to be called for each machine you want to add in your final infrastructure.
+The command line above should provide IPMI/BMC IP address, user+password and mac address
+as well as the roles you want to assign to the node
+
+Valid/supported node roles are at the present time:
+ - control
+ - storage
+ - compute
+ - ceph
+
+After machines have been provisioned using this stage 5, node roles are stored as facts on the infra-master
+machine under /etc/ansible/facts.d/opennext_infra_master_create_osa_nodes.fact
+The playbooks called further down use these facts to retrieve node roles and build appropriate variables
+which will in turn be used for instance to create disks partitions according to role during
+osa-nodes-configure-system.yml
 
 ### Step 6: OpenNext Bootstrap for final OSA deployment
 

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# IMPORTANT NOTE: this scenario script is not supposed to be launched as is
+# but rather a condensed version of all the instructions given in the README.md file
+
+set -e
+
 export ANSIBLE_CALLBACK_WHITELIST="profile_tasks"
 export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=120 -o ServerAliveCountMax=10"
 
@@ -23,8 +28,20 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post
 #ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-aio-vm.yml
 #ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml
 # You can also use the following playbook to register a real baremetal server providing
-# IPMI/BMC IP address, user+password and mac address
-#ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-baremetal-node.yml -e node_name="<NODE_NAME>" -e node_ip="<NODE_IP>" -e node_mac_address="<NODE_MAC_@>" -e node_bmc_ip="<NODE_BMC_IP>" -e node_bmc_user="<NODE_BMC_USER>" -e node_bmc_passwd="<NODE_BMC_PASSWD>"
+# IPMI/BMC IP address, user+password and mac address and node roles
+#ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-baremetal-node.yml -e node_name="<NODE_NAME>" -e node_ip="<NODE_IP>" -e node_mac_address="<NODE_MAC_@>" -e node_bmc_ip="<NODE_BMC_IP>" -e node_bmc_user="<NODE_BMC_USER>" -e node_bmc_passwd="<NODE_BMC_PASSWD>" -e node_roles="['compute','ceph']"
+
+# Valid/supported node roles are at the present time:
+# - control
+# - storage
+# - compute
+# - ceph
+
+# After machines have been provisioned using this stage 5, node roles are stored as facts on the infra-master
+# machine under /etc/ansible/facts.d/opennext_infra_master_create_osa_nodes.fact
+# The playbooks called further down use these facts to retrieve node roles and build appropriate variables
+# which will in turn be used for instance to create disks partitions according to role during
+# osa-nodes-configure-system.yml
 
 #  Stage 6 => Add some OpenNext specifics services (Squid) and associated configurations
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-pre-deploy.yml
