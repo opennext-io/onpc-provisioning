@@ -31,6 +31,7 @@
     owner: root
     group: root
     mode: 0644
+  changed_when: false
   when: ansible_distribution | lower == 'centos'
 
 # Add the specified module into configuration
