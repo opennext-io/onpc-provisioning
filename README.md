@@ -387,3 +387,18 @@ Be carefull however to NOT add spaces before or after the comma in the list
 Note that the previous installation and configuration of Nginx as a reverse proxy
 to access to Horizon and Grafana is now disabled by default and can be reinstated
 using -e opennext_reverse_nginx=True
+
+### Getting informations, interacting with OpenStack utilities, ...
+
+To get the status of the registered machines of your current provisioned infrastructure
+log onto infra-master machine and run the following commands:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Activate new venv and credentials
+cd ~vagrant && . .venv/bifrost/bin/activate && . openrc bifrost-admin
+# See Bifrost registered nodes
+openstack baremetal node list
+# You can also query the regist-helper agent utility to get informations
+# and format the JSON response for human readability
+curl -s -u ${OS_USERNAME}:${OS_PASSWORD} -H 'Content-Type: application/json' -X GET http://localhost:7777/status | jq -S . -
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
