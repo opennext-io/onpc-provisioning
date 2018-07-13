@@ -214,7 +214,21 @@
   vars_files:
     - ../vars/osa-briges-vlans_vars.yml
 
+  vars_prompt:
+    - name: "go_manual"
+      prompt: >
+        This playbook will roll over the installation of OpenNext end-to-end automatically
+        unless you prefer to quit this playbook once the OSA master node setup is complete.
+        Continuing the installation manually may be an better option if, for exemple,
+        you'd like to run a specific playbook or limit the installation to a specific target.
+        Would you like to go manual once the OSA master node setup is complete, yes or no ?:
+      default: "no"
+      private: no
   tasks:
+    - fail:
+        msg: "User prompt to go manual has an invalid value"
+      when: go_manual | lower != 'yes' and go_manual | lower != 'no'
+
     - name: Setting remote OSA nodes informations facts
       set_fact:
         osa_nodes_infos: "{{ hostvars.get(inventory_hostname, {}).get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {}) }}"
@@ -228,8 +242,9 @@
       set_fact:
         controller_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'control' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
         cinder_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'storage' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+        ceph_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'ceph' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
         compute_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'compute' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
-#        neutron_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'compute' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+        neutron_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'network' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
         monitoring_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'monitoring' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
         logging_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.iteritems() %}{% if 'logging' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
 
@@ -255,7 +270,9 @@
         osa_bridges_ips_ranges: "{% set sel = [] %} {% for x in osa_bridges_ips %} {% set l = sel.append(x + '.1,' + x + '.50') %}{% endfor %}{{ sel | to_yaml }}"
         controller_hosts_l: "{% set sel = [] %} {% for x in controller_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
         cinder_hosts_l: "{% set sel = [] %} {% for x in cinder_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
+        ceph_hosts_l: "{% set sel = [] %} {% for x in ceph_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
         compute_hosts_l: "{% set sel = [] %} {% for x in compute_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
+        neutron_hosts_l: "{% set sel = [] %} {% for x in neutron_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
         monitoring_hosts_l: "{% set sel = [] %} {% for x in monitoring_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
         logging_hosts_l: "{% set sel = [] %} {% for x in logging_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml }}"
 
@@ -357,6 +374,26 @@
         owner: root
         group: root
         mode: 0644
+
+## At this point all artefact within /etc/openstack_deploy have been generated.
+## You have the option to continuing the installation of OpenNext automatically or
+## quit the playbook to take over the installation manually to for example run
+## specific playbooks or define target limits.
+    - debug:
+      msg:
+        - "At this point, all nodes will be installed with OpenNext"
+        - "You can decide to continue the installation process automatically or quit."
+        - "Quitting here may be necessary if, for exemple, you'd like to run a specific"
+        - "playbook or limit the installation to some specific targets"
+
+    - vars_prompt:
+      - name: "answer"
+        prompt: "Would you like to continue with the installation of OpenNext? (yes or no): "
+        default: "no"
+
+    - name: Exit if user choice is to go manual
+      meta: end_play
+      when: go_manual | lower == 'yes'
 
     - name: Adding OSA final deployment script
       copy:
