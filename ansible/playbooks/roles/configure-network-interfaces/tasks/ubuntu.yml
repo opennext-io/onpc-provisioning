@@ -1,0 +1,161 @@
+# Tasks for configuring network interfaces on Ubuntu
+---
+# Copyright (c) 2018, OpenNext SAS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Getting interfaces infos
+  interfaces_file:
+  register: cur_interfaces
+  when: is_host_to_be_modified
+
+- name: Moving loopback interface to its own config file
+  interfaces_file:
+    src: /etc/network/interfaces
+    dest: /etc/network/interfaces.d/lo.cfg
+    iface: lo
+    state: move
+  register: lo_changed
+  when: "is_host_to_be_modified and 'lo' in cur_interfaces.get('ifaces', {})"
+
+- import_tasks: ../tasks/select_network_interfaces_type.yml
+  vars:
+    itf_type: "ether"
+  when: is_host_to_be_modified
+
+- import_tasks: ../tasks/filter_network_interfaces_name.yml
+  vars:
+    itf_reject_name: "virbr.*|.*\\.[1-9][0-9]*"
+  when: is_host_to_be_modified
+
+- import_tasks: ../tasks/select_network_interfaces_state.yml
+  vars:
+    itf_state: true
+  when: is_host_to_be_modified
+
+- import_tasks: ../tasks/select_network_interfaces_address.yml
+  vars:
+    itf_address: "{{ ansible_host }}"
+  when: is_host_to_be_modified
+
+- name: Setting matching ethernet network interfaces list
+  set_fact:
+    matching_ether_itfs: "{{ itfs[0].get('device','') }}"
+  when: is_host_to_be_modified
+
+- name: Moving {{ matching_ether_itfs }} primary ethernet interface to its own config file
+  interfaces_file:
+    src: /etc/network/interfaces
+    dest: "/etc/network/interfaces.d/{{ matching_ether_itfs }}.cfg"
+    iface: "{{ matching_ether_itfs }}"
+    state: move
+  register: primary_changed
+  when: "is_host_to_be_modified and matching_ether_itfs in cur_interfaces.get('ifaces', {})"
+
+- name: Bringing down interface and dhcpclient for proper bridging
+  set_fact:
+    primary_itf_down: "pkill dhclient ; ip addr flush {{ matching_ether_itfs }} ; "
+  when: "is_host_to_be_modified and matching_ether_itfs in cur_interfaces.get('ifaces', {})"
+
+- name: Setting remaining interfaces list
+  set_fact:
+    remaining_itfs: "{{ cur_interfaces.get('ifaces', {}).keys() | difference(['lo', matching_ether_itfs]) }}"
+  when: is_host_to_be_modified
+
+- name: Moving {{ remaining_itfs[0] }} secondary ethernet interface to its own config file
+  interfaces_file:
+    src: /etc/network/interfaces
+    dest: "/etc/network/interfaces.d/{{ remaining_itfs[0] }}.cfg"
+    iface: "{{ remaining_itfs[0] }}"
+    state: move
+    method: manual
+  register: secondary_changed
+  when: is_host_to_be_modified and remaining_itfs | length > 0
+
+- name: Bringing down interface and dhcpclient for proper bridging
+  set_fact:
+    secondary_itf_down: "pkill dhclient ; ip addr flush {{ remaining_itfs[0] }} ; "
+  when: is_host_to_be_modified and remaining_itfs | length > 0
+
+- name: Configuring {{ remaining_itfs[0] }} VLANs and bridges
+  template:
+    src: ../templates/bridge_vlans_itf_cfg.j2
+    dest: "/etc/network/interfaces.d/{{ remaining_itfs[0] }}.cfg"
+    owner: root
+    group: root
+    mode: 0644
+  register: vlan_changed
+  when: is_host_to_be_modified and remaining_itfs | length > 0 and (not is_aio or (force_networking | default(false) | bool))
+  vars:
+    - prov_itf: "{{ remaining_itfs[0] }}"
+    - vlans_list: "{{ osa_vlans | default([]) }}"
+    - ip_suffix: "{{ ansible_host.split('.')[-1] }}"
+    - node_roles: "{{ hostvars.get('infra-master', {}).get('osa_nodes_roles', {}).get(inventory_hostname, []) }}"
+
+- name: Set fact for conditional execution
+  set_fact:
+    network_reconfig: True
+  when: ((lo_changed is defined and lo_changed.changed) or
+         (primary_changed is defined and primary_changed.changed) or
+         (secondary_changed is defined and secondary_changed.changed) or
+         (vlan_changed is defined and vlan_changed.changed))
+
+- name: Disabling existing services for DIB dhcp-all-interfaces
+  shell: systemctl list-unit-files | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl disable -q --force /' | bash
+  ignore_errors: true
+  changed_when: false
+  when: is_host_to_be_modified
+
+- name: Disabling existing services for DIB dhcp-all-interfaces
+  shell: systemctl list-units | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl disable -q --force /' | bash
+  ignore_errors: true
+  changed_when: false
+  when: is_host_to_be_modified
+
+- name: Stopping existing services for DIB dhcp-all-interfaces
+  shell: systemctl list-units | grep dhcp-interface | sed -e 's/^.*dhcp/dhcp/' | sed -e 's/  *.*//' -e 's/^/systemctl stop -q --force /' | bash
+  ignore_errors: true
+  changed_when: false
+  when: is_host_to_be_modified
+
+- name: Removing DIB dhcp-all-interfaces udev item {{ item }}
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /usr/lib/systemd/system/dhcp-interface@.service
+    - /etc/udev/rules.d/99-dhcp-all-interfaces.rules
+    - /usr/local/sbin/dhcp-all-interfaces.sh
+  register: removed_udev_rules
+  when: is_host_to_be_modified
+
+- name: Restarting udev service
+  shell: "udevadm control --reload-rules && udevadm trigger"
+  when: is_host_to_be_modified and removed_udev_rules is changed
+
+- name: Rebooting nodes
+  shell: echo "reboot" | at now + 0 min
+  when: is_host_to_be_modified and network_reconfig is defined and network_reconfig
+
+- name: Waiting for nodes to be reachable again by SSH
+  wait_for: >
+    host="{{ hostvars.get(inventory_hostname, {}).get('ansible_host') }}"
+    port=22
+    delay=10
+    timeout=3600
+    sleep=20
+    connect_timeout=10
+    search_regex=OpenSSH
+  delegate_to: localhost
+  become: no
+  when: network_reconfig is defined and network_reconfig

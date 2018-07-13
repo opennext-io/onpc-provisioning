@@ -335,7 +335,7 @@ ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbo
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-IMPORT NOTE: If you'd like to limit the execution of the osa-nodes-configure-system.yml to a set of node targets
+IMPORTANT NOTE: If you'd like to limit the execution of the osa-nodes-configure-system.yml to a set of node targets
 like compute you must nonetheless include infra-master and osa-master to allow a proper generation of facts like in:
 
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-nodes-configure-system.yml \
