@@ -309,6 +309,7 @@
         infrastructure_hosts: "{{ controller_hosts_l | from_yaml }}"
         controller_hosts: "{{ controller_hosts_l | from_yaml }}"
         lvm_iscsi_hosts: "{{ cinder_hosts_l | from_yaml }}"
+        ceph_osd_hosts: "{{ ceph_hosts_l | from_yaml }}"
         compute_hosts: "{{ compute_hosts_l | from_yaml }}"
         neutron_hosts: "{{ controller_hosts_l | from_yaml }}"
         image_hosts: ["{{ cinder_hosts_l | from_yaml | first }}"]
