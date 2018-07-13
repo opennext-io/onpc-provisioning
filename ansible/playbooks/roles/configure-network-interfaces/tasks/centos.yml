@@ -1,4 +1,4 @@
-# Tasks for configuring network interfaces
+# Tasks for configuring network interfaces on CentOS
 ---
 # Copyright (c) 2018, OpenNext SAS
 #
@@ -13,9 +13,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-- include_tasks: "{{ role_path }}/tasks/ubuntu.yml"
-  when: ansible_distribution | lower == 'ubuntu'
-
-- include_tasks: "{{ role_path }}/tasks/centos.yml"
-  when: ansible_distribution | lower == 'centos'
