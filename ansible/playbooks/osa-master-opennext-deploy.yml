@@ -375,23 +375,8 @@
         group: root
         mode: 0644
 
-## At this point all artefact within /etc/openstack_deploy have been generated.
-## You have the option to continuing the installation of OpenNext automatically or
-## quit the playbook to take over the installation manually to for example run
-## specific playbooks or define target limits.
-    - debug:
-      msg:
-        - "At this point, all nodes will be installed with OpenNext"
-        - "You can decide to continue the installation process automatically or quit."
-        - "Quitting here may be necessary if, for exemple, you'd like to run a specific"
-        - "playbook or limit the installation to some specific targets"
-
-    - vars_prompt:
-      - name: "answer"
-        prompt: "Would you like to continue with the installation of OpenNext? (yes or no): "
-        default: "no"
-
-    - name: Exit if user choice is to go manual
+    ## Quit the playbook here if user decided to go manual
+    - name: Quit if user choice is to go manual
       meta: end_play
       when: go_manual | lower == 'yes'
 
