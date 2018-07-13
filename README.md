@@ -236,6 +236,13 @@ Finally, it will also install and launch the register-helper utility which is
 responsible for changing the Ironic states of registered machines automatically and
 provide a REST API for VM/machines registration as well as status information.
 
+This step now also install Squid on infra-master system for VMs and baremetal machines usage.
+
+It also retrieve the OpenNext onpc-provisioning Github repository which will be used in step 6 below.
+
+Finally, it creates the ansible virtualenv which will be used in step 6 below for further machine
+deployments.
+
 ### Step 5: Launch VMs to be provisioned
 
 IMPORTANT NOTE: like explained in Step 0 above, some of the tasks executed by the
@@ -269,7 +276,7 @@ You can also customize the OSA VMs and specify values for #CPUs, memory, #HDDs, 
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-create-osa-multi-vm.yml -e osa_nodes_disks=2 -e osa_nodes_disk_size=200
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Please play very close attention also to the IMPORTANT NOTE in step 7 concerning disks partitions in advance
+Please play very close attention also to the IMPORTANT NOTE in step 6 concerning disks partitions in advance
 to specify your disks numbers and sizes.
 
 Anyhow, all VMs will get provisioned with IPA image (Ironic Python Agent) and register
@@ -304,26 +311,10 @@ The playbooks called further down use these facts to retrieve node roles and bui
 which will in turn be used for instance to create disks partitions according to role during
 osa-nodes-configure-system.yml
 
-### Step 6: OpenNext Bootstrap for final OSA deployment
-
-Now that your VM(s) is(are) available, you need to finalize some modifications on
-infra-master node prior to launch the effective OSA deployment:
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-pre-deploy.yml
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This step install Squid on infra-master system for VM based (aka non-baremetal) usage.
-
-It also retrieve the OpenNext onpc-provisioning Github repository which will be used in step 7 below.
-
-Finally, it creates the ansible virtualenv which will be used in step 7 below for further machine
-deployments.
-
-### Step 7: Configure system of VMs to be deployed
+### Step 6: Configure system of VMs to be deployed
 
 IMPORTANT NOTE: this step has to occur when logged onto infra-master node. You will
-also need to activate the ansible virtualenv which has been setup by step 6 above using:
+also need to activate the ansible virtualenv which has been setup by step 4 above using:
 . ~/.venv/ansible/bin/activate
 
 Now that your VM(s) is(are) available, you need to finalize some modifiations on
@@ -366,7 +357,7 @@ IMPORTANT NOTE: if you have specified a value for openstack_release on the comma
 you MUST add it to any of the command written in this paragraph for step 5. You might also want to make sure it got written appropriately
 into osa-inventory file in which case you do not need to add it on the command lines.
 
-### Step 8: OpenNext post OSA deployment
+### Step 7: OpenNext post OSA deployment
 
 Now that OpenStack Ansible is successfully deployed, the following
 command run on your ansible-master node deploys some additional services

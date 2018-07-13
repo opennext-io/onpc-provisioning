@@ -22,6 +22,7 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-depl
 ssh vagrant@80.93.82.50 -t 'cd /home/vagrant/bifrost/playbooks && . /home/vagrant/.venv/bifrost/bin/activate && . ../env-vars && https_proxy= ansible-playbook -i inventory/target install.yaml -e @/home/vagrant/deploy_args.yml'
 
 # Stage 4 => add some ironic introspection rules and agent for managing ironic state auto-magically
+# also add some OpenNext specifics services (Squid) and associated configurations
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post-deploy-bifrost.yml
 
 # Stage 5 => test scenarios all-in-one (one huge VM) or 3 vms
@@ -43,10 +44,7 @@ ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-post
 # which will in turn be used for instance to create disks partitions according to role during
 # osa-nodes-configure-system.yml
 
-#  Stage 6 => Add some OpenNext specifics services (Squid) and associated configurations
-ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-pre-deploy.yml
-
-# Stage 7 => configure provisioned VMs system and services for OSA deployment
+# Stage 6 => configure provisioned VMs system and services for OSA deployment
 # For this stage only (2 playbooks to be run), you need to be logged on the infra-master node where
 # the osa-inventory file has been generated for you
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-nodes-configure-system.yml
@@ -60,7 +58,7 @@ ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbo
 export ANSIBLE_SSH_ARGS="-C -o ControlMaster=auto -o ControlPersist=60s -o ServerAliveInterval=120 -o ServerAliveCountMax=10"
 ansible-playbook -i ~vagrant/osa-inventory /opt/onpc-provisioning/ansible/playbooks/osa-master-opennext-deploy.yml
 
-# Stage 8 => configure additional services to access Horizon and Grafana from infra-master node
+# Stage 7 => configure additional services to access Horizon and Grafana from infra-master node
 # acting as a reverse proxy to appropriate services in VMs
 # This stage is to be run again on ansible-master node, not on infra-master
 ansible-playbook -i ansible/inventory/master ansible/playbooks/infra-master-opennext-post-osa-deploy.yml

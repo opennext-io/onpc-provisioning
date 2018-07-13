@@ -19,8 +19,9 @@
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
     - ../vars/infra-master-deploy-bifrost_vars.yml
+    - ../vars/infra-master-squid_vars.yml
 
-  tasks:
+  pre_tasks:
 
     - name: Retrieving Remote Deploy Informations
       slurp:
@@ -205,6 +206,62 @@
         group: root
         mode: 0644
       notify: Restarting Register Helper Service
+
+    - name: Installing Squid proxy package
+      package:
+        name: squid
+        state: latest
+
+    - name: Setting Facts
+      set_fact:
+        root_ssh_dir: "{{ root_dot_ssh_dir | default('/root/.ssh') }}"
+        dest_repo_dir: "{{ dest_github_repo_dir | default('/opt') }}"
+
+    - name: Creating root .ssh
+      file:
+        path: "{{ root_ssh_dir }}"
+        mode: 0700
+        owner: "root"
+        group: "root"
+        state: directory
+
+    - name: Retrieving OpenNext GitHub Repositories
+      git:
+        repo: "https://github.com/opennext-io/{{ item }}"
+        dest: "{{ dest_repo_dir }}/{{ item }}"
+        force: yes
+        recursive: no
+      with_items:
+        - "onpc-provisioning"
+
+    - name: Setting up Ansible in virtualenv
+      become: no
+      pip:
+        virtualenv: "{{ systemuserhome }}/.venv/ansible"
+        requirements: "{{ dest_repo_dir }}/onpc-provisioning/requirements.txt"
+
+    - name: Setting default facts for Squid ACLs
+      set_fact:
+        osa_nodes_ips: "{{ hostvars.get(inventory_hostname, {}).get('ansible_local', {}).get('opennext_infra_master_create_osa_nodes', {}).get(inventory_hostname, {}).get('node_ips', []) }}"
+        squid_ips_acls:
+          - { name: "allowed_ips", type: "src", argument: "{{ ip_prefix | default('20.20.20') }}.0/{{ ip_netmask_bits | default(24) }}" }
+
+    - block:
+      - name: Computing baremetal facts for Squid ACLs
+        set_fact:
+           l_squid_ips_acls: "{% set sel = [] %} {% for x in osa_nodes_ips | to_yaml | from_yaml %} {% set l = sel.append({ 'name': 'allowed_ips', 'type': 'src', 'argument': x }) %}{% endfor %}{{ sel }}"
+
+      - name: Setting baremetal facts for Squid ACLs
+        set_fact:
+           squid_ips_acls: "{{ [] + l_squid_ips_acls | from_yaml }}"
+      when: real_baremetal is defined and real_baremetal | bool == True
+
+  roles:
+    - role: kbrebanov.squid
+      squid_tcp_outgoing_address: "{{ ansible_default_ipv4.address }}"
+      squid_acls: "{{ squid_ports_acls + squid_ips_acls }}"
+
+  post_tasks:
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_post_deploy_bifrost"
       vars:

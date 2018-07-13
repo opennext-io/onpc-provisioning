@@ -1,0 +1,13 @@
+# OpenNext Squid proxy configuration
+# Baremetal node provisioning
+---
+squid_cache_mem: 768
+squid_maximum_object_size: 256
+squid_cache_dir: "/var/spool/squid"
+squid_cache_dir_size: 16384
+squid_http_access_allow_clients:
+  - localhost
+  - allowed_ips
+squid_ports_acls:
+  - { name: "SSL_ports", type: "port", argument: "22" }
+  - { name: "Safe_ports", type: "port", argument: "22" }
