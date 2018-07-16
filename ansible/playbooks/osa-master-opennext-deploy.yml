@@ -266,7 +266,7 @@
 
     - name: Computing OSA deployment nodes additional facts
       set_fact:
-        osa_deploy_hosts_ips_infos: "{% set sel = [] %} {% for x in osa_deploy_hosts %} {% set l = sel.append(hostvars.get(x)) %}{% endfor %}{{ sel | map(attribute='ansible_all_ipv4_addresses') | flatten | reject('match', ip_reject_regex) | list | to_yaml }}"
+        osa_deploy_hosts_ips_infos: "{% set sel = [] %} {% for x in osa_deploy_hosts %} {% set l = sel.append(hostvars.get(x)) %}{% endfor %}{{ sel | selectattr('ansible_all_ipv4_addresses', 'defined') | map(attribute='ansible_all_ipv4_addresses') | flatten | reject('match', ip_reject_regex) | list | to_yaml }}"
         osa_bridges_ips_ranges: "{% set sel = [] %} {% for x in osa_bridges_ips %} {% set l = sel.append(x + '.1,' + x + '.50') %}{% endfor %}{{ sel | to_yaml }}"
         controller_hosts_l: "{% set sel = [] %} {% for x in controller_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml | from_yaml }}"
         cinder_hosts_l: "{% set sel = [] %} {% for x in cinder_hosts_list %} {% set l = sel.append({'name': x, 'ip_v4': hostvars.get(x)['ansible_br_mgmt']['ipv4']['address']}) %}{% endfor %}{{ sel | list | to_yaml | from_yaml }}"
