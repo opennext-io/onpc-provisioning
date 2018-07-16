@@ -280,9 +280,18 @@
       set_fact:
         osa_ips: "{{ osa_deploy_hosts_ips_infos | from_yaml + osa_bridges_ips_ranges | from_yaml }}"
 
-    - name: Setting final IP networks facts
+    - name: Setting final IP networks and hosts facts
       set_fact:
         osa_networks: "{% set sel = [] %} {% for x in osa_bridges_ips %} {% for y in osa_vlans %} {% if y.get('prefix', '') == x %}{% set l = sel.append(x ~ '.0/' ~ y.get('netmask', '255.255.255.0')) %}{% endif %}{% endfor %}{% endfor %}{{ sel | list | to_yaml }}"
+        infrastructure_hosts: "{{ controller_hosts_l | from_yaml }}"
+        controller_hosts: "{{ controller_hosts_l | from_yaml }}"
+        lvm_iscsi_hosts: "{{ cinder_hosts_l | from_yaml }}"
+        ceph_osd_hosts: "{{ ceph_hosts_l | from_yaml }}"
+        compute_hosts: "{{ compute_hosts_l | from_yaml }}"
+        neutron_hosts: "{{ controller_hosts_l | from_yaml }}"
+        image_hosts: ["{{ cinder_hosts_l | from_yaml | first }}"]
+        monitoring_hosts: "{{ monitoring_hosts_l | from_yaml }}"
+        logging_hosts: "{{ logging_hosts_l | from_yaml }}"
 
     - name: Retrieving onpc-basic-model conf.d templates
       find:
@@ -306,15 +315,6 @@
         bootstrap_host_public_address: "{{ external_public_vip_address.split('/')[0] }}"
         internal_vip_address: "{{ internal_public_vip_address | ipaddr('address') }}"
         reserved_ips: "{{ osa_ips | merge_ip_addresses(osa_networks | from_yaml) }}"
-        infrastructure_hosts: "{{ controller_hosts_l | from_yaml }}"
-        controller_hosts: "{{ controller_hosts_l | from_yaml }}"
-        lvm_iscsi_hosts: "{{ cinder_hosts_l | from_yaml }}"
-        ceph_osd_hosts: "{{ ceph_hosts_l | from_yaml }}"
-        compute_hosts: "{{ compute_hosts_l | from_yaml }}"
-        neutron_hosts: "{{ controller_hosts_l | from_yaml }}"
-        image_hosts: ["{{ cinder_hosts_l | from_yaml | first }}"]
-        monitoring_hosts: "{{ monitoring_hosts_l | from_yaml }}"
-        logging_hosts: "{{ logging_hosts_l | from_yaml }}"
 
     - name: Setting OpenNext facts
       set_fact:
