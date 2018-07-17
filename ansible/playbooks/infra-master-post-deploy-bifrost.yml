@@ -234,6 +234,14 @@
       with_items:
         - "onpc-provisioning"
 
+    - name: Changing ownership of {{ dest_repo_dir }}/onpc-provisioning
+      file:
+        path: "{{ dest_repo_dir }}/onpc-provisioning"
+        owner: "{{ systemuser }}"
+        group: "{{ systemuser }}"
+        recurse: yes
+      changed_when: false
+
     - name: Setting up Ansible in virtualenv
       become: no
       pip:
