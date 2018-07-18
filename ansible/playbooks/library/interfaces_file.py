@@ -554,6 +554,14 @@ def main():
         if state == 'bridge' and src == dest:
             lines = lines + removed_lines
             removed_lines = []
+    elif state == 'present' and option is None and value is None and iface is not None and iface not in ifaces.keys():
+        for x in [
+            {'line': '\n', 'line_type': 'empty'},
+            {'comment': '# Added secondary network interface\n', 'line': 'auto ' + iface + '\n', 'iface': iface, 'line_type': 'auto'},
+            {'params': {'address_family': 'inet', 'post-up': [], 'auto': True, 'up': [], 'method': 'dhcp', 'down': [], 'pre-up': []}, 'line': 'iface ' + iface + ' inet dhcp\n', 'iface': iface, 'line_type': 'iface'}
+        ]:
+            lines.append(x)
+        changed = True
 
     if changed:
         _, ifaces = read_interfaces_lines(module, [d['line'] for d in lines if 'line' in d])

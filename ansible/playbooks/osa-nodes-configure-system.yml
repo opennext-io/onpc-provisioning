@@ -79,9 +79,9 @@
   roles:
     - configure-hostname
     - configure-ssh
-    - configure-packages
+    - { role: configure-packages, node_type: osa-nodes }
     - configure-drivers
-    - configure-ntp
+    - { role: configure-ntp, node_type: osa-nodes }
     - configure-network-interfaces
     - configure-disks-partitioning
 

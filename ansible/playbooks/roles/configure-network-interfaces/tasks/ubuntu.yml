@@ -19,12 +19,56 @@
   register: cur_interfaces
   when: is_host_to_be_modified
 
+- name: Setting facts for primary interface IP retrieval
+  set_fact:
+    match_ip_prefix: "{{ primary_itf_prefix }}"
+  when: is_host_to_be_modified and primary_itf_prefix is defined and primary_itf_prefix | length > 0
+
+- name: Setting facts for primary interface IP retrieval
+  set_fact:
+    match_ip_prefix: "{{ hostvars[inventory_hostname]['ip_prefix'] }}"
+  when: is_host_to_be_modified and primary_itf_prefix is undefined or primary_itf_prefix | length == 0
+
 - name: Setting facts for network interfaces
   set_fact:
-    primary_dhcp_net_itf: "{% set sel = [] %}{% for k,v in cur_interfaces.get('ifaces', {}).iteritems() %}{% if v.get('method') == 'dhcp' and hostvars[inventory_hostname]['ansible_' + k | replace('-', '_') ]['ipv4']['address'] is match(hostvars[inventory_hostname]['ip_prefix'] + '.*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
-    secondary_dhcp_net_itfs: "{% set sel = [] %}{% for k,v in cur_interfaces.get('ifaces', {}).iteritems() %}{% if v.get('method') == 'dhcp' and not hostvars[inventory_hostname]['ansible_' + k | replace('-', '_') ]['ipv4']['address'] is match(hostvars[inventory_hostname]['ip_prefix'] + '.*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+    primary_dhcp_net_itf: "{% set sel = [] %}{% for k,v in cur_interfaces.get('ifaces', {}).iteritems() %}{% if v.get('method') == 'dhcp' and hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(match_ip_prefix + '.*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+    secondary_dhcp_net_itfs: "{% set sel = [] %}{% for k,v in cur_interfaces.get('ifaces', {}).iteritems() %}{% if v.get('method') == 'dhcp' and not hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(match_ip_prefix + '.*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
     non_dhcp_net_itfs: "{% set sel = [] %}{% for k,v in cur_interfaces.get('ifaces', {}).iteritems() %}{% if v.get('method') != 'dhcp' %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
   when: is_host_to_be_modified
+
+- name: Setting facts for node roles (osa-nodes)
+  set_fact:
+    node_roles: "{{ hostvars.get('infra-master', {}).get('osa_nodes_roles', {}).get(inventory_hostname, []) }}"
+  when: is_host_to_be_modified and node_type == 'osa-nodes'
+
+- name: Setting facts for node roles (infra-master)
+  set_fact:
+    node_roles: ["infra-master"]
+  when: is_host_to_be_modified and node_type == 'infra-master'
+
+- fail: msg='No primary network interface detected'
+  when: is_host_to_be_modified and primary_dhcp_net_itf | length == 0
+
+- name: Setting fact for non-handled network interfaces
+  set_fact:
+    unhandled_itfs: "{{ ansible_interfaces | difference(primary_dhcp_net_itf + secondary_dhcp_net_itfs + non_dhcp_net_itfs) | reject('match', '^bond.*') | list }}"
+  when: is_host_to_be_modified
+
+- name: Setting fact for non-handled network interfaces become secondary interfaces
+  set_fact:
+    secondary_dhcp_net_itfs: "{{ unhandled_itfs }}"
+  when: is_host_to_be_modified and secondary_dhcp_net_itfs | length == 0
+
+- fail: msg='No secondary network interface detected'
+  when: is_host_to_be_modified and secondary_dhcp_net_itfs | length == 0
+
+- name: Adding non-handled network interfaces in original network configuration file
+  interfaces_file:
+    iface: "{{ item }}"
+    state: present
+    backup: yes
+  with_items: "{{ unhandled_itfs }}"
+  when: is_host_to_be_modified and unhandled_itfs | length > 0
 
 - name: Setting facts for VLANs network interfaces
   set_fact:
@@ -78,7 +122,6 @@
     - prov_itf_mode: dhcp
     - vlans_list: "{{ osa_vlans | default([]) }}"
     - ip_suffix: "{{ ansible_host.split('.')[-1] }}"
-    - node_roles: "{{ hostvars.get('infra-master', {}).get('osa_nodes_roles', {}).get(inventory_hostname, []) }}"
 
 - name: Configuring {{ secondary_dhcp_net_itfs[0] }} VLANs and bridges
   template:
@@ -93,12 +136,11 @@
     - prov_itf: "{{ secondary_dhcp_net_itfs[0] }}"
     - vlans_list: "{{ osa_vlans | default([]) }}"
     - ip_suffix: "{{ ansible_host.split('.')[-1] }}"
-    - node_roles: "{{ hostvars.get('infra-master', {}).get('osa_nodes_roles', {}).get(inventory_hostname, []) }}"
 
 - name: Set fact for conditional execution
   set_fact:
     network_reconfig: True
-  when: ((itfs_changed is defined and itfs_changed.changed) or
+  when: is_host_to_be_modified and ((itfs_changed is defined and itfs_changed.changed) or
          (secondary_changed is defined and secondary_changed.changed) or
          (primary_vlan_changed is defined and primary_vlan_changed.changed) or
          (secondary_vlan_changed is defined and secondary_vlan_changed.changed))
@@ -151,4 +193,4 @@
     search_regex=OpenSSH
   delegate_to: localhost
   become: no
-  when: network_reconfig is defined and network_reconfig
+  when: is_host_to_be_modified and network_reconfig is defined and network_reconfig

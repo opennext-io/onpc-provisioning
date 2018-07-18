@@ -26,11 +26,9 @@
   vars_files:
     - ../vars/infra-master-configure-system_vars.yml
     - ../vars/infra-master-deploy-bifrost_vars.yml
-    - ../vars/infra-master-pkgs-ubuntu.yml
-    - ../vars/infra-master-kvm-pkgs-ubuntu.yml
     - ../vars/osa-briges-vlans_vars.yml
 
-  tasks:
+  pre_tasks:
 
     - fail: msg="infra_master_running_kvm and ansible_master_running_kvm can not be both set to true"
       when: infra_master_running_kvm and ansible_master_running_kvm
@@ -54,46 +52,13 @@
       environment:
         https_proxy: ""
 
-    - name: Verifying all mandatory packages
-      package:
-        name: "{{ systempkgs | sort }}"
-        state: latest
-
-    - name: Verifying all mandatory packages for running KVM/libvirt
-      package:
-        name: "{{ kvmsystempkgs | sort }}"
-        state: latest
-      when: infra_master_running_kvm
-
-    - include_tasks: ../tasks/kernel_drivers_modules.yml module={{ item }}
-      with_items:
-        - "bonding"
-        - "bridge"
-        - "br_netfilter"
-        - "8021q"
-        - "vxlan"
-
-    - name: Configuring IP forwarding via sysctl
-      sysctl:
-        name: "net.ipv4.ip_forward"
-        value: 1
-        sysctl_set: yes
-        state: present
-        reload: yes
-
-    - name: Configuring Bridges for proper VLAN support via sysctl
-      sysctl:
-        name: "{{ item }}"
-        value: 0
-        sysctl_set: yes
-        state: present
-        reload: yes
-      with_items:
-        - net.bridge.bridge-nf-call-ip6tables
-        - net.bridge.bridge-nf-call-iptables
-        - net.bridge.bridge-nf-call-arptables
-        - net.bridge.bridge-nf-filter-pppoe-tagged
-        - net.bridge.bridge-nf-filter-vlan-tagged
+    - name: Setting facts for roles
+      set_fact:
+        is_aio: false
+        is_host_to_be_modified: true
+        ip_prefix: "{{ ip_prefix | default('20.20.20') }}"
+        ip_suffix: "{{ ip_suffix | default(1) }}"
+        ip_netmask_bits: "{{ ip_netmask_bits | default(24) }}"
 
     - name: Storing collision IP addresses list
       set_fact:
@@ -101,7 +66,7 @@
 
     - name: Computing provisioning master IP address
       set_fact:
-        master_ip: '{{ ip_prefix | default("20.20.20") }}.{{ ip_suffix | default(1) }}'
+        master_ip: '{{ ip_prefix }}.{{ ip_suffix }}'
 
     - name: Checking IP collisions
       fail: msg="Collision in IP addresses {{ collision_ips }}"
@@ -111,161 +76,14 @@
       fail: msg="ip_prefix and ip_suffix variables lead to {{ master_ip }} colliding with {{ hostvars['localhost']['local_ips'] }}"
       when: master_ip in hostvars['localhost']['local_ips']
 
-    - import_tasks: ../tasks/select_network_interfaces_type.yml
-      vars:
-       itf_type: "ether"
+  roles:
+    - { role: configure-packages, node_type: infra-master }
+    - { role: configure-packages, node_type: infra-master-kvm, when: infra_master_running_kvm }
+    - configure-drivers
+    - { role: configure-ntp, node_type: infra-master }
+    - { role: configure-network-interfaces, node_type: infra-master, primary_itf_prefix: "{{ inventory_hostname.split('.')[:-1] | join('.') }}" }
 
-    - import_tasks: ../tasks/filter_network_interfaces_name.yml
-      vars:
-        itf_reject_name: "virbr.*|.*\\.[1-9][0-9]*"
-
-    - import_tasks: ../tasks/select_network_interfaces_state.yml
-      vars:
-       itf_state: false
-
-    - name: Setting inactive ethernet network interfaces list
-      set_fact:
-        inactive_ether_itfs: "{{ itfs | list }}"
-
-    - import_tasks: ../tasks/select_network_interfaces_type.yml
-      vars:
-       itf_type: "ether"
-
-    - import_tasks: ../tasks/filter_network_interfaces_name.yml
-      vars:
-        itf_reject_name: "virbr.*|.*\\.[1-9][0-9]*"
-
-    - import_tasks: ../tasks/select_network_interfaces_state.yml
-      vars:
-       itf_state: true
-
-    - name: Setting active ethernet network interfaces list
-      set_fact:
-        active_ether_itfs: "{{ itfs | list }}"
-
-    - import_tasks: ../tasks/select_network_interfaces_type.yml
-      vars:
-       itf_type: "bridge"
-
-    - import_tasks: ../tasks/select_network_interfaces_state.yml
-      vars:
-       itf_state: true
-
-    - name: Setting active bridge network interfaces list
-      set_fact:
-        active_bridges: "{{ itfs | list }}"
-        active_bridges_itfs: "{{ itfs | map(attribute='interfaces') | flatten | list }}"
-
-    - name: Checking if primary interface needs to migrate to bridge
-      set_fact:
-        primary: "{{ active_ether_itfs | selectattr('ipv4', 'defined') | selectattr('ipv4.address', 'defined') | selectattr('ipv4.address', 'match', ansible_default_ipv4.address) | list }}"
-
-    - name: Setting fact for primary ethernet interface for migration to bridge
-      set_fact:
-        primary_itf: "{{ primary[0] }}"
-      when: primary is defined and primary | length > 0
-
-    - name: Checking if secondary interface needs to migrate to bridge
-      set_fact:
-        secondary: "{{ inactive_ether_itfs | selectattr('ipv4', 'undefined') | rejectattr('device', 'in', active_bridges_itfs) | list }}"
-
-    - name: Setting fact for secondary ethernet interface for migration to bridge
-      set_fact:
-        secondary_itf: "{{ secondary[0] }}"
-      when: (secondary is defined and secondary | length > 0)
-
-    - name: Getting interfaces infos
-      interfaces_file:
-      register: cur_interfaces
-
-    - name: Moving loopback interface to its own config file
-      interfaces_file:
-        src: /etc/network/interfaces
-        dest: /etc/network/interfaces.d/lo.cfg
-        iface: lo
-        state: move
-      register: lo_changed
-      when: "'lo' in cur_interfaces.get('ifaces', {})"
-
-    - name: Moving {{ primary_itf.get('device') }} primary ethernet interface to its own config file
-      interfaces_file:
-        src: /etc/network/interfaces
-        dest: "/etc/network/interfaces.d/{{ primary_itf.get('device') }}.cfg"
-        iface: "{{ primary_itf.get('device') }}"
-        state: move
-      register: primary_changed
-      when: "primary_itf is defined and primary_itf.get('device') in cur_interfaces.get('ifaces', {})"
-
-    - name: Migrating {{ primary_itf.get('device') }} primary ethernet interface to bridge
-      interfaces_file:
-        dest: "/etc/network/interfaces.d/{{ primary_itf.get('device') }}.cfg"
-        iface: "{{ primary_itf.get('device') }}"
-        state: bridge
-        bridge_options:
-          - { name: "br-host" }
-          - { bridge_maxwait: 5 }
-          - { bridge_stp: "off" }
-          - { bridge_fd: 0 }
-          - { bridge_waitport: 0 }
-      register: bridge_changed
-      when: primary_changed is defined and primary_changed.changed
-
-    - name: Bringing down interface and dhcpclient for proper bridging
-      set_fact:
-        itf_down: "pkill dhclient ; ip addr flush {{ primary_itf.get('device') }} ; "
-      when: primary_itf is defined and primary_itf.get('device')
-
-    - name: Setting default fact for VLANs and Bridges
-      set_fact:
-        vlans_list: "{{ osa_vlans | default([]) }}"
-
-    - name: Setting fact for VLANs and Bridges
-      set_fact:
-        vlans_list: "{{ vlans_list + opennext_vlans | default([]) }}"
-      when: not baremetal_provisioning
-
-    - name: Setting fact for baremetal provisioning DHCP timeout
-      set_fact:
-        dhcp_timeout: 90
-      when: baremetal_provisioning and dhcp_timeout is not defined
-
-    - name: Configuring {{ secondary_itf.device }} VLANs and bridges
-      template:
-        src: ../templates/bridge_vlans_itf_cfg.j2
-        dest: "/etc/network/interfaces.d/{{ secondary_itf.device }}.cfg"
-        owner: root
-        group: root
-        mode: 0644
-      register: secondary_changed
-      when: secondary_itf is defined
-      vars:
-        - prov_itf: "{{ secondary_itf.device }}"
-        - bridges_list: "{{ opennext_bridges }}"
-        - node_roles: ['infra-master']
-
-    - name: Set fact for conditional execution
-      set_fact:
-        network_reconfig: True
-      when: ((lo_changed is defined and lo_changed.changed) or
-             (primary_changed is defined and primary_changed.changed) or
-             (secondary_changed is defined and secondary_changed.changed) or
-             (bridge_changed is defined and bridge_changed.changed))
-
-    - include_tasks: ../tasks/clean_udev_rules.yml
-
-    - name: Restarting network services
-      shell: echo "{{ itf_down | default('') }}service networking restart" | at now + 0 min
-      when: network_reconfig is defined and network_reconfig
-
-    - name: Wait for server come back
-      wait_for: >
-        host="{{ inventory_hostname }}"
-        port=22
-        delay=10
-        timeout=60
-      delegate_to: localhost
-      become: no
-      when: network_reconfig is defined and network_reconfig
+  post_tasks:
 
     - name: Configuring infra-master node for KVM/libvirt
       include_tasks: ../tasks/kvm_host_configure.yml
@@ -276,28 +94,11 @@
         path: /etc/environment
         backrefs: yes
         regexp: '^no_proxy="(.*)"$'
-        line: 'no_proxy="\1,{{ ip_prefix | default("20.20.20") }}.0/{{ ip_netmask_bits | default(24) }}"'
+        line: 'no_proxy="\1,{{ ip_prefix }}.0/{{ ip_netmask_bits }}"'
         state: present
         owner: root
         group: root
         mode: 0644
-      when: itf is defined
-
-    - name: Configuring NTP
-      lineinfile:
-        path: /etc/ntp.conf
-        insertafter: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        state: present
-        owner: root
-        group: root
-        mode: 0644
-      with_items:
-        - { regexp: '^#broadcast ', line: 'broadcast {{ ip_prefix | default("20.20.20") }}.{{ ip_netmask_broadcast | default(255) }}' }
-      when: itf is defined
-
-    - name: Restarting NTP Service
-      service: name=ntp enabled=yes state=restarted
       when: itf is defined
 
     - name: Cleaning Up Hosts File
@@ -342,8 +143,6 @@
         infra_master_running_kvm: "{{ infra_master_running_kvm | default(kvm_on_infra_master) | default(true) | bool }}"
         ansible_master_running_kvm: "{{ ansible_master_running_kvm | default(kvm_on_ansible_master) | default(false) | bool }}"
         baremetal_provisioning: "{{ baremetal_provisioning | default(real_baremetal) | default(false) | bool }}"
-        ip_prefix: "{{ ip_prefix | default('20.20.20') }}"
-        ip_suffix: "{{ ip_suffix | default(1) }}"
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_configure_system"
       vars:

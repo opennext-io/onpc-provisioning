@@ -16,19 +16,27 @@
 
 - name: Setting facts for NTP daemon configuration
   set_fact:
-    ntp_daemon_conf_line: "server {{ proxy_host }}"
     ntp_daemon_conf_file: "/etc/ntp.conf"
-
-- name: Setting facts for NTP daemon configuration (Ubuntu)
-  set_fact:
-    ntp_date_conf_line: "NTPSERVERS=\"{{ proxy_host }}\""
     ntp_date_conf_file: "/etc/default/ntpdate"
+
+- name: Setting facts for NTP daemon configuration (Ubuntu,osa-nodes)
+  set_fact:
+    ntp_daemon_conf_line: "server {{ proxy_host }}"
+    ntp_date_conf_line: "NTPSERVERS=\"{{ proxy_host }}\""
     ntp_patterns_to_comment:
       - { regexp: '^pool (.*)', line: '#pool \1' }
     ntp_anchor_pattern:
-      - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 ntp server as a fallback.' }
+      - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\nserver {{ proxy_host }}\n\1 ntp server as a fallback.' }
     ntp_service_handler: "restart ntp and stop systemd-timesyncd"
-  when: ansible_distribution | lower == 'ubuntu'
+  when: ansible_distribution | lower == 'ubuntu' and node_type == 'osa-nodes'
+
+- name: Setting facts for NTP daemon configuration (Ubuntu,infra-master)
+  set_fact:
+    ntp_daemon_conf_line: "broadcast {{ ip_prefix | default('20.20.20') }}.{{ ip_netmask_broadcast | default(255) }}"
+    ntp_anchor_pattern:
+      - { regexp: '^#broadcast (.*)$', line: '#broadcast \1\nbroadcast {{ ip_prefix | default("20.20.20") }}.{{ ip_netmask_broadcast | default(255) }}' }
+    ntp_service_handler: "restart ntp and stop systemd-timesyncd"
+  when: ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master'
 
 - name: Setting facts for NTP daemon configuration (CentOS)
   set_fact:
@@ -37,7 +45,7 @@
     ntp_anchor_pattern:
       - { regexp: '^(.*) Hosts on local network are less restricted\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 Hosts on local network are less restricted.' }
     ntp_service_handler: "restart ntpd"
-  when: ansible_distribution | lower == 'centos'
+  when: ansible_distribution | lower == 'centos' and node_type == 'osa-nodes'
 
 - name: Configuring NTP daemon (removing default pools)
   replace:
@@ -50,7 +58,7 @@
   with_items: "{{ ntp_patterns_to_comment }}"
   notify:
     - "{{ ntp_service_handler }}"
-  when: is_host_to_be_modified
+  when: is_host_to_be_modified and node_type == 'osa-nodes'
 
 - name: Retrieving remote NTP daemon configuration
   slurp:
@@ -58,7 +66,7 @@
   register:
     ntp_daemon_info
 
-- name: Configuring NTP daemon (inserting infra-master as NTP server)
+- name: Configuring NTP daemon
   replace:
     path: "{{ ntp_daemon_conf_file }}"
     regexp: "{{ item.regexp }}"
@@ -67,9 +75,11 @@
     group: root
     mode: 0644
   with_items: "{{ ntp_anchor_pattern }}"
+  register: ntp_server_reconfig
   notify:
     - "{{ ntp_service_handler }}"
-  when: is_host_to_be_modified and not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line))
+  when: (is_host_to_be_modified and
+    not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line)))
 
 - name: Retrieving remote NTP date configuration
   slurp:
@@ -89,4 +99,12 @@
     - { regexp: '^NTPSERVERS=".*', line: '{{ ntp_date_conf_line }}' }
   notify:
     - "{{ ntp_service_handler }}"
-  when: ansible_distribution | lower == 'ubuntu' and is_host_to_be_modified and not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line))
+  when: (is_host_to_be_modified and
+    ansible_distribution | lower == 'ubuntu' and
+    node_type == 'osa-nodes' and
+    not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line)))
+
+- name: Restarting NTP Service
+  service: name=ntp enabled=yes state=restarted
+  when: is_host_to_be_modified and node_type == 'infra-master' and ntp_server_reconfig is changed
+
