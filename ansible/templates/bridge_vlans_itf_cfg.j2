@@ -2,7 +2,8 @@
 
 # The secondary network interface (ethernet)
 auto {{ prov_itf }}
-iface {{ prov_itf }} inet manual
+iface {{ prov_itf }} inet {{ prov_itf_mode | default('manual') }}
+{%- set orig_prov_itf = prov_itf %}
 
 {% if bridges_list is defined  and bridges_list | length == 1 %}
 # Extra Bridge
@@ -21,6 +22,7 @@ iface {{ bridges_list[0].get('name') }} inet manual
 {% if vlans_list is defined %}
 # VLANS
 {% for vlan in vlans_list %}
+{% if vlan.get('interface', '') == orig_prov_itf %}
 {%- set vlan_roles = vlan.get('roles', []) %}
 {%- set matching_roles = vlan_roles | json_query('[*].name') | intersect(node_roles) %}
 {% if matching_roles | length > 0 %}
@@ -76,5 +78,6 @@ iface br-{{ vlan.get('name') }} inet {{ itf_mode }}
         bridge_waitport 0
 {% endif %}{# if vlan.get('name') #}
 {% endif %}{# if matching_roles | length > 0 #}
+{% endif %}{# vlan.get('interface', '') == orig_prov_itf #}
 {%- endfor %}{# for vlan in vlans_list #}
 {%- endif %}{# if vlans_list is defined #}

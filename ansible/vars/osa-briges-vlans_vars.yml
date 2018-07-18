@@ -33,6 +33,7 @@ osa_vlans: [
       { name: "osa-master", assign_address: True },
       { name: "storage", assign_address: True },
     ],
+    interface: "{{ mgmt_net_itf | default('eth0') }}",
   },
   {
     name: "storage",
@@ -46,6 +47,7 @@ osa_vlans: [
       { name: "control", assign_address: False },
       { name: "storage", assign_address: True },
     ],
+    interface: "{{ storage_net_itf | default('eth1') }}",
   },
   {
     name: "vxlan",
@@ -59,6 +61,7 @@ osa_vlans: [
       { name: "control", assign_address: False },
       { name: "network", assign_address: True },
     ],
+    interface: "{{ vxlan_net_itf | default('eth1') }}",
   },
   {
     name: "vlan",
@@ -71,5 +74,6 @@ osa_vlans: [
       { name: "compute", assign_address: True },
       { name: "control", assign_address: False },
     ],
+    interface: "{{ vlan_net_itf | default('eth1') }}",
   },
 ]

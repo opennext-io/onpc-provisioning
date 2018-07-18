@@ -254,7 +254,7 @@
 
     - name: Setting VIP facts
       set_fact:
-        external_public_vip_itf: "{{ osa_nodes_infos[osa_first_controller_node_name]['matching_ether_itfs'] }}"
+        external_public_vip_itf: "{{ osa_nodes_infos[osa_first_controller_node_name]['primary_dhcp_net_itf'][0] }}"
         internal_public_vip_address: "{{ hostvars[osa_first_controller_node_name]['internal_public_vip_address'] }}"
         external_public_vip_address: "{{ hostvars[osa_first_controller_node_name]['external_public_vip_address'] }}"
 
