@@ -19,12 +19,12 @@
   register: cur_interfaces
   when: is_host_to_be_modified
 
-- name: Setting facts for primary interface IP retrieval
+- name: Setting facts for primary interface IP retrieval (primary-prefix)
   set_fact:
     match_ip_prefix: "{{ primary_itf_prefix }}"
   when: is_host_to_be_modified and primary_itf_prefix is defined and primary_itf_prefix | length > 0
 
-- name: Setting facts for primary interface IP retrieval
+- name: Setting facts for primary interface IP retrieval (ip-prefix)
   set_fact:
     match_ip_prefix: "{{ hostvars[inventory_hostname]['ip_prefix'] }}"
   when: is_host_to_be_modified and primary_itf_prefix is undefined or primary_itf_prefix | length == 0
@@ -46,13 +46,36 @@
     node_roles: ["infra-master"]
   when: is_host_to_be_modified and node_type == 'infra-master'
 
-- fail: msg='No primary network interface detected'
-  when: is_host_to_be_modified and primary_dhcp_net_itf | length == 0
+- name: Retrieving configured interfaces files
+  find:
+    paths: "/etc/network/interfaces.d"
+    patterns: '^.*\.cfg$'
+    use_regex: yes
+  register: configured_interfaces_files
+  when: is_host_to_be_modified
+
+- name: Setting fact for configured interfaces
+  set_fact:
+    configured_interfaces: "{{ configured_interfaces_files.get('files', []) | selectattr('path', 'defined') | map(attribute='path') | map('regex_replace', '/etc/network/interfaces.d/(.*)\\.cfg', '\\1') | list }}"
+  when: is_host_to_be_modified
 
 - name: Setting fact for non-handled network interfaces
   set_fact:
     unhandled_itfs: "{{ ansible_interfaces | difference(primary_dhcp_net_itf + secondary_dhcp_net_itfs + non_dhcp_net_itfs) | reject('match', '^bond.*') | list }}"
   when: is_host_to_be_modified
+
+- name: Removing already configured interfaces and bridges
+  set_fact:
+    unhandled_itfs: "{% set sel = [] %}{% for k in unhandled_itfs %}{% set itf = hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}) %}{% if itf.get('type', '') == 'ether' and k.split('.')[0] not in configured_interfaces %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+  when: is_host_to_be_modified
+
+- name: Resetting modification state
+  set_fact:
+    is_host_to_be_modified: False
+  when: is_host_to_be_modified and unhandled_itfs | length == 0
+
+- fail: msg='No primary network interface detected'
+  when: is_host_to_be_modified and primary_dhcp_net_itf | length == 0
 
 - name: Setting fact for non-handled network interfaces become secondary interfaces
   set_fact:
