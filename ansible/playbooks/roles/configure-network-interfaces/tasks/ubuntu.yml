@@ -179,14 +179,14 @@
   when: is_host_to_be_modified and removed_udev_rules is changed
 
 - name: Rebooting nodes
-  shell: echo "reboot" | at now + 0 min
+  shell: echo "sleep 5 ; reboot" | at now + 0 min
   when: is_host_to_be_modified and network_reconfig is defined and network_reconfig
 
 - name: Waiting for nodes to be reachable again by SSH
   wait_for: >
     host="{{ hostvars.get(inventory_hostname, {}).get('ansible_host') }}"
     port=22
-    delay=10
+    delay=60
     timeout=3600
     sleep=20
     connect_timeout=10
