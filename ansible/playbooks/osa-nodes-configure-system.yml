@@ -82,7 +82,7 @@
     - { role: configure-packages, node_type: osa-nodes }
     - configure-drivers
     - { role: configure-ntp, node_type: osa-nodes }
-    - configure-network-interfaces
+    - { role: configure-network-interfaces, node_type: osa-nodes, primary_itf_prefix: "{{ proxy_host.split('.')[:-1] | join('.') }}" }
     - configure-disks-partitioning
 
   post_tasks:
