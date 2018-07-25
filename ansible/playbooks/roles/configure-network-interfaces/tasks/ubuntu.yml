@@ -80,6 +80,7 @@
     iface: "{{ item }}"
     state: present
     backup: yes
+    backupdir: /etc/network/backup.d
   with_items: "{{ unhandled_itfs }}"
   when: is_host_to_be_modified and unhandled_itfs | length > 0
 
@@ -99,6 +100,7 @@
     iface: "{{ item }}"
     state: move
     backup: yes
+    backupdir: /etc/network/backup.d
   register: loopback_changed
   when: is_host_to_be_modified and 'lo' in itfs_names_to_be_handled
   with_items: ['lo']
@@ -110,6 +112,7 @@
     iface: "{{ item }}"
     state: move
     backup: yes
+    backupdir: /etc/network/backup.d
   register: primary_changed
   when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] in itfs_names_to_be_handled
   with_items: "{{ primary_net_itf }}"
@@ -132,6 +135,7 @@
     state: move
     method: manual
     backup: yes
+    backupdir: /etc/network/backup.d
   register: secondary_changed
   when: is_host_to_be_modified and secondary_net_itfs | length > 0
   with_items: "{{ secondary_net_itfs | intersect(itfs_names_to_be_handled) }}"
