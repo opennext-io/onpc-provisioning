@@ -29,7 +29,7 @@
     fail:
       msg: "No node_name variable specified, aborting..."
       when: node_name is undefined or node_name | length == 0
-       
+
     - name: Setting Registration Informations for {{ node_name }} baremetal node
       set_fact:
         dnsmasq_conf_file: "/etc/dnsmasq.conf"

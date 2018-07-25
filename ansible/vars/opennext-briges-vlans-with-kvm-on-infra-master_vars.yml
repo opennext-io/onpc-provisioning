@@ -25,11 +25,13 @@ opennext_vlans: [
     roles: [
       { name: "infra-master", assign_address: True },
     ],
+    interface: "{{ prov_net_itf | default('eth0') }}",
   },
 ]
 opennext_bridges: [
   {
     name: "{{ kvm_vms_bridge_itf | default('br-vms') }}",
     bridge_comment: "bridge {{ kvm_vms_bridge_itf | default('br-vms') }} - KVM/libvirt network",
+    interface: "{{ kvm_net_itf | default('eth0') }}",
   },
 ]
