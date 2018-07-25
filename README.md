@@ -317,7 +317,7 @@ IMPORTANT NOTE: this step has to occur when logged onto infra-master node. You w
 also need to activate the ansible virtualenv which has been setup by step 4 above using:
 . ~/.venv/ansible/bin/activate
 
-Now that your VM(s) is(are) available, you need to finalize some modifiations on
+Now that your VM(s) is(are) available, you need to finalize some modifications on
 it(them) prior to launch the effective OSA deployment. To do so, you need to log
 into infra-master and launch the following:
 

@@ -24,7 +24,12 @@
   tasks:
 
     - import_tasks: ../tasks/operational_informations.yml
+    - import_tasks: ../taks/enforce_roles_consistency.yml
 
+    fail:
+      msg: "No node_name variable specified, aborting..."
+      when: node_name is undefined or node_name | length == 0
+       
     - name: Setting Registration Informations for {{ node_name }} baremetal node
       set_fact:
         dnsmasq_conf_file: "/etc/dnsmasq.conf"
@@ -35,7 +40,7 @@
           bmc_host: "{{ node_bmc_ip }}",
           bmc_user: "{{ node_bmc_user | default('admin') }}",
           bmc_password: "{{ node_bmc_passwd | default('password') }}",
-          roles: "{{ node_roles | default(['control', 'compute', 'storage']) }}"
+          roles: "{{ node_roles | default([]) }}"
         }
 
     - name: Retrieving infos from  {{ dnsmasq_conf_file }}

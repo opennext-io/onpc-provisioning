@@ -1,0 +1,48 @@
+# Operational informations retrieval task
+---
+# Copyright (c) 2018, OpenNext SAS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+  
+    - fail: msg="Node's roles is undefinedi, aborting..."
+      when: node_roles is undefined or node_roles | length == 0
+
+    - name: Retreive Remote Cloud Informations
+      slurp:
+        src: "{{ systemuserhome }}/.config/openstack/clouds.yaml"
+      register: cloud_info
+
+    - name: Get nodes registration status from Register Helper
+      uri:
+        url: "http://{{ registration_ip }}:{{ registration_port }}/{{ status_uri }}"
+        force_basic_auth: yes
+        user: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('username', '') }}"
+        password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
+        status_code: 200
+      register: node_register_status
+      vars:
+        registration_port: "{{ infra_master_port | default('7777') }}"
+        status_uri: "{{ infra_status_uri | default('status') }}"
+        clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
+
+    - name: Get OSA node's roles 
+      set_fact:
+        osa_roles: "{% set sel = [] %} {% for x in node_register_status.get('json', {}) | json_query('keys(@)') %}{% set l = sel.append(node_register_status.get('json', {}).get(x, {}).get('extra/roles', [])) %}{% endfor %}{{ sel | flatten | unique | to_yaml }}"
+
+    - fail: msg="Role '{{ item }}' is unknown"
+      when:  item not in known_roles
+      loop: "{{ node_roles }}"
+
+    - fail: msg="Cannot mix 'ceph' and 'storage' roles in the same environment"
+      when:  item == 'ceph' and 'storage' in osa_roles | from_yaml
+      loop: "{{ node_roles }}"
