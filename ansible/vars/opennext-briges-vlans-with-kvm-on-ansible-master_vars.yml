@@ -23,6 +23,7 @@ opennext_vlans: [
     roles: [
       { name: "infra-master", assign_address: True },
     ],
+    interface: "{{ prov_net_itf | default('eth0') }}",
   },
 ]
 opennext_bridges: [

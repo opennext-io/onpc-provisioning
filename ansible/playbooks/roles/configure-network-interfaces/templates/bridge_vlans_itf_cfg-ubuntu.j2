@@ -1,11 +1,13 @@
 # {{ ansible_managed }}
 
-# The secondary network interface (ethernet)
+# The {{ itf_type | default('primary') }} network interface (ethernet)
 auto {{ prov_itf }}
 iface {{ prov_itf }} inet {{ prov_itf_mode | default('manual') }}
 {%- set orig_prov_itf = prov_itf %}
 
 {% if bridges_list is defined  and bridges_list | length == 1 %}
+{% if bridges_list[0].get('interface', '') == orig_prov_itf %}
+
 # Extra Bridge
 # {{ bridges_list[0].get('bridge_comment', '') }}
 auto {{ bridges_list[0].get('name') }}
@@ -17,9 +19,11 @@ iface {{ bridges_list[0].get('name') }} inet manual
         bridge_waitport 0
         offload-sg off
 {%- set prov_itf = bridges_list[0].get('name') %}
+{% endif %}{# bridges_list[0].get('interface', '') == orig_prov_itf #}
 {% endif %}{# if bridges_list is defined  and bridges_list | length == 1 #}
 
 {% if vlans_list is defined %}
+
 # VLANS
 {% for vlan in vlans_list %}
 {% if vlan.get('interface', '') == orig_prov_itf %}
