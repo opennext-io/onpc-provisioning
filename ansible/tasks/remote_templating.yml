@@ -23,7 +23,7 @@
 
 - name: Writing {{ out_file | basename }} on osa-master host
   template:
-    src: "/tmp//{{ in_file | basename }}"
+    src: "/tmp/{{ in_file | basename }}"
     dest: "{{ out_file }}"
     backup: yes
     group: root
