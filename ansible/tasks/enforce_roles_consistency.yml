@@ -13,8 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-  
-    - fail: msg="Node's roles is undefinedi, aborting..."
+
+    - fail: msg="Node's roles is undefined, aborting..."
       when: node_roles is undefined or node_roles | length == 0
 
     - name: Retreive Remote Cloud Informations
@@ -35,7 +35,7 @@
         status_uri: "{{ infra_status_uri | default('status') }}"
         clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
 
-    - name: Get OSA node's roles 
+    - name: Get OSA node's roles
       set_fact:
         osa_roles: "{% set sel = [] %} {% for x in node_register_status.get('json', {}) | json_query('keys(@)') %}{% set l = sel.append(node_register_status.get('json', {}).get(x, {}).get('extra/roles', [])) %}{% endfor %}{{ sel | flatten | unique | to_yaml }}"
 
