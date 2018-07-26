@@ -364,7 +364,7 @@
         group: root
         mode: 0644
 
-    ## Quit the playbook here if user decided to go manual
+    ## Quit the playbook here if user decide to go manual
     - name: Quit if user choice is to go manual
       meta: end_play
       when: go_manual | lower == 'yes'
