@@ -39,6 +39,7 @@
   set_fact:
     primary_net_itf: "{% set sel = [] %}{% for k in ansible_interfaces %}{% if hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(match_ip_prefix + '.*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
     secondary_net_itfs: "{% set sel = [] %}{% for k in itfs_to_be_handled.get('ifaces', {}).keys() %}{% if k != 'lo' and not hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(match_ip_prefix + '.*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+    itfs_names_to_be_handled: "{{ itfs_to_be_handled.get('ifaces', {}).keys() }}"
   when: is_host_to_be_modified
 
 - name: Setting facts for node roles (osa-nodes)
@@ -79,12 +80,17 @@
     iface: "{{ item }}"
     state: present
     backup: yes
+    backupdir: /etc/network/backup.d
   with_items: "{{ unhandled_itfs }}"
   when: is_host_to_be_modified and unhandled_itfs | length > 0
 
-- name: Getting interfaces infos (re-reading)
-  interfaces_file:
-  register: itfs_to_be_handled
+- block:
+    - name: Getting interfaces infos (re-reading)
+      interfaces_file:
+      register: itfs_to_be_handled
+    - name: Setting facts after re-reading
+      set_fact:
+        itfs_names_to_be_handled: "{{ itfs_to_be_handled.get('ifaces', {}).keys() }}"
   when: is_host_to_be_modified and unhandled_itfs | length > 0
 
 - name: Moving loopback ethernet interface to its own config file
@@ -94,8 +100,9 @@
     iface: "{{ item }}"
     state: move
     backup: yes
+    backupdir: /etc/network/backup.d
   register: loopback_changed
-  when: "is_host_to_be_modified and 'lo' in itfs_to_be_handled.get('ifaces', {}).keys()"
+  when: is_host_to_be_modified and 'lo' in itfs_names_to_be_handled
   with_items: ['lo']
 
 - name: Moving primary interfaces to its own config file
@@ -105,8 +112,9 @@
     iface: "{{ item }}"
     state: move
     backup: yes
+    backupdir: /etc/network/backup.d
   register: primary_changed
-  when: "is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] in itfs_to_be_handled.get('ifaces', {}).keys()"
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] in itfs_names_to_be_handled
   with_items: "{{ primary_net_itf }}"
 
 - name: Setting fact for handled network interfaces become secondary interfaces
@@ -127,9 +135,10 @@
     state: move
     method: manual
     backup: yes
+    backupdir: /etc/network/backup.d
   register: secondary_changed
-  when: "is_host_to_be_modified and secondary_net_itfs | length > 0 and item in itfs_to_be_handled.get('ifaces', {}).keys()"
-  with_items: "{{ secondary_net_itfs }}"
+  when: is_host_to_be_modified and secondary_net_itfs | length > 0
+  with_items: "{{ secondary_net_itfs | intersect(itfs_names_to_be_handled) }}"
 
 - name: Getting informations about /etc/network/interfaces file
   stat:

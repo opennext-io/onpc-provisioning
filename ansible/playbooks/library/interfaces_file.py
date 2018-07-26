@@ -50,6 +50,11 @@ options:
         the original file back if you somehow clobbered it incorrectly.
     type: bool
     default: 'no'
+  backupdir:
+    description:
+      - Create the backup file within specified directory.
+    type: path/string
+    default: None meaning backup file is stored under same path than original
   state:
     description:
       - If set to C(absent) the option or section will be removed if present instead of created.
@@ -511,6 +516,7 @@ def main():
             option=dict(required=False),
             value=dict(required=False),
             backup=dict(default='no', type='bool'),
+            backupdir=dict(default=None, required=False, type='path'),
             state=dict(default='present', choices=['present', 'absent', 'move', 'bridge']),
             bridge_options=dict(default=None, required=False, type='list'),
         ),
@@ -525,6 +531,7 @@ def main():
     option = module.params['option']
     value = module.params['value']
     backup = module.params['backup']
+    backupdir = module.params['backupdir']
     state = module.params['state']
     bridge_options = module.params['bridge_options']
 
@@ -568,7 +575,13 @@ def main():
 
     if changed and not module.check_mode:
         if backup:
-            module.backup_local(src)
+            backup_dest = module.backup_local(src)
+            if backupdir:
+                backupdir_infos = os.stat(os.path.dirname(backup_dest))
+                if not os.path.exists(backupdir):
+                    os.makedirs(backupdir, backupdir_infos.st_mode)
+                    os.chown(backupdir, backupdir_infos.st_uid, backupdir_infos.st_gid)
+                module.atomic_move(backup_dest, os.path.join(backupdir, os.path.basename(backup_dest)))
         if src == dest:
             write_changes(module, select_lines_and_comments(lines), dest)
         else:
