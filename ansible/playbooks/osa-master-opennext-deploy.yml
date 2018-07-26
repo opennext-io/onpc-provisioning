@@ -268,7 +268,7 @@
         monitoring_hosts: "{{ monitoring_hosts_l | from_yaml }}"
         logging_hosts: "{{ logging_hosts_l | from_yaml }}"
 
-   - name: Retrieving onpc-basic-model env.d templates
+    - name: Retrieving onpc-basic-model env.d templates
       find:
         paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/env.d"
         patterns: '^.*\.j2$'
@@ -281,7 +281,7 @@
         out_file: "{{ osa_deploy_conf_path }}/env.d/{{ (item | basename).split('.')[:-1] | join('.') }}"
       with_items: "{{ onpc_model_envd_templates.get('files', []) | map(attribute='path') | list }}"   
    
-   - name: Retrieving onpc-basic-model conf.d templates
+    - name: Retrieving onpc-basic-model conf.d templates
       find:
         paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/conf.d"
         patterns: '^.*\.j2$'
