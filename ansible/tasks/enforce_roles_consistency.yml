@@ -30,10 +30,6 @@
         password: "{{ clouds.get('clouds', {}).get('bifrost-admin', {}).get('auth', {}).get('password', '') }}"
         status_code: 200
       register: node_register_status
-      vars:
-        registration_port: "{{ infra_master_port | default('7777') }}"
-        status_uri: "{{ infra_status_uri | default('status') }}"
-        clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
 
     - name: Get OSA node's roles
       set_fact:

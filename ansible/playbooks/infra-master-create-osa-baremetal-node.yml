@@ -25,6 +25,10 @@
 
     - import_tasks: ../tasks/operational_informations.yml
     - import_tasks: ../taks/enforce_roles_consistency.yml
+      vars:
+        registration_port: "{{ infra_master_port | default('7777') }}"
+        status_uri: "{{ infra_status_uri | default('status') }}"
+        clouds: "{{ cloud_info['content'] | b64decode | from_yaml }}"
 
     fail:
       msg: "No node_name variable specified, aborting..."
