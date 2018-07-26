@@ -9,6 +9,8 @@ exec > >(tee -i /var/log/"$(basename "$0" .sh)"_"$(date '+%Y-%m-%d_%H-%M-%S')".l
 cd /opt/openstack-ansible/playbooks
 # Run host setup
 openstack-ansible setup-hosts.yml
+# Run YAML config files syntax checks
+openstack-ansible setup-infrastructure.yml --syntax-check
 # Run infra setup
 openstack-ansible setup-infrastructure.yml
 # Check Galera in infra
