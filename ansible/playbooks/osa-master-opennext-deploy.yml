@@ -175,31 +175,6 @@
       changed_when: false
       when: not user_onpc_secrets_info.stat.exists
 
-    - name: Retrieving onpc-basic-model env.d files
-      find:
-        paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/env.d"
-      register: onpc_model_envd_files
-
-    - name: Copying env.d files from onpc-basic-model to {{ osa_deploy_conf_path }}/env.d
-      copy:
-        src: "{{ item }}"
-        dest: "{{ osa_deploy_conf_path }}/env.d/{{ item | basename }}"
-        remote_src: yes
-      with_items: "{{ onpc_model_envd_files.get('files', []) | map(attribute='path') | list }}"
-
-    - name: Retrieving onpc-basic-model env.d templates
-      find:
-        paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/env.d"
-        patterns: '^.*\.j2$'
-        use_regex: yes
-      register: onpc_model_envd_templates
-
-    - include_tasks: ../tasks/remote_templating.yml
-      vars:
-        in_file: "{{ item }}"
-        out_file: "{{ osa_deploy_conf_path }}/env.d/{{ (item | basename).split('.')[:-1] | join('.') }}"
-      with_items: "{{ onpc_model_envd_templates.get('files', []) | map(attribute='path') | list }}"
-
 - hosts: osa-nodes
 
   tasks:
@@ -293,7 +268,20 @@
         monitoring_hosts: "{{ monitoring_hosts_l | from_yaml }}"
         logging_hosts: "{{ logging_hosts_l | from_yaml }}"
 
-    - name: Retrieving onpc-basic-model conf.d templates
+   - name: Retrieving onpc-basic-model env.d templates
+      find:
+        paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/env.d"
+        patterns: '^.*\.j2$'
+        use_regex: yes
+      register: onpc_model_envd_templates
+
+    - include_tasks: ../tasks/remote_templating.yml
+      vars:
+        in_file: "{{ item }}"
+        out_file: "{{ osa_deploy_conf_path }}/env.d/{{ (item | basename).split('.')[:-1] | join('.') }}"
+      with_items: "{{ onpc_model_envd_templates.get('files', []) | map(attribute='path') | list }}"   
+   
+   - name: Retrieving onpc-basic-model conf.d templates
       find:
         paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/conf.d"
         patterns: '^.*\.j2$'
