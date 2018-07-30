@@ -61,9 +61,9 @@ osa_disks: [
           },
           {
             name: "osd-volumes",
-            vg: "osd-volumes",
+            vg: "osd-",
+            lv: "data"
             size: "{{ ceph_partition_size | default(128.0) | float }}",
-            type: "vgonly",
             roles: [
               { "name": "ceph" },
             ],
