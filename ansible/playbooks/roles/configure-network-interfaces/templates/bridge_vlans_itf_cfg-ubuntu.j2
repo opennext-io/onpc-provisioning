@@ -1,5 +1,9 @@
 # {{ ansible_managed }}
 
+{% if itf_blob is defined %}
+{{ itf_blob }}
+
+{% else %}
 # The {{ itf_type | default('primary') }} network interface (ethernet)
 auto {{ prov_itf }}
 iface {{ prov_itf }} inet {{ prov_itf_mode | default('manual') }}
@@ -21,6 +25,7 @@ iface {{ bridges_list[0].get('name') }} inet manual
 {%- set prov_itf = bridges_list[0].get('name') %}
 {% endif %}{# bridges_list[0].get('interface', '') == orig_prov_itf #}
 {% endif %}{# if bridges_list is defined  and bridges_list | length == 1 #}
+{% endif %}{#  if itf_blob is defined #}
 
 {% if vlans_list is defined %}
 

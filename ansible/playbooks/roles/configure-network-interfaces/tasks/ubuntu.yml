@@ -60,9 +60,16 @@
   register: handled_itfs_files
   when: is_host_to_be_modified
 
-- name: Setting fact for handled interfaces
+- name: Retrieving handled interfaces informations
+  interfaces_file:
+    dest: "{{ item }}"
+  register: handled_itfs_infos
+  with_items: "{{ handled_itfs_files.get('files', []) | selectattr('path', 'defined') | map(attribute='path') | list }}"
+  when: is_host_to_be_modified
+
+- name: Setting handled interfaces list
   set_fact:
-    handled_itfs: "{{ handled_itfs_files.get('files', []) | selectattr('path', 'defined') | map(attribute='path') | map('regex_replace', '/etc/network/interfaces.d/(.*)\\.cfg', '\\1') | list }}"
+    handled_itfs: "{{ handled_itfs_infos.results | json_query('[*].ifaces | flatten_dict_entries(@) | keys(@)') }}"
   when: is_host_to_be_modified
 
 - name: Setting fact for non-handled network interfaces
@@ -85,10 +92,10 @@
   when: is_host_to_be_modified and unhandled_itfs | length > 0
 
 - block:
-    - name: Getting interfaces infos (re-reading)
+    - name: Reading interfaces infos again
       interfaces_file:
       register: itfs_to_be_handled
-    - name: Setting facts after re-reading
+    - name: Setting facts after reading again
       set_fact:
         itfs_names_to_be_handled: "{{ itfs_to_be_handled.get('ifaces', {}).keys() }}"
   when: is_host_to_be_modified and unhandled_itfs | length > 0
@@ -116,6 +123,65 @@
   register: primary_changed
   when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] in itfs_names_to_be_handled
   with_items: "{{ primary_net_itf }}"
+
+- name: Migrating primary interfaces to bridge
+  interfaces_file:
+    dest: "/etc/network/interfaces.d/{{ item }}.cfg"
+    iface: "{{ item }}"
+    state: bridge
+    bridge_options:
+      - { name: "{{ primary_bridge_name }}" }
+      - { bridge_maxwait: 5 }
+      - { bridge_stp: "off" }
+      - { bridge_fd: 0 }
+      - { bridge_waitport: 0 }
+    backup: yes
+    backupdir: /etc/network/backup.d
+  register: primary_bridge_changed
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_bridge_name is defined and primary_changed is defined and primary_changed.changed
+  with_items: "{{ primary_net_itf }}"
+
+- name: Setting fact for primary interface name
+  set_fact:
+    primary_itf_name: "{{ primary_net_itf[0] }}"
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] in itfs_names_to_be_handled
+
+- name: Keeping reference file for primary interface
+  copy:
+    src: "/etc/network/interfaces.d/{{ primary_itf_name }}.cfg"
+    dest: "/etc/network/{{ primary_net_itf[0] }}.ref"
+    remote_src: yes
+    force: no
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] in itfs_names_to_be_handled
+
+- name: Retrieving in which file primary interface is defined
+  set_fact:
+    primary_itf_name: "{% set sel = [] %}{% for itf in handled_itfs_infos.get('results', []) %}{% if primary_net_itf[0] in itf.get('ifaces', {}).keys() %}{% set l = sel.append(itf.get('dest', '')) %}{% endif %}{% endfor %}{{ sel[0].split('/')[-1] | replace('.cfg', '') }}"
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] not in itfs_names_to_be_handled
+
+- name: Retrieving primary interfaces infos
+  interfaces_file:
+    dest: "/etc/network/{{ primary_itf_name }}.ref"
+  register: primary_itf_infos
+  when: is_host_to_be_modified and primary_net_itf | length == 1
+
+- name: Retrieving primary interfaces file content
+  slurp:
+    src: "/etc/network/{{ primary_itf_name }}.ref"
+  register: primary_itf_file_content
+  when: is_host_to_be_modified and primary_net_itf | length == 1
+
+- name: Setting facts for primary interface
+  set_fact:
+    primary_itf_blob: "{{ primary_itf_file_content['content'] | b64decode }}"
+    primary_itf_prov_itf: "{% set sel = [] %}{% for k,v in primary_itf_infos.get('ifaces', {}).iteritems() %}{% if v.get('method', '') != 'manual' %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+    primary_itf_orig_prov_itf: "{% set sel = [] %}{% for k,v in primary_itf_infos.get('ifaces', {}).iteritems() %}{% if v.get('method', '') == 'manual' %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+  when: is_host_to_be_modified and primary_net_itf | length == 1
+
+- name: Setting facts for primary interface
+  set_fact:
+    primary_itf_orig_prov_itf: "{{ primary_itf_prov_itf }}"
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_itf_orig_prov_itf | length == 0
 
 - name: Setting fact for handled network interfaces become secondary interfaces
   set_fact:
@@ -158,7 +224,7 @@
 
 - name: Setting facts for VLANs network interfaces
   set_fact:
-    mgmt_net_itf: "{{ primary_net_itf[0] }}"
+    mgmt_net_itf: "{{ primary_itf_name }}"
   when: is_host_to_be_modified and primary_net_itf | length > 0
 
 - name: Setting facts for VLANs network interfaces
@@ -174,6 +240,8 @@
     kvm_net_itf: "{{ secondary_net_itfs[0] }}"
   when: is_host_to_be_modified and secondary_net_itfs | length > 0 and node_type == 'infra-master'
 
+# at this step all variables (itfs names) are properly
+# set and therefore VLANs will be properly assigned
 - include_vars: ../vars/osa-briges-vlans_vars.yml
   when: is_host_to_be_modified
 
@@ -197,18 +265,19 @@
     bridges_list: "{{ opennext_bridges | default([]) }}"
   when: is_host_to_be_modified and node_type == 'infra-master'
 
-- name: Configuring {{ primary_net_itf[0] }} VLANs and bridges
+- name: Configuring {{ primary_itf_name }} VLANs and bridges
   template:
     src: "{{ role_path }}/templates/bridge_vlans_itf_cfg-ubuntu.j2"
-    dest: "/etc/network/interfaces.d/{{ primary_net_itf[0] }}.cfg"
+    dest: "/etc/network/interfaces.d/{{ primary_itf_name }}.cfg"
     owner: root
     group: root
     mode: 0644
   register: primary_vlan_changed
   when: is_host_to_be_modified and primary_net_itf | length > 0 and (not is_aio or (force_networking | default(false) | bool))
   vars:
-    - prov_itf: "{{ primary_net_itf[0] }}"
-    - prov_itf_mode: dhcp
+    - itf_blob: "{{ primary_itf_blob }}"
+    - prov_itf: "{{ primary_itf_prov_itf[0] }}"
+    - orig_prov_itf: "{{ primary_itf_orig_prov_itf[0] }}"
     - ip_suffix: "{{ ansible_host.split('.')[-1] }}"
 
 - name: Configuring {{ secondary_net_itfs[0] }} VLANs and bridges
@@ -233,6 +302,7 @@
          (loopback_changed is defined and loopback_changed.changed) or
          (primary_vlan_changed is defined and primary_vlan_changed.changed) or
          (secondary_vlan_changed is defined and secondary_vlan_changed.changed) or
+         (primary_bridge_changed is defined and primary_bridge_changed.changed) or
          (last_reboot_time < last_itfs_files_mod))
 
 - name: Disabling existing services for DIB dhcp-all-interfaces
