@@ -29,6 +29,12 @@
 
   pre_tasks:
 
+    - name: Setting default facts from inventory or variables
+      set_fact:
+        infra_master_running_kvm: "{{ infra_master_running_kvm | default(kvm_on_infra_master) | default(true) | bool }}"
+        ansible_master_running_kvm: "{{ ansible_master_running_kvm | default(kvm_on_ansible_master) | default(false) | bool }}"
+        baremetal_provisioning: "{{ baremetal_provisioning | default(real_baremetal) | default(false) | bool }}"
+
     - fail: msg="infra_master_running_kvm and ansible_master_running_kvm can not be both set to true"
       when: infra_master_running_kvm and ansible_master_running_kvm
 
@@ -66,12 +72,25 @@
       fail: msg="ip_prefix and ip_suffix variables lead to {{ master_ip }} colliding with {{ hostvars['localhost']['local_ips'] }}"
       when: master_ip in hostvars['localhost']['local_ips']
 
+    - name: Setting facts for host bridge
+      set_fact:
+        primary_bridge_name: br-host
+      when: not baremetal_provisioning and infra_master_running_kvm
+
+    - name: Setting facts for VMs bridge
+      set_fact:
+        secondary_bridge_name: br-vms
+      when: not baremetal_provisioning and infra_master_running_kvm
+
   roles:
     - { role: configure-packages, node_type: infra-master }
     - { role: configure-packages, node_type: infra-master-kvm, when: infra_master_running_kvm }
     - configure-drivers
     - { role: configure-ntp, node_type: infra-master }
-    - { role: configure-network-interfaces, node_type: infra-master, primary_itf_prefix: "{{ inventory_hostname.split('.')[:-1] | join('.') }}" }
+    - { role: configure-network-interfaces,
+        node_type: infra-master,
+        primary_itf_prefix: "{{ inventory_hostname.split('.')[:-1] | join('.') }}"
+      }
 
   post_tasks:
 
@@ -127,12 +146,6 @@
     - meta: flush_handlers
 
     - include_tasks: ../tasks/system_user_home.yml
-
-    - name: Setting default facts from inventory or variables
-      set_fact:
-        infra_master_running_kvm: "{{ infra_master_running_kvm | default(kvm_on_infra_master) | default(true) | bool }}"
-        ansible_master_running_kvm: "{{ ansible_master_running_kvm | default(kvm_on_ansible_master) | default(false) | bool }}"
-        baremetal_provisioning: "{{ baremetal_provisioning | default(real_baremetal) | default(false) | bool }}"
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_configure_system"
       vars:
