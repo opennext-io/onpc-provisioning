@@ -82,6 +82,11 @@
         secondary_bridge_name: br-vms
       when: not baremetal_provisioning and infra_master_running_kvm
 
+    - name: Setting fact for baremetal provisioning DHCP timeout
+      set_fact:
+        dhcp_timeout: 90
+      when: baremetal_provisioning and dhcp_timeout is not defined
+
   roles:
     - { role: configure-packages, node_type: infra-master }
     - { role: configure-packages, node_type: infra-master-kvm, when: infra_master_running_kvm }
