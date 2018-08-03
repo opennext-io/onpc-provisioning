@@ -60,10 +60,21 @@ osa_disks: [
             ],
           },
           {
-            name: "osd-volumes",
-            vg: "osd-",
+            name: "ceph-data",
+            vg: "ceph-",
             lv: "data"
-            size: "{{ ceph_partition_size | default(128.0) | float }}",
+            size: "{{ ceph_data_partition_size | default(1024.0) | float }}",
+            type: "vgonly",
+            roles: [
+              { "name": "ceph" },
+            ],
+          },
+          {
+            name: "ceph-journal",
+            vg: "ceph-",
+            lv: "journal"
+            size: "{{ ceph_journal_partition_size | default(10.0) | float }}",
+            type: "vgonly",
             roles: [
               { "name": "ceph" },
             ],
