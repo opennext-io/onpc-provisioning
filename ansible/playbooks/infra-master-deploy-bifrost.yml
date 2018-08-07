@@ -116,7 +116,7 @@
           {{ dib_std_options | default('') }}{{ dib_partitioning_infos | default('') }}
           -e dib_imagesize={{ root_part_size_gb | default(60) }}
           -e dib_os_element={{ distrib_infos.get(distribution).get('dib_os_element') }}
-          -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}
+          -e ipa_upstream_release={{ upstream_release | default('stable-queens') }}
 
     - name: Adding Specific OS Image Options
       set_fact:

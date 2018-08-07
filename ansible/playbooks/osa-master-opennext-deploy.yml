@@ -71,7 +71,7 @@
     - name: Setting ansible environment fact (conditional)
       set_fact:
         ansible_release_env: { 'ANSIBLE_PACKAGE': 'git+https://github.com/opennext-io/ansible@6783b173bd8d7fcfb3abe7007a482a9b322b01c7' }
-      when: openstack_release | default('pike') == 'pike'
+      when: openstack_release | default('queens') == 'pike'
 
     - name: Setting ansible environment fact
       set_fact:
@@ -84,7 +84,7 @@
         accept_hostkey: yes
         force: yes
         recursive: no
-        version: "stable/{{ openstack_release | default('pike') }}"
+        version: "stable/{{ openstack_release | default('queens') }}"
       environment: "{{ proxy_env | default('{}') }}"
 
     - include_tasks: ../tasks/clone_private_git_repo.yml
