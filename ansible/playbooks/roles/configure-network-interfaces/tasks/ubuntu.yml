@@ -344,7 +344,7 @@
 
 - name: Waiting for nodes to be reachable again by SSH
   wait_for: >
-    host="{{ hostvars.get(inventory_hostname, {}).get('ansible_host') }}"
+    host="{{ hostvars.get(inventory_hostname, {}).get('ansible_host', inventory_hostname) }}"
     port=22
     delay=60
     timeout=3600
