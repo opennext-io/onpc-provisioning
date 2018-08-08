@@ -38,6 +38,9 @@
     - fail: msg="infra_master_running_kvm and ansible_master_running_kvm can not be both set to true"
       when: infra_master_running_kvm and ansible_master_running_kvm
 
+    - include_vars: ../vars/infra-master-kvm_vars.yml
+      when: infra_master_running_kvm
+
     - import_tasks: ../tasks/system_infos.yml
 
     - name: Verifying repositories

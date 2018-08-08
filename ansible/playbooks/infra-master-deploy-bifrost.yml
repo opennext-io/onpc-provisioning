@@ -22,6 +22,9 @@
 
   tasks:
 
+    - include_vars: ../vars/infra-master-kvm_vars.yml
+      when: infra_master_running_kvm
+
     - name: Retrieving Bifrost GitHub Repository
       git:
         repo: https://github.com/opennext-io/bifrost
