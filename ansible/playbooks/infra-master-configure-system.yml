@@ -77,7 +77,7 @@
 
     - name: Setting facts for host bridge
       set_fact:
-        primary_bridge_name: br-host
+        primary_bridge_name: "{{ host_bridge_itf }}"
       when: not baremetal_provisioning and infra_master_running_kvm
 
     - name: Setting facts for VMs bridge
