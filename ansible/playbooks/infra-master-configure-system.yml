@@ -79,7 +79,7 @@
 
     - name: Setting facts for VMs bridge
       set_fact:
-        secondary_bridge_name: br-vms
+        secondary_bridge_name: "{{ kvm_vms_bridge_itf }}"
       when: not baremetal_provisioning and infra_master_running_kvm
 
     - name: Setting fact for baremetal provisioning DHCP timeout

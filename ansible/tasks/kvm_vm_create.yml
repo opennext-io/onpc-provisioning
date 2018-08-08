@@ -17,8 +17,8 @@
 - name: Setting VM uuid
   set_fact:
     vmuuid: "{{ vmname | to_uuid }}"
-    provbridge: "{{ prov_bridge | default('br-prov') }}"
-    vmsbridge: "{{ vms_bridge | default('br-vms') }}"
+    provbridge: "{{ prov_bridge }}"
+    vmsbridge: "{{ vms_bridge }}"
 
 - name: Setting disk names
   set_fact:
