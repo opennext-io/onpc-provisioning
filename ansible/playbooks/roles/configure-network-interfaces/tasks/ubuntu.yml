@@ -74,7 +74,7 @@
 
 - name: Setting fact for non-handled network interfaces
   set_fact:
-    unhandled_itfs: "{{ ansible_interfaces | difference(primary_net_itf + secondary_net_itfs + handled_itfs) | reject('match', '^bond.*') | list }}"
+    unhandled_itfs: "{{ ansible_interfaces | difference(primary_net_itf + secondary_net_itfs + handled_itfs) | reject('match', '^bond.*') | reject('match', '^virbr.*-nic$') | list }}"
   when: is_host_to_be_modified
 
 - name: Removing already handled interfaces and bridges
