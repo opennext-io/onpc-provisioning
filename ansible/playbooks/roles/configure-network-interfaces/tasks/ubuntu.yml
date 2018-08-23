@@ -174,8 +174,8 @@
 - name: Setting facts for primary interface
   set_fact:
     primary_itf_blob: "{{ primary_itf_file_content['content'] | b64decode }}"
-    primary_itf_prov_itf: "{% set sel = [] %}{% for k,v in primary_itf_infos.get('ifaces', {}).iteritems() %}{% if v.get('method', '') != 'manual' %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
-    primary_itf_orig_prov_itf: "{% set sel = [] %}{% for k,v in primary_itf_infos.get('ifaces', {}).iteritems() %}{% if v.get('method', '') == 'manual' %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+    primary_itf_prov_itf: "{% set sel = [] %}{% for k,v in primary_itf_infos.get('ifaces', {}).items() %}{% if v.get('method', '') != 'manual' %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+    primary_itf_orig_prov_itf: "{% set sel = [] %}{% for k,v in primary_itf_infos.get('ifaces', {}).items() %}{% if v.get('method', '') == 'manual' %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
   when: is_host_to_be_modified and primary_net_itf | length == 1
 
 - name: Setting facts for primary interface

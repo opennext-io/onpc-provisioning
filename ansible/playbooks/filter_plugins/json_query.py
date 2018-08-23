@@ -49,7 +49,7 @@ class CustomFunctions(jmespath.functions.Functions):
         ret = {}
         for item in l:
             if isinstance(item, dict):
-                for k, v in item.iteritems():
+                for k, v in iter(item.items()):
                     ret[k] = v
         return ret
 

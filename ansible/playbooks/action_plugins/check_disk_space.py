@@ -28,11 +28,11 @@ class ActionModule(ActionBase):
             'ansible_device_links',
             {})
         res['devices'] = {
-            k: v for k, v in result.get(
+            k: v for k, v in iter(result.get(
                 'ansible_facts',
                 {}).get(
                 'ansible_devices',
-                {}).iteritems() if not k.startswith("loop")
+                {}).items()) if not k.startswith("loop")
         }
 
         # Retrieve device ID of mount points retrieve via facts

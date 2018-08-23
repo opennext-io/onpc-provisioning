@@ -69,7 +69,7 @@ def merge(y1, y2):
     if not isinstance(y1, dict) or not isinstance(y2, dict):
     	print 'Error: not a dictionnary'
     	sys.exit(1)
-    for k, v in y2.iteritems():
+    for k, v in iter(y2.items()):
         if k not in y1:
             y1[k] = v
         else:
