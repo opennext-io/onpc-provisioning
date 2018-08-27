@@ -17,6 +17,27 @@
 - fail: msg="Missing, empty or bad node_type variable"
   when: node_type is undefined or node_type | length == 0 or node_type not in ['osa-nodes', 'infra-master']
 
+- name: Retrieving system network interfaces
+  find:
+    paths: "/sys/class/net"
+    file_type: link
+  register: system_net_itfs_symlinks
+  when: is_host_to_be_modified
+
+- name: Retrieving system network interfaces links informations
+  stat:
+    path: "{{ item }}"
+  register: system_net_itfs_infos
+  with_items: "{{ system_net_itfs_symlinks.get('files', []) | selectattr('path', 'defined') | map(attribute='path') | list }}"
+  when: is_host_to_be_modified
+
+# We keep track of non virtual aka physical interfaces
+- name: Setting facts for system network interfaces
+  set_fact:
+    physical_system_net_itfs: "{% set sel = [] %}{% for k in system_net_itfs_infos.get('results', []) %}{% if not k.get('stat', {}).get('lnk_target', '') is match('.*/virtual/.*') %}{% set l = sel.append(k.get('item', '').split('/')[-1]) %}{% endif %}{% endfor %}{{ sel }}"
+    all_system_net_itfs: "{% set sel = [] %}{% for k in system_net_itfs_infos.get('results', []) %}{% set l = sel.append(k.get('item', '').split('/')[-1]) %}{% endfor %}{{ sel }}"
+  when: is_host_to_be_modified
+
 - name: Getting interfaces infos
   interfaces_file:
   register: itfs_to_be_handled
@@ -37,7 +58,7 @@
 
 - name: Setting facts for non-handled network interfaces
   set_fact:
-    primary_net_itf: "{% set sel = [] %}{% for k in ansible_interfaces %}{% if hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(match_ip_prefix + '.*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+    primary_net_itf: "{% set sel = [] %}{% for k in ansible_interfaces %}{% if hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(match_ip_prefix + '\\..*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
     secondary_net_itfs: "{% set sel = [] %}{% for k in itfs_to_be_handled.get('ifaces', {}).keys() %}{% if k != 'lo' and not hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(match_ip_prefix + '.*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
     itfs_names_to_be_handled: "{{ itfs_to_be_handled.get('ifaces', {}).keys() }}"
   when: is_host_to_be_modified
@@ -72,9 +93,14 @@
     handled_itfs: "{{ handled_itfs_infos.results | json_query('[*].ifaces | flatten_dict_entries(@) | keys(@)') }}"
   when: is_host_to_be_modified
 
+- name: Setting provisioning interfaces additional interfaces list
+  set_fact:
+    additional_itfs: "[] + [ '{{ host_bridge_itf }}' ] + [ '{{ kvm_prov_bridge_itf }}' ] + [ '{{ kvm_vms_bridge_itf }}' ]"
+  when: is_host_to_be_modified and infra_master_running_kvm
+
 - name: Setting fact for non-handled network interfaces
   set_fact:
-    unhandled_itfs: "{{ ansible_interfaces | difference(primary_net_itf + secondary_net_itfs + handled_itfs) | reject('match', '^bond.*') | reject('match', '^virbr.*-nic$') | list }}"
+    unhandled_itfs: "{{ ansible_interfaces | difference(primary_net_itf + secondary_net_itfs + handled_itfs) | reject('match', '^bond.*') | reject('match', '^virbr.*') | difference(additional_itfs | default([])) | list }}"
   when: is_host_to_be_modified
 
 - name: Removing already handled interfaces and bridges
@@ -185,7 +211,7 @@
 
 - name: Setting fact for handled network interfaces become secondary interfaces
   set_fact:
-    secondary_net_itfs: "{{ handled_itfs | difference( primary_net_itf + ['lo']) }}"
+    secondary_net_itfs: "{{ handled_itfs | difference(primary_net_itf + ['lo']) }}"
   when: is_host_to_be_modified and secondary_net_itfs | length == 0
 
 - name: Setting fact for non-handled network interfaces become secondary interfaces
