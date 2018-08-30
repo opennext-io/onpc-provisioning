@@ -22,6 +22,9 @@
 
   tasks:
 
+    - include_vars: ../vars/infra-master-kvm_vars.yml
+      when: infra_master_running_kvm
+
     - name: Retrieving Bifrost GitHub Repository
       git:
         repo: https://github.com/opennext-io/bifrost
@@ -36,6 +39,10 @@
         mode: 0755
         state: directory
 
+    - name: Retrieving Python executable
+      set_fact:
+        use_python3: "{{ ansible_python.get('executable', '/usr/bin/python') is match('.*/python3$') }}"
+
     - name: Setting Up Bifrost Environment
       command: "./scripts/env-setup.sh"
       args:
@@ -45,6 +52,7 @@
         LC_ALL: C
         VENV: "{{ venv }}"
         https_proxy: ""
+        USE_PYTHON3: "{{ use_python3 | lower }}"
       register: setup_result
 
     - name: Retrieving Bifrost deployment informations
@@ -94,6 +102,11 @@
           -e extra_dib_elements='devuser openssh-server{{ distrib_infos.get(distribution).get("dib_elements","") }}'
           -e dib_packages=python,python3-yaml,dnsutils,net-tools,netcat,iputils-ping,traceroute,curl{{ distrib_infos.get(distribution).get("dib_packages","") }}
 
+    - name: Setting Python version informations
+      set_fact:
+        python_infos: " -e ansible_python_interpreter=python3"
+      when: use_python3
+
     - name: Setting partitioning informations
       set_fact:
         dib_partitioning_infos: " -e partitioning_file={{ systemuserhome }}/{{ partitioning_scheme }}.yml"
@@ -116,7 +129,8 @@
           {{ dib_std_options | default('') }}{{ dib_partitioning_infos | default('') }}
           -e dib_imagesize={{ root_part_size_gb | default(60) }}
           -e dib_os_element={{ distrib_infos.get(distribution).get('dib_os_element') }}
-          -e ipa_upstream_release={{ upstream_release | default('stable-pike') }}
+          -e ipa_upstream_release={{ upstream_release | default('stable-queens') }}
+          {{ python_infos | default('') }}
 
     - name: Adding Specific OS Image Options
       set_fact:
@@ -147,9 +161,11 @@
         itf: "{{ ansible_libvirt_networks.get('provisioning', {}).get('bridge') }}"
       when: infra_master_running_kvm
 
+    # Because br-prov is also defined in ../vars/opennext-briges-vlans_vars.yml
+    # we need to set its default in this very specific case
     - name: Retrieving provisioning interface from network infos
       set_fact:
-        itf: "{{ kvm_prov_bridge_itf }}"
+        itf: "{{ kvm_prov_bridge_itf | default('br-prov') }}"
       when: not infra_master_running_kvm and not baremetal_provisioning
 
     - import_tasks: ../tasks/baremetal_bifrost_config.yml

@@ -14,7 +14,7 @@ import json
 import re
 
 from ansible.errors import AnsibleFilterError
-from ansible.module_utils.six import iteritems, string_types, integer_types
+from ansible.module_utils.six import string_types
 
 # ---- Ansible filters ----
 class FilterModule(object):
@@ -35,21 +35,21 @@ class FilterModule(object):
         if len(include_keys) == 0 and len(exclude_keys) == 0:
             raise AnsibleFilterError('List of matching and non matching keys can not be both empty for hostvars_filter')
         if len(include_keys) > 0:
-            not_strings = filter(lambda x: not isinstance(x, string_types), include_keys)
+            not_strings = list(filter(lambda x: not isinstance(x, string_types), include_keys))
             if len(not_strings) > 0:
                 raise AnsibleFilterError('Invalid matching keys type (not strings) for hostvars_filter items (%s)' % (not_strings))
         if len(exclude_keys) > 0:
-            not_strings = filter(lambda x: not isinstance(x, string_types), exclude_keys)
+            not_strings = list(filter(lambda x: not isinstance(x, string_types), exclude_keys))
             if len(not_strings) > 0:
                 raise AnsibleFilterError('Invalid non matching keys type (not strings) for hostvars_filter items (%s)' % (not_strings))
         ret = {}
         try:
             to_parse = json.loads(value)
             # Level 1 is host key
-            for k,v in to_parse.iteritems():
+            for k,v in iter(to_parse.items()):
                 lret = {}
                 # Level 2 is entries to be matched
-                for lk,lv in v.iteritems():
+                for lk,lv in iter(v.items()):
                     # Exclude has precedence over include
                     to_exclude = False
                     for m in exclude_keys:

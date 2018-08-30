@@ -29,11 +29,11 @@ keystone: true
 keystone_opts: ""
 
 # DIB golden image parameters
-upstream_release: "stable-{{ openstack_release | default('pike') }}"
+upstream_release: "stable-{{ openstack_release | default('queens') }}"
 root_part_size_gb: 60
 partitioning_scheme: "partitioning-lvm"
 dibblockdevice: "{{ dib_block_device | default('gpt') }}"
-ipa_ramdisk_upstream_url: http://www.olivierbourdon.com/IPA/{{ upstream_release }}/ipa.initramfs
+#ipa_ramdisk_upstream_url: http://www.olivierbourdon.com/IPA/{{ upstream_release }}/ipa.initramfs
 
 # Distribution specificities
 distribution: "{{ deployed_distribution | default('ubuntu') }}"

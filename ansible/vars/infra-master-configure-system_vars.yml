@@ -27,22 +27,13 @@ systempasswd: "{{ ansible_user | default(vagrant) }}"
 # Parameter to override the default 5mn DHCP timeout
 dhcptimeout: "{{ dhcp_timeout | default(10) }}"
 
-# System group to control KVM/libvirt from
-libvirtgroup: "{{ libvirt_group | default('libvirtd') }}"
-# Location where KVM/libvirt stores VMs bits
-libvirtvarpath: "{{ libvirt_var_path | default('/var/lib/libvirt') }}"
-libvirtservice: "{{ libvirt_service | default('libvirtd') }}"
-kvm_prov_network_name: "{{ provisioning_network_name | default('provisioning') }}"
-kvm_prov_bridge_itf: "{{ provisioning_bridge_itf | default('br-prov') }}"
-kvm_vms_network_name: "{{ vms_network_name | default('machines') }}"
-kvm_vms_bridge_itf: "{{ vms_bridge_itf | default('br-vms') }}"
-
 # Current default scenario is to have a physical machine
 # acting as the master node and which will spawn KVM/libvirt
 # VMs which will host OSA deployment
 infra_master_running_kvm: "{{ kvm_on_infra_master | default(true) | bool }}"
 ansible_master_running_kvm: "{{ kvm_on_ansible_master | default(false) | bool }}"
 baremetal_provisioning: "{{ real_baremetal | default(false) | bool }}"
+host_bridge_itf: "{{ primary_host_bridge_itf | default('br-host') }}"
 
 # List of supported (known) roles
 known_roles: ['control','storage','ceph','compute','network','monitoring','logging']
