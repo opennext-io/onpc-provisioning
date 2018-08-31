@@ -15,10 +15,10 @@
 # limitations under the License.
 
 - name: restart ntp and stop systemd-timesyncd
-  service: name={{ item.name }} state={{ item.state }}
+  service: name={{ item.name }} state={{ item.state }} enabled={{ item.enabled }}
   with_items:
-    - { name: ntp, state: restarted }
-    - { name: systemd-timesyncd, state: stopped }
+    - { name: ntp, state: restarted, enabled: yes }
+    - { name: systemd-timesyncd, state: stopped, enabled: no }
 
 - name: restart ntpd
   service: name={{ item.name }} state={{ item.state }}
