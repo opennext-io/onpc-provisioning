@@ -28,7 +28,13 @@
 - hosts: kvm-master
   become: no
 
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+
   tasks:
+
+    - include_vars: ../vars/infra-master-kvm_vars.yml
+      when: infra_master_running_kvm
 
     - name: Retrieving infra-master inventory_hostname
       set_fact:
@@ -148,9 +154,8 @@
         src: ../templates/inventory.cfg.j2
         dest: "{{ systemuserhome }}/osa-inventory"
       vars:
-        # TODO: next variables to be retrieved from facts
+        # TODO next variables to be retrieved from facts
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
-        # TODO: be carefull as OSA master is taken as the 1st in the list, should potentially be more predictive
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get('osa-master').get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names | difference(['osa-master']) }}"
         bridge_itf: "{{ kvm_prov_bridge_itf }}"
