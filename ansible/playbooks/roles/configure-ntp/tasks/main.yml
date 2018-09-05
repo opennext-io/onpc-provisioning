@@ -38,7 +38,12 @@
     ntp_service_handler: "restart ntp and stop systemd-timesyncd"
   when: ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master'
 
-- name: Setting facts for NTP daemon configuration (CentOS)
+- name: Setting facts for NTP daemon configuration (CentOS,osa-nodes)
+  set_fact:
+    ntp_daemon_conf_line: "server {{ proxy_host }}"
+  when: ansible_distribution | lower == 'centos' and node_type == 'osa-nodes'
+
+- name: Setting additional facts for NTP daemon configuration (CentOS,osa-nodes)
   set_fact:
     ntp_patterns_to_comment:
       - { regexp: '^server (.*.centos.pool.ntp.org.*)', line: '#server \1' }
