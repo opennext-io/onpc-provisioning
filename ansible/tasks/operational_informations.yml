@@ -40,7 +40,7 @@
 - name: Setting IP adresses and VBMC environment for ansible running kvm {{ ansible_master_running_kvm }}
   set_fact:
     br_prov_ip: "{{ ansible_br_prov.ipv4.address }}"
-    registration_ip: "{{ infra_master_ip | default(ansible_br_prov.ipv4.address) | default('127.0.0.1') }}"
+    registration_ip: "{{ infra_master_ip | default(hostvars[inventory_hostname]['groups']['infra-master'][0]) | default('127.0.0.1') }}"
     vbmc_venv: {}
   when: ansible_master_running_kvm
 

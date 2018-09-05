@@ -53,7 +53,7 @@
 
     - name: Retrieving infra-master facts
       set_fact:
-        vbmc_ip: "{{ hostvars[inventory_hostname].ansible_br_prov.ipv4.address }}"
+        vbmc_ip: "{{ hostvars[inventory_hostname]['groups']['kvm-master'][0] }}"
       when: ansible_master_running_kvm
 
     - include_tasks: ../tasks/kvm_vm_create.yml
