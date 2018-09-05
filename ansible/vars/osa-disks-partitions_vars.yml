@@ -62,7 +62,7 @@ osa_disks: [
           {
             name: "ceph-data",
             vg: "ceph-",
-            lv: "data"
+            lv: "data",
             size: "{{ ceph_data_partition_size | default(1024.0) | float }}",
             type: "vgonly",
             roles: [
@@ -72,7 +72,7 @@ osa_disks: [
           {
             name: "ceph-journal",
             vg: "ceph-",
-            lv: "journal"
+            lv: "journal",
             size: "{{ ceph_journal_partition_size | default(10.0) | float }}",
             type: "vgonly",
             roles: [
