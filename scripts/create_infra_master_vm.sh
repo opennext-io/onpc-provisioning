@@ -208,7 +208,7 @@ elif [ "$virtprovider" == "kvm" ]; then
 		--disk path=/var/lib/libvirt/images/$vmname.qcow2,size=$(($vmdisk / 1024)),bus=virtio,format=qcow2 \
 		--network bridge=br0,model=virtio --network bridge=br-prov,model=virtio \
 		--cdrom $iso --graphics vnc,listen=$vmvncbindip,port=$vmvncport
-	ip=$(arp -e | grep $(virsh domiflist $vmname | grep vnet0 | awk '{print $NF}') | awk '{print $1}')
+	ip=$(arp -e | grep $(virsh domiflist $vmname | grep br0 | awk '{print $NF}') | awk '{print $1}')
 fi
 
 echo -e "\n\nAll done, VM $vmname IP is $ip"
