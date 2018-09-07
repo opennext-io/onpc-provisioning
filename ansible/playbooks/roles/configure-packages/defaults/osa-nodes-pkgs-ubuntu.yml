@@ -96,6 +96,7 @@ monitoring:
 network:
   - bridge-utils
   - dnsmasq-base
+  - ethtool
   - ifenslave
   - ifenslave-2.6
   - ifstat

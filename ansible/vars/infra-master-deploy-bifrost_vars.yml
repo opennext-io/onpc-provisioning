@@ -44,7 +44,7 @@ distrib_infos: {
     # IMPORTANT NOTE: do not forget the leading space !!!!!
     dib_elements: " dracut-regenerate manifests",
     # IMPORTANT NOTE: do not forget the leading comma !!!!!
-    dib_packages: ",lvm2,xfsprogs,dracut"
+    dib_packages: ",lvm2,xfsprogs,dracut,ethtool,gdisk,parted"
   },
   ubuntu: {
     dib_os_release: "xenial",
@@ -54,7 +54,7 @@ distrib_infos: {
     # IMPORTANT NOTE: do not forget the leading space !!!!!
     dib_elements: " lvm",
     # IMPORTANT NOTE: do not forget the leading comma !!!!!
-    dib_packages: ",lvm2,xfsprogs,initramfs-tools"
+    dib_packages: ",lvm2,xfsprogs,initramfs-tools,ethtool,gdisk,parted"
   }
 }
 
