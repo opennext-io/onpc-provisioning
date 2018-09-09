@@ -16,7 +16,7 @@ proxy_host={{ hostvars[inventory_hostname]['ansible_' + bridge_itf | replace('-'
 external_public_vip_address={{ ext_pub_vip_addr }}
 internal_public_vip_itf={{ int_pub_vip_itf }}
 internal_public_vip_address={{ int_pub_vip_addr }}
-{% if real_baremetal is defined and real_baremetal | bool %}
+{% if baremetal_provisioning is defined and baremetal_provisioning | bool %}
 osa_master_runs_on_osa_node=True
 {% endif %}
 {% if openstack_release is defined and openstack_release | length > 0 %}
@@ -24,6 +24,7 @@ openstack_release={{ openstack_release }}
 {% endif %}
 force_partitioning={{ no_templated_partitioning | default(true) | bool }}
 force_networking={{ no_templated_networking | default(true) | bool }}
+low_end_profile={{ has_reduced_system_resources | default(false if (baremetal_provisioning is defined and baremetal_provisioning | bool) else true) | bool }}
 {% if base_system_disk_device is defined and base_system_disk_device | length > 0 %}
 base_system_disk_device={{ base_system_disk_device }}
 {% endif %}

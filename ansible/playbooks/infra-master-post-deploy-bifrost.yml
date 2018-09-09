@@ -262,7 +262,7 @@
       - name: Setting baremetal facts for Squid ACLs
         set_fact:
            squid_ips_acls: "{{ [] + l_squid_ips_acls | from_yaml }}"
-      when: real_baremetal is defined and real_baremetal | bool == True
+      when: baremetal_provisioning is defined and baremetal_provisioning | bool == True
 
   roles:
     - role: kbrebanov.squid

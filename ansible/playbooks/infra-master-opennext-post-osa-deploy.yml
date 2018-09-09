@@ -129,7 +129,7 @@
     - name: Setting some more interesting facts to keep
       set_fact:
         openvpn_client_routes: "{{ openvpn_client_routes + [ hostvars[inventory_hostname]['ansible_br_prov']['ipv4']['network'] ~ ' ' ~ hostvars[inventory_hostname]['ansible_br_prov']['ipv4']['netmask'] ] }}"
-      when: real_baremetal | default(false) | bool == False
+      when: baremetal_provisioning | default(false) | bool == False
 
     - name: Setting some more interesting facts to keep
       set_fact:
