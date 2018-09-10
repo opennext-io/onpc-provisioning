@@ -93,7 +93,7 @@
     - import_tasks: ../tasks/nodes_get_status.yml
       vars:
         node_prov_status_delay: 30
-        node_prov_status_retries: 40
+        node_prov_status_retries: "{{ 60 if (ansible_master_running_kvm) else 40 | int }}"
 
     - name: Retrieving infra-master facts
       set_fact:

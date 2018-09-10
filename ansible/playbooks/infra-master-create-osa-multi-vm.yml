@@ -126,7 +126,7 @@
         node_status_retries: 20
         nodes_nb: 4
         node_prov_status_delay: 30
-        node_prov_status_retries: 80
+        node_prov_status_retries: "{{ 120 if (ansible_master_running_kvm) else 80 | int }}"
 
     - name: Retrieving infra-master facts
       set_fact:
