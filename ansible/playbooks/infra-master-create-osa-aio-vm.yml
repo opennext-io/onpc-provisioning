@@ -95,6 +95,11 @@
         node_prov_status_delay: 30
         node_prov_status_retries: 40
 
+    - name: Retrieving infra-master facts
+      set_fact:
+        kvm_prov_bridge_itf: "{{ kvm_prov_bridge_itf | default(provisioning_bridge_itf | default('br-prov')) }}"
+      when: ansible_master_running_kvm
+
     - name: Extracting VMs names from facts
       set_fact:
         node_infos_init: "{{ hostvars[inventory_hostname].registered_status.json }}"
@@ -134,7 +139,7 @@
         dest: "{{ systemuserhome }}/osa-inventory"
       vars:
         # TODO next variables to be retrieved from facts
-        infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
+        infra_master_ip: "{{ registration_ip }}"
         osa_nodes: "{{ node_names }}"
         bridge_itf: "{{ kvm_prov_bridge_itf }}"
         ext_pub_vip_addr: "{{ osa_master_ip }}"
