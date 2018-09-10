@@ -167,7 +167,7 @@
 
     - name: Extracting VMs names from facts
       set_fact:
-        node_infos_init: "{{ hostvars[inventory_hostname].registered_status.json }}"
+        node_infos: "{{ hostvars[inventory_hostname].registered_status.json }}"
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"
       vars:
