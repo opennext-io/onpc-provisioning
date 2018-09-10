@@ -69,14 +69,14 @@
         roles: "{{ vm_item.roles }}"
       with_items:
         - {
-          name: "aio1",
+          name: "{{ aio_name | default('aio1') }}",
           cpus: "{{ aio_cpus | default(10) | int }}",
           mem: "{{ aio_mem | default(48) | int }}",
           disks: "{{ aio_disks | default(2) | int }}",
           hdd: "{{ aio_disk_size | default(500) | int }}",
-          vnc: 5901,
-          bmc: 6001,
-          roles: ['control', 'compute', 'storage'],
+          vnc: "{{ aio_vnc | default(5901) | int }}",
+          bmc: "{{ aio_bmc | default(6001) | int }}",
+          roles: "{{ aio_roles | default(['control', 'compute', 'storage']) }}",
         }
       loop_control:
         loop_var: vm_item

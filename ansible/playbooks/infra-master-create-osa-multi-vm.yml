@@ -69,44 +69,44 @@
         roles: "{{ vm_item.roles }}"
       with_items:
         - {
-          name: "osa-master",
+          name: "{{ osa_master_name | default('osa-master') }}",
           cpus: "{{ osa_master_cpus | default(1) | int }}",
           mem: "{{ osa_master_mem | default(4) | int }}",
           disks: "{{ osa_master_disks | default(1) | int }}",
           hdd: "{{ osa_master_disk_size | default(60) | int }}",
-          vnc: 5901,
-          bmc: 6001,
+          vnc: "{{ osa_master_vnc | default(5901) | int }}",
+          bmc: "{{ osa_master_bmc | default(6001) | int }}",
           roles: ['osa-master'],
         }
         - {
-          name: "infra1",
+          name: "{{ infra1_name | default('infra1') }}",
           cpus: "{{ osa_nodes_cpus | default(8) | int }}",
           mem: "{{ osa_nodes_mem | default(12) | int }}",
           disks: "{{ osa_nodes_disks | default(2) | int }}",
           hdd: "{{ osa_nodes_disk_size | default(300) | int }}",
-          vnc: 5902,
-          bmc: 6002,
-          roles: ['control', 'compute', 'storage'],
+          vnc: "{{ infra1_vnc | default(5902) | int }}",
+          bmc: "{{ infra1_bmc | default(6002) | int }}",
+          roles: "{{ infra1_roles | default(['control', 'compute', 'storage']) }}",
         }
         - {
-          name: "infra2",
+          name: "{{ infra2_name | default('infra2') }}",
           cpus: "{{ osa_nodes_cpus | default(8) | int }}",
           mem: "{{ osa_nodes_mem | default(12) | int }}",
           disks: "{{ osa_nodes_disks | default(2) | int }}",
           hdd: "{{ osa_nodes_disk_size | default(300) | int }}",
-          vnc: 5903,
-          bmc: 6003,
-          roles: ['control', 'compute', 'storage'],
+          vnc: "{{ infra2_vnc | default(5903) | int }}",
+          bmc: "{{ infra2_bmc | default(6003) | int }}",
+          roles: "{{ infra2_roles | default(['control', 'compute', 'storage']) }}",
         }
         - {
-          name: "infra3",
+          name: "{{ infra3_name | default('infra3') }}",
           cpus: "{{ osa_nodes_cpus | default(8) | int }}",
           mem: "{{ osa_nodes_mem | default(12) | int }}",
           disks: "{{ osa_nodes_disks | default(2) | int }}",
           hdd: "{{ osa_nodes_disk_size | default(300) | int }}",
-          vnc: 5904,
-          bmc: 6004,
-          roles: ['control', 'compute', 'storage'],
+          vnc: "{{ infra3_vnc | default(5904) | int }}",
+          bmc: "{{ infra3_bmc | default(6004) | int }}",
+          roles: "{{ infra3_roles | default(['control', 'compute', 'storage']) }}",
         }
       loop_control:
         loop_var: vm_item
