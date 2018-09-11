@@ -24,3 +24,14 @@
   service: name={{ item.name }} state={{ item.state }}
   with_items:
     - { name: ntpd, state: restarted }
+
+- name: restart chrony and stop systemd-timesyncd
+  service: name={{ item.name }} state={{ item.state }} enabled={{ item.enabled }}
+  with_items:
+    - { name: chrony, state: restarted, enabled: yes }
+    - { name: systemd-timesyncd, state: stopped, enabled: no }
+
+- name: restart chrony
+  service: name={{ item.name }} state={{ item.state }}
+  with_items:
+    - { name: chrony, state: restarted }

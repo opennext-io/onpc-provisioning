@@ -102,7 +102,7 @@ network:
   - ifstat
   - iputils-tracepath
   - netcat
-  - ntp
+  - chrony
   - ntpdate
   - open-iscsi
   - openssh-server

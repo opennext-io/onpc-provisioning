@@ -93,7 +93,7 @@ network:
   - ifenslave
   - ifenslave-2.6
   - ifstat
-  - ntp
+  - chrony
   - ntpdate
   - open-iscsi
   - openssh-server
