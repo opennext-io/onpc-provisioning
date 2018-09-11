@@ -12,6 +12,7 @@ import os
 import pprint
 import ast
 import time
+import datetime
 
 # Flask web service imports
 from flask import Flask, jsonify, request, abort
@@ -249,11 +250,15 @@ def _get_shade_infos():
             new_machine['addressing_mode'] = "dhcp"
             # Machine has just been discovered, store it
             if not new_machine['uuid'] in registered_machines:
+                new_machine['agent-stored-ts'] = time.time()
+                new_machine['agent-stored'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 app.logger.debug('-----> New machine stored: {}'.format(new_machine))
                 registered_machines[new_machine['uuid']] = new_machine
             else:
                 # Store UUID for later use
                 uuid = new_machine['uuid']
+                new_machine['agent-last-seen-ts'] = time.time()
+                new_machine['agent-last-seen'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 # Machine was previously discovered
                 app.logger.debug('-----> Merging new machine: {} {} with former data {}'.format(
                     new_machine, '\n++++++++++\n----------\n', registered_machines[uuid]))
@@ -266,6 +271,8 @@ def _get_shade_infos():
                     app.logger.error('Updating key {} old {} new {}'.format(
                         key, registered_machines[uuid].get(key, ""), value))
                     registered_machines[uuid][key] = value
+                    new_machine['agent-last-modified-ts'] = time.time()
+                    new_machine['agent-last-modified'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             # Check if machine changes have been requested
             modified = []
             for key, value in todo_machines.items():
@@ -444,6 +451,7 @@ def get_status():
                   'provision_state', 'last_error', 'properties/cpus',
                   'properties/local_gb', 'properties/memory_mb', 'target_provision_state',
                   'extra/roles', 'extra/all/macs', 'extra/all/interfaces/eth0/ip',
+                  'agent-created', 'agent-last-seen', 'agent-last-modified',
                   ]:
             if '/' not in f:
                 v1 = v.get(f)
