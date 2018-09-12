@@ -82,7 +82,7 @@
   set_fact:
     chrony_daemon_conf_line: "allow {{ ip_prefix | default('20.20.20') }}.0/{{ ip_netmask_bits | default(24) }}"
     chrony_anchor_pattern:
-      - { regexp: '^#allow foo.example.net$', line: 'allow {{ ip_prefix | default("20.20.20") }}.0/{{ ip_netmask_bits | default(24) }}\n#allow foo.example.net' }
+      - { regexp: '^#allow foo.example.net$', line: 'allow {{ ip_prefix | default("20.20.20") }}.0/{{ ip_netmask_bits | default(24) }}\nmakestep 1 -1\n#allow foo.example.net' }
     chrony_service_handler: "restart chrony and stop systemd-timesyncd"
   when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == True
 
