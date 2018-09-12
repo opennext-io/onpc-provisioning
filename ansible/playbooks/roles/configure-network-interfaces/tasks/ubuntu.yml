@@ -15,7 +15,7 @@
 # limitations under the License.
 
 - fail: msg="Missing, empty or bad node_type variable"
-  when: node_type is undefined or node_type | length == 0 or node_type not in ['osa-nodes', 'infra-master']
+  when: is_host_to_be_modified and (node_type is undefined or node_type | length == 0 or node_type not in ['osa-nodes', 'infra-master'])
 
 - name: Retrieving system network interfaces
   find:
@@ -51,10 +51,10 @@
 - name: Setting facts for primary interface IP retrieval (ip-prefix)
   set_fact:
     match_ip_prefix: "{{ hostvars[inventory_hostname]['ip_prefix'] }}"
-  when: is_host_to_be_modified and primary_itf_prefix is undefined or primary_itf_prefix | length == 0
+  when: is_host_to_be_modified and (primary_itf_prefix is undefined or primary_itf_prefix | length == 0)
 
 - fail: msg="Missing or empty match_ip_prefix variable"
-  when: match_ip_prefix is undefined or match_ip_prefix | length == 0
+  when: is_host_to_be_modified and (match_ip_prefix is undefined or match_ip_prefix | length == 0)
 
 - name: Setting facts for non-handled network interfaces
   set_fact:
