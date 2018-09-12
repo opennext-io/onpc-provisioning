@@ -268,16 +268,16 @@
 
 # at this step all variables (itfs names) are properly
 # set and therefore VLANs will be properly assigned
-- include_vars: ../vars/osa-briges-vlans_vars.yml
+- include_vars: ../vars/osa-bridges-vlans_vars.yml
   when: is_host_to_be_modified
 
-- include_vars: ../vars/opennext-briges-vlans_vars.yml
+- include_vars: ../vars/opennext-bridges-vlans_vars.yml
   when: is_host_to_be_modified and node_type == 'infra-master' and not infra_master_running_kvm and not ansible_master_running_kvm
 
-- include_vars: ../vars/opennext-briges-vlans-with-kvm-on-infra-master_vars.yml
+- include_vars: ../vars/opennext-bridges-vlans-with-kvm-on-infra-master_vars.yml
   when: is_host_to_be_modified and node_type == 'infra-master' and infra_master_running_kvm
 
-- include_vars: ../vars/opennext-briges-vlans-with-kvm-on-ansible-master_vars.yml
+- include_vars: ../vars/opennext-bridges-vlans-with-kvm-on-ansible-master_vars.yml
   when: is_host_to_be_modified and node_type == 'infra-master' and ansible_master_running_kvm
 
 - name: Setting VLANs and bridges facts for node (osa-nodes)

@@ -161,7 +161,7 @@
         itf: "{{ ansible_libvirt_networks.get('provisioning', {}).get('bridge') }}"
       when: infra_master_running_kvm
 
-    # Because br-prov is also defined in ../vars/opennext-briges-vlans_vars.yml
+    # Because br-prov is also defined in ../vars/opennext-bridges-vlans_vars.yml
     # we need to set its default in this very specific case
     - name: Retrieving provisioning interface from network infos
       set_fact:

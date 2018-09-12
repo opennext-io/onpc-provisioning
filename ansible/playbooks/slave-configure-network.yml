@@ -25,7 +25,7 @@
 
   vars_files:
     - ../vars/slaves-pkgs-ubuntu.yml
-    - ../vars/slaves-briges-vlans_vars.yml
+    - ../vars/slaves-bridges-vlans_vars.yml
 
   tasks:
 
