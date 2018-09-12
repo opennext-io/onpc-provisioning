@@ -17,34 +17,38 @@
 - name: Setting fact for package query command (Ubuntu)
   set_fact:
     package_name: "chrony"
+  when: is_host_to_be_modified
 
 - name: Setting fact for package query command (Ubuntu)
   set_fact:
     package_query_cmd: "dpkg -l"
     package_query_match: "^ii *{{ package_name }} *"
-  when: ansible_distribution | lower == 'ubuntu'
+  when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu'
 
 - name: Setting fact for package query command (CentOS)
   set_fact:
     package_query_cmd: "rpm -q"
     package_query_match: "^{{ package_name }} *"
-  when: ansible_distribution | lower == 'centos'
+  when: is_host_to_be_modified and ansible_distribution | lower == 'centos'
 
 - name: Checking if chrony is installed
   shell: "{{ package_query_cmd }} {{ package_name }}"
   register: check_chrony_package
   ignore_errors: true
   changed_when: false
+  when: is_host_to_be_modified
 
 - name: Setting fact for chrony usage vs ntp
   set_fact:
     use_chrony: "{{ check_chrony_package.failed == False and check_chrony_package.stdout_lines | select('match', package_query_match) | list | length > 0 }}"
+  when: is_host_to_be_modified
 
 - name: Setting facts for NTP daemon configuration
   set_fact:
     chrony_daemon_conf_file: "/etc/chrony/chrony.conf"
     ntp_daemon_conf_file: "/etc/ntp.conf"
     ntp_date_conf_file: "/etc/default/ntpdate"
+  when: is_host_to_be_modified
 
 - name: Setting facts for NTP daemon configuration (Ubuntu,osa-nodes)
   set_fact:
@@ -55,7 +59,7 @@
     ntp_anchor_pattern:
       - { regexp: '^(.*) ntp server as a fallback\.$', line: '# Custom ntp server list\nserver {{ proxy_host }}\n\1 ntp server as a fallback.' }
     ntp_service_handler: "restart ntp and stop systemd-timesyncd"
-  when: ansible_distribution | lower == 'ubuntu' and node_type == 'osa-nodes' and use_chrony == False
+  when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'osa-nodes' and use_chrony == False
 
 - name: Setting facts for NTP daemon configuration (Ubuntu,infra-master)
   set_fact:
@@ -63,7 +67,16 @@
     ntp_anchor_pattern:
       - { regexp: '^#broadcast (.*)$', line: '#broadcast \1\nbroadcast {{ ip_prefix | default("20.20.20") }}.{{ ip_netmask_broadcast | default(255) }}' }
     ntp_service_handler: "restart ntp and stop systemd-timesyncd"
-  when: ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == False
+  when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == False
+
+- name: Setting facts for chrony daemon configuration (Ubuntu,osa-nodes)
+  set_fact:
+    chrony_daemon_conf_line: "server {{ proxy_host }} .*"
+    ntp_date_conf_line: "NTPSERVERS=\"{{ proxy_host }}\""
+    chrony_anchor_pattern:
+      - { regexp: '^pool (\S*) (.*)$', line: '# Custom ntp server list\nserver {{ proxy_host }} iburst\nmakestep 1 -1\n\n#pool \1 \2' }
+    chrony_service_handler: "restart chrony and stop systemd-timesyncd"
+  when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'osa-nodes' and use_chrony == True
 
 - name: Setting facts for chrony daemon configuration (Ubuntu,infra-master)
   set_fact:
@@ -71,12 +84,12 @@
     chrony_anchor_pattern:
       - { regexp: '^#allow foo.example.net$', line: 'allow {{ ip_prefix | default("20.20.20") }}.0/{{ ip_netmask_bits | default(24) }}\n#allow foo.example.net' }
     chrony_service_handler: "restart chrony and stop systemd-timesyncd"
-  when: ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == True
+  when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == True
 
 - name: Setting facts for NTP daemon configuration (CentOS,osa-nodes)
   set_fact:
     ntp_daemon_conf_line: "server {{ proxy_host }}"
-  when: ansible_distribution | lower == 'centos' and node_type == 'osa-nodes' and use_chrony == False
+  when: is_host_to_be_modified and ansible_distribution | lower == 'centos' and node_type == 'osa-nodes' and use_chrony == False
 
 - name: Setting additional facts for NTP daemon configuration (CentOS,osa-nodes)
   set_fact:
@@ -85,7 +98,7 @@
     ntp_anchor_pattern:
       - { regexp: '^(.*) Hosts on local network are less restricted\.$', line: '# Custom ntp server list\n{{ ntp_daemon_conf_line }}\n\1 Hosts on local network are less restricted.' }
     ntp_service_handler: "restart ntpd"
-  when: ansible_distribution | lower == 'centos' and node_type == 'osa-nodes' and use_chrony == False
+  when: is_host_to_be_modified and ansible_distribution | lower == 'centos' and node_type == 'osa-nodes' and use_chrony == False
 
 - name: Configuring NTP daemon (removing default pools)
   replace:
@@ -105,14 +118,14 @@
     src: "{{ ntp_daemon_conf_file }}"
   register:
     ntp_daemon_info
-  when: use_chrony == False
+  when: is_host_to_be_modified and use_chrony == False
 
 - name: Retrieving remote chrony daemon configuration
   slurp:
     src: "{{ chrony_daemon_conf_file }}"
   register:
     chrony_daemon_info
-  when: use_chrony == True
+  when: is_host_to_be_modified and use_chrony == True
 
 - name: Configuring NTP daemon
   replace:
@@ -150,7 +163,7 @@
   slurp:
     src: "{{ ntp_date_conf_file }}"
   register: ntp_date_info
-  when: ansible_distribution | lower == 'ubuntu'
+  when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu'
 
 - name: Configuring NTP date (inserting infra-master as NTP server)
   replace:
@@ -163,7 +176,7 @@
   with_items:
     - { regexp: '^NTPSERVERS=".*', line: '{{ ntp_date_conf_line }}' }
   notify:
-    - "{{ ntp_service_handler }}"
+    - "{{ ntp_service_handler | default(chrony_service_handler) }}"
   when: (is_host_to_be_modified and
     ansible_distribution | lower == 'ubuntu' and
     node_type == 'osa-nodes' and
@@ -171,8 +184,8 @@
 
 - name: Restarting NTP Service
   service: name=ntp enabled=yes state=restarted
-  when: is_host_to_be_modified and node_type == 'infra-master' and ntp_server_reconfig is changed and use_chrony == False
+  when: is_host_to_be_modified and ntp_server_reconfig is changed and use_chrony == False
 
 - name: Restarting chrony Service
   service: name=chrony enabled=yes state=restarted
-  when: is_host_to_be_modified and node_type == 'infra-master' and chrony_server_reconfig is changed and use_chrony == True
+  when: is_host_to_be_modified and chrony_server_reconfig is changed and use_chrony == True
