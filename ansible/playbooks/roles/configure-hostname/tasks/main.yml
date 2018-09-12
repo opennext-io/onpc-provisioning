@@ -14,10 +14,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+- name: Checking existence of /etc/hosts
+  stat:
+    path: /etc/hosts
+  register: hosts_status
+  when: is_host_to_be_modified
+
 - name: Checking dynamic hostname
   command: "hostname"
   changed_when: false
   register: hostname_result
+  when: is_host_to_be_modified
+
+- name: Checking dynamic hostname (FQDN)
+  command: "hostname -f"
+  changed_when: false
+  failed_when: false
+  register: fqdn_hostname_result
+  when: is_host_to_be_modified
+
+- name: Boostrapping /etc/hosts
+  template:
+    dest: /etc/hosts
+    src: "{{ role_path }}/templates/hosts-{{ ansible_distribution | lower }}.j2"
+    owner: root
+    group: root
+    mode: 0644
+  vars:
+    hostname: "{{ hostname_result.stdout }}"
+    fqdn_hostname: "{{ fqdn_hostname_result.stdout if fqdn_hostname_result.rc == 0 else '' }}"
+  when: is_host_to_be_modified and not hosts_status.stat.exists
 
 - name: Updating /etc/hosts with {{ fqdn }} (Ubuntu)
   lineinfile:
