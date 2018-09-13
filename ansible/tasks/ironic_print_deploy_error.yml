@@ -22,7 +22,8 @@
 # Pretty print strings with \n's converting to list of strings
 - set_fact:
     ironic_error_pretty_dict: "{% set sel = {} %}{% for k,v in ironic_error_dict.items() %}{% if v is string %}{% set v1=v.split('\n') %}{% else %}{% set v1=v %}{% endif %}{% set l = sel.update({k: v1}) %}{% endfor %}{{ sel }}"
+  when: ironic_error_msg != ironic_error_dict
 
 # Compose final result
 - set_fact:
-    ironic_error_msg_dict: "{{ {'error': ironic_error_msg } | combine(ironic_error_pretty_dict) }}"
+    ironic_error_msg_dict: "{{ {'error': ironic_error_msg } | combine(ironic_error_pretty_dict | default({})) }}"
