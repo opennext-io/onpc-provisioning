@@ -81,7 +81,7 @@ network:
   - iputils
   - iscsi-initiator-utils
   - nc
-  - ntp
+  - chrony
   - ntpdate
   - openssh-server
 
