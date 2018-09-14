@@ -204,16 +204,16 @@
         msg: "User prompt to go manual has an invalid value"
       when: go_manual | lower != 'yes' and go_manual | lower != 'no'
 
-    - name: Setting remote OSA nodes informations facts
+    - name: Setting remote OSA nodes informations facts (infos + IPs)
       set_fact:
         osa_nodes_infos: "{{ hostvars.get(inventory_hostname, {}).get('ansible_local', {}).get('opennext_osa_nodes_configure_system', {}) }}"
         vlans_ips: "{{ osa_vlans | selectattr('prefix', 'defined') | map(attribute='prefix') | flatten | list }}"
 
-    - name: Setting remote OSA nodes roles informations facts
+    - name: Setting remote OSA nodes informations facts (roles)
       set_fact:
         osa_nodes_roles: "{{ osa_nodes_infos.get('infra-master', {}).get('osa_nodes_roles', {}) }}"
 
-    - name: Setting remote OSA nodes roles informations facts
+    - name: Setting remote OSA nodes informations facts (hosts lists)
       set_fact:
         controller_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.items() %}{% if 'control' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
         cinder_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.items() %}{% if 'storage' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
@@ -223,7 +223,7 @@
         monitoring_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.items() %}{% if 'monitoring' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
         logging_hosts_list: "{% set sel = [] %}{% for k,v in osa_nodes_roles.items() %}{% if 'logging' in v %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
 
-    - name: Setting remote OSA nodes names informations facts
+    - name: Setting remote OSA nodes informations facts (names)
       set_fact:
         osa_first_controller_node_name:  "{{ controller_hosts_list | sort | first }}"
 
@@ -279,8 +279,8 @@
       vars:
         in_file: "{{ item }}"
         out_file: "{{ osa_deploy_conf_path }}/env.d/{{ (item | basename).split('.')[:-1] | join('.') }}"
-      with_items: "{{ onpc_model_envd_templates.get('files', []) | map(attribute='path') | list }}"   
-   
+      with_items: "{{ onpc_model_envd_templates.get('files', []) | map(attribute='path') | list }}"
+
     - name: Retrieving onpc-basic-model conf.d templates
       find:
         paths: "{{ onpc_model_repo_dir }}/etc/openstack_deploy/templates/conf.d"
@@ -325,8 +325,13 @@
       set_fact:
         osa_vars_additions: "{%- raw %}{{ lookup('template', '../templates/osa_additional_user_variables.yml.j2') }}{%- endraw %}"
         onpc_vars_additions: "{%- raw %}{{ lookup('template', '../templates/monitoring_additional_user_variables.yml.j2') }}{%- endraw %}"
-        onpc_osa_user_config: "{%- raw %}{{ lookup('template', '/tmp/user_variables.yml.j2') }}{%- endraw %}"
+        onpc_osa_user_config: {}
         onpc_onpc_user_config: "{%- raw %}{{ lookup('template', '/tmp/user_onpc_variables.yml.j2') }}{%- endraw %}"
+
+    - name: Setting facts for OSA user configuration file
+      set_fact:
+        onpc_osa_user_config: "{%- raw %}{{ lookup('template', '/tmp/user_variables.yml.j2') }}{%- endraw %}"
+      when: not is_aio or ((force_networking | default(false) | bool) and (force_partitioning | default(false) | bool))
 
     - name: Retrieving OSA user configuration from osa-master host
       slurp:
