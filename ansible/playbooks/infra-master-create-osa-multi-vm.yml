@@ -142,6 +142,15 @@
         pub_addr: "{{ hostvars[inventory_hostname].ansible_br_prov.ipv4 }}"
         registered_status_init: "{{ registered_status }}"
         registered_machines_init: "{{ registered_machines }}"
+        # This should be in sync with the disks: parameter number passed to kvm_vm_create.yml task
+        base_system_disk_device: /dev/vdb
+        base_system_disk_space: 320.0
+        osa_partition_size: 40.0
+        osa_logs_partition_size: 50.0
+        lxc_partition_size: 60.0
+        storage_partition_size: 70.0
+        compute_partition_size: 80.0
+        swap_partition_size: 16.0
 
     - name: Waiting for VMs to be reachable by SSH
       wait_for:
