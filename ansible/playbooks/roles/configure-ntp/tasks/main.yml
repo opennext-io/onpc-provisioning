@@ -88,6 +88,7 @@
   set_fact:
     chrony_service_name: "chrony"
     chrony_daemon_conf_file: "/etc/chrony/chrony.conf"
+    chrony_patterns_to_comment: []
     chrony_daemon_conf_line: "server {{ proxy_host }} .*"
     ntp_date_conf_line: "NTPSERVERS=\"{{ proxy_host }}\""
     chrony_anchor_patterns:
