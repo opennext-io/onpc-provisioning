@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Reauires the following modules to work
+# Requires the following modules to work
 #
 # pip install -U flask
 # pip install -U apscheduler
@@ -47,9 +47,10 @@ shelve_db = None
 
 # Update objects to be persisted
 def _update_persisted_objects():
-    global shelve_db
-    shelve_db['registered_machines'] = registered_machines
-    shelve_db['todo_machines'] = todo_machines
+    global shelve_db, registered_machines, todo_machines
+    if not shelve_db is None:
+        shelve_db['registered_machines'] = registered_machines
+        shelve_db['todo_machines'] = todo_machines
 
 
 # Get shade library credentials
@@ -78,6 +79,7 @@ shade_opts = _get_shade_auth()
 # HTTP Authentication
 @auth.verify_password
 def verify_password(username, password):
+    global shade_opts
     app.logger.debug('******************** Checking user {} password {}'.format(username, password))
 
     # No auth aka keystone not configured: service is left unsecured
@@ -112,6 +114,7 @@ def verify_password(username, password):
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        global shade_opts
         # Keystone authentication required
         if shade_opts.get('auth_type', None) == "password":
             auth = request.authorization
@@ -128,6 +131,7 @@ def requires_auth(f):
 
 
 def _find_machine(mac_addr):
+    global registered_machines
     app.logger.debug('******************** Looking for machine with MAC address {}'.format(mac_addr))
     if not mac_addr:
         return None
@@ -139,7 +143,7 @@ def _find_machine(mac_addr):
 
 
 def _patch_machine(uuid, vid, changes):
-    global registered_machines
+    global registered_machines, shade_opts
     # Convert unicode to string
     # uuid = uuid.encode('ascii', 'ignore')
     app.logger.error('==================== _patch_machine {} {} {}'.format(uuid, vid, changes))
@@ -197,7 +201,7 @@ def _patch_machine(uuid, vid, changes):
 
 # Retrieve baremetal informations via shade library
 def _get_shade_infos():
-    global registered_machines, todo_machines
+    global registered_machines, todo_machines, shade_opts
     """Retrieve inventory utilizing Shade"""
     app.logger.error('==================== _get_shade_infos')
     try:
@@ -319,11 +323,11 @@ def _get_shade_infos():
 try:
     # Retrieve base directory of Python script
     script_base_dir = os.path.dirname(os.path.realpath(__file__))
+    script_filename = os.path.basename(__file__)
     # Shelve file will be stored in same directory with the prefix of Python
     # script name (without .py extension) with additional .db extension
-    shelve_file = os.path.join(script_base_dir, os.path.splitext(__file__)[0] + ".db")
+    shelve_file = os.path.join(script_base_dir, os.path.splitext(script_filename)[0] + ".db")
     has_shelve = os.path.isfile(shelve_file)
-    shelve_db = shelve.open(shelve_file, writeback=True)
     # Retrieve saved variables if they exist in shelve store
     if has_shelve:
         # Check proper access (but may be this should have failed in the shelve.open call above)
@@ -331,6 +335,7 @@ try:
             app.logger.error('Can not read saved state from: {}'.format(shelve_file))
         else:
             app.logger.error('Restoring saved state from: {}'.format(shelve_file))
+            shelve_db = shelve.open(shelve_file, writeback=True)
             # Restore persited objects into current memory
             registered_machines = shelve_db.get('registered_machines', {})
             todo_machines = shelve_db.get('todo_machines', {})
@@ -340,7 +345,7 @@ try:
                 first_call_to_shade = False
     else:
         # No shelve backup but may be a JSON bootstrapping status file can be found
-        bootstrap_file = os.path.join(script_base_dir, os.path.splitext(__file__)[0] + ".json")
+        bootstrap_file = os.path.join(script_base_dir, os.path.splitext(script_filename)[0] + ".json")
         has_bootstrap = os.path.isfile(bootstrap_file)
         if has_bootstrap:
             if not os.access(bootstrap_file, os.R_OK):
