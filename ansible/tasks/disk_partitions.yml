@@ -17,6 +17,15 @@
 - fail: msg="Wrong disk specification {{ disk_setup }}"
   when: disk_setup is not defined or not disk_setup.get('device_path')
 
+- name: Checking disk for proper partitioning
+  shell: sgdisk -v "{{ disk_setup.get('device_path') }}"
+  register: sgdisk_status
+  changed_when: false
+
+- name: Resetting disk for proper partitioning
+  shell: sgdisk -e "{{ disk_setup.get('device_path') }}"
+  when: sgdisk_status.get('stdout_lines', []) | select('match', '^Problem[:] .*') | list | length > 0
+
 - name: Retrieving disk and partitions infos
   parted:
     device: "{{ disk_setup.get('device_path') }}"
