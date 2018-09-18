@@ -193,6 +193,12 @@ def _patch_machine(uuid, vid, changes):
             'path': '/extra/roles',
             'value': changes['roles']
         })
+    if 'tags' in changes:
+        patch.append({
+            'op': 'add',
+            'path': '/extra/tags',
+            'value': changes['tags']
+        })
     if len(patch) > 0:
         cloud = shade.operator_cloud(**shade_opts)
         cloud.patch_machine(uuid, patch)
@@ -235,6 +241,9 @@ def _get_shade_infos():
                     v = value.get('roles')
                     if v:
                         dict_value['roles'] = v
+                    v = value.get('tags')
+                    if v:
+                        dict_value['tags'] = v
                     value = dict_value
 
                 # Only keep usefull informations
@@ -387,6 +396,9 @@ try:
                                     roles = v.get('extra/roles')
                                     if roles:
                                         m_changes['roles'] = roles
+                                    tags = v.get('extra/tags')
+                                    if tags:
+                                        m_changes['tags'] = tags
                                     app.logger.debug('Updating bootstrap registered_machines: {}'.format(pprint.pformat(m_changes)))
                                     # Call same procedure than when machine is 1st registered into register-helper utility
                                     _patch_machine(machine_uuid, v.get('virt-uuid'), m_changes)
@@ -455,7 +467,7 @@ def get_status():
         for f in ['vnc-info', 'virt-uuid', 'power_state', 'target_power_state',
                   'provision_state', 'last_error', 'properties/cpus',
                   'properties/local_gb', 'properties/memory_mb', 'target_provision_state',
-                  'extra/roles', 'extra/all/macs', 'extra/all/interfaces/eth0/ip',
+                  'extra/roles', 'extra/tags', 'extra/all/macs', 'extra/all/interfaces/eth0/ip',
                   'agent-created', 'agent-last-seen', 'agent-last-modified',
                   ]:
             if '/' not in f:

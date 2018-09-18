@@ -45,6 +45,7 @@
           bmc_user: "{{ node_bmc_user | default('admin') }}",
           bmc_password: "{{ node_bmc_passwd | default('password') }}",
           roles: "{{ node_roles | default([]) }}"
+          tags: "{{ node_tags | default({ 'caracteristics': ['baremetal'] }) }}",
         }
 
     - name: Retrieving infos from  {{ dnsmasq_conf_file }}

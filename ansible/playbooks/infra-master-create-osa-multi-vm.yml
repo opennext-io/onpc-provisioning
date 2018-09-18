@@ -67,6 +67,7 @@
         vbmc_port: "{{ vm_item.bmc }}"
         vmmacprefix: "52:54:01"
         roles: "{{ vm_item.roles }}"
+        tags: "{{ vm_item.tags }}"
       with_items:
         - {
           name: "{{ osa_master_name | default('osa-master') }}",
@@ -77,6 +78,7 @@
           vnc: "{{ osa_master_vnc | default(5901) | int }}",
           bmc: "{{ osa_master_bmc | default(6001) | int }}",
           roles: ['osa-master'],
+          tags: "{{ osa_master_tags | default({ 'caracteristics': ['vm', 'multi', 'small', 'single-disk', 'non-ssd'], 'disks': { 'count': osa_master_disks | default(1) | int, 'type': 'ide' }}) }}",
         }
         - {
           name: "{{ infra1_name | default('infra1') }}",
@@ -87,6 +89,7 @@
           vnc: "{{ infra1_vnc | default(5902) | int }}",
           bmc: "{{ infra1_bmc | default(6002) | int }}",
           roles: "{{ infra1_roles | default(['control', 'compute', 'storage']) }}",
+          tags: "{{ infra1_tags | default({ 'caracteristics': ['vm', 'multi', 'medium', 'multi-disks', 'non-ssd'], 'disks': { 'count': osa_nodes_disks | default(2) | int, 'type': 'ide' }}) }}",
         }
         - {
           name: "{{ infra2_name | default('infra2') }}",
@@ -97,6 +100,7 @@
           vnc: "{{ infra2_vnc | default(5903) | int }}",
           bmc: "{{ infra2_bmc | default(6003) | int }}",
           roles: "{{ infra2_roles | default(['control', 'compute', 'storage']) }}",
+          tags: "{{ infra2_tags | default({ 'caracteristics': ['vm', 'multi', 'medium', 'multi-disks', 'non-ssd'], 'disks': { 'count': osa_nodes_disks | default(2) | int, 'type': 'ide' }}) }}",
         }
         - {
           name: "{{ infra3_name | default('infra3') }}",
@@ -107,6 +111,7 @@
           vnc: "{{ infra3_vnc | default(5904) | int }}",
           bmc: "{{ infra3_bmc | default(6004) | int }}",
           roles: "{{ infra3_roles | default(['control', 'compute', 'storage']) }}",
+          tags: "{{ infra3_tags | default({ 'caracteristics': ['vm', 'multi', 'medium', 'multi-disks', 'non-ssd'], 'disks': { 'count': osa_nodes_disks | default(2) | int, 'type': 'ide' }}) }}",
         }
       loop_control:
         loop_var: vm_item

@@ -67,6 +67,7 @@
         vbmc_port: "{{ vm_item.bmc }}"
         vmmacprefix: "52:54:00"
         roles: "{{ vm_item.roles }}"
+        tags: "{{ vm_item.tags }}"
       with_items:
         - {
           name: "{{ aio_name | default('aio1') }}",
@@ -77,6 +78,7 @@
           vnc: "{{ aio_vnc | default(5901) | int }}",
           bmc: "{{ aio_bmc | default(6001) | int }}",
           roles: "{{ aio_roles | default(['control', 'compute', 'storage']) }}",
+          tags: "{{ aio_tags | default({ 'caracteristics': ['vm', 'aio', 'big', 'multi-disks', 'non-ssd'], 'disks': { 'count': aio_disks | default(2) | int, 'type': 'ide' }}) }}",
         }
       loop_control:
         loop_var: vm_item

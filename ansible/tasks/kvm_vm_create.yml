@@ -141,6 +141,7 @@
       vnc_host: "{{ vm_vnc_ip }}",
       vnc_port: "{{ vm_vnc_port }}",
       roles: "{{ roles | default([]) }}",
+      tags: "{{ tags | default([]) }}",
     }
 
 - name: Checking handling of {{ vmname }} VM by VBMC IPMI agent
