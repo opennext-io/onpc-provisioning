@@ -1,5 +1,5 @@
-[infra-master]
-LAB2-PUBLIC-IP kvm_on_infra_master=false kvm_on_ansible_master=false real_baremetal=true
+[infra-hosts]
+infra-master ansible_host=LAB2-PUBLIC-IP kvm_on_infra_master=false kvm_on_ansible_master=false real_baremetal=true
 
 [all:vars]
 ansible_user=vagrant

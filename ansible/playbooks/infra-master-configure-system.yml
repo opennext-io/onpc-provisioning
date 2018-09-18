@@ -78,7 +78,7 @@
     - name: Setting facts for host bridge
       set_fact:
         primary_bridge_name: "{{ host_bridge_itf }}"
-      when: not baremetal_provisioning and infra_master_running_kvm
+      when: not baremetal_provisioning
 
     - name: Setting facts for VMs bridge
       set_fact:
@@ -172,6 +172,7 @@
           - "^ansible_all_ipv4_addresses$"
           - "^ansible_default_ipv4$"
           - "^ansible_dns$"
+          - "^ansible_host$"
           - "^ansible_interfaces$"
           - "^.*libvirt_networks"
           - "^groups$"

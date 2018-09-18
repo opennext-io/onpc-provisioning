@@ -212,7 +212,7 @@ elif [ "$virtprovider" == "kvm" ]; then
 fi
 
 echo -e "\n\nAll done, VM $vmname IP is $ip"
-echo -e "[infra-master]\n$ip kvm_on_infra_master=false kvm_on_ansible_master=true\n\n[all:vars]\nansible_user=$username\n" > $CMDDIR/ansible/inventory/master
+echo -e "[infra-hosts]\ninfra-master ansible_host=$ip kvm_on_infra_master=false kvm_on_ansible_master=true\n\n[all:vars]\nansible_user=$username\n" > $CMDDIR/ansible/inventory/master
 if type ansible >/dev/null 2>&1; then
 	echo -e "\n\nTry running the following: ansible all -i ansible/inventory/master -m ping\n"
 fi
