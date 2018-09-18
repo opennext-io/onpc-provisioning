@@ -88,6 +88,19 @@
   with_items: "{{ handled_itfs_files.get('files', []) | selectattr('path', 'defined') | map(attribute='path') | list }}"
   when: is_host_to_be_modified
 
+- name: Retrieving physical primary network interface
+  set_fact:
+    new_primary_net_itf: "{% set sel = [] %}{% for k in handled_itfs_infos.get('results', []) %}{% if primary_net_itf[0] in k.get('ifaces', {}).keys() %}{% set l = sel.append(k.get('dest', '').split('/')[-1] | replace('.cfg', '')) %}{% endif %}{% endfor %}{{ sel }}"
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] not in physical_system_net_itfs
+
+- name: Overwriting primary network interface
+  set_fact:
+    primary_net_itf: "{{ new_primary_net_itf | list }}"
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] not in physical_system_net_itfs
+
+- fail: msg='Primary interface {{ primary_net_itf[0] }} not in physical_system_net_itfs {{ physical_system_net_itfs }}'
+  when: is_host_to_be_modified and primary_net_itf | length == 1 and primary_net_itf[0] not in physical_system_net_itfs
+
 - name: Setting handled interfaces list
   set_fact:
     handled_itfs: "{{ handled_itfs_infos.results | json_query('[*].ifaces | flatten_dict_entries(@) | keys(@)') }}"
@@ -211,7 +224,7 @@
 
 - name: Setting fact for handled network interfaces become secondary interfaces
   set_fact:
-    secondary_net_itfs: "{{ handled_itfs | difference(primary_net_itf + ['lo']) }}"
+    secondary_net_itfs: "{{ handled_itfs | intersect(physical_system_net_itfs) | difference(primary_net_itf + ['lo']) }}"
   when: is_host_to_be_modified and secondary_net_itfs | length == 0
 
 - name: Setting fact for non-handled network interfaces become secondary interfaces
