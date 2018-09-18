@@ -55,5 +55,5 @@
   become: yes
   action: template src=../templates/dump_var_json.j2 dest="{{ dest_fact_file }}"
   vars:
-    myvar: "{{ hostvars | to_json | hostvars_filter(keys_to_store) }}"
+    myvar: "{{ hostvars | to_json | hostvars_filter(keys_to_store | default([]), keys_to_ignore | default([])) }}"
   when: not fact_file_status.stat.exists or (force_update is defined and force_update | bool == True)

@@ -157,6 +157,9 @@
 
     - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_configure_system"
       vars:
+        keys_to_ignore:
+          - "^system_net_itfs_.*"
+          - "^primary_itf_file_content$"
         keys_to_store:
           - "^kvm_on_.*"
           - ".*_master_running_kvm$"
@@ -164,10 +167,8 @@
           - "^ip_.*fix$"
           - "^master_ip$"
           - "^prov_vlan_id$"
-          - "^active_bridges.*"
-          - "^primary_itf$"
-          - "^secondary_itf$"
-          - "^.*active_ether_itfs$"
+          - "^primary_itf.*"
+          - "^.*_net_itf.*"
           - "^vlans_list$"
           - "^ansible_all_ipv4_addresses$"
           - "^ansible_default_ipv4$"
