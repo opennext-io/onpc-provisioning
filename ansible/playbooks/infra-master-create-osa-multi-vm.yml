@@ -38,7 +38,7 @@
 
     - name: Retrieving infra-master inventory_hostname
       set_fact:
-        infra_hostname: "{{ hostvars[inventory_hostname]['groups']['infra-master'][0] }}"
+        infra_hostname: "{{ hostvars[inventory_hostname]['groups']['infra-hosts'][0] }}"
 
     - name: Retrieving infra-master facts
       set_fact:
