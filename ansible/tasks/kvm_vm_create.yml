@@ -147,19 +147,20 @@
 - name: Checking handling of {{ vmname }} VM by VBMC IPMI agent
   command: "vbmc show {{ vmname }}"
   environment: "{{ vbmc_venv }}"
-  ignore_errors: yes
+  failed_when: ((vm_already_running.rc == 1 and vm_already_running.stderr_lines | select('match', 'No domain with matching name ' ~ vmname ~ ' was found') | list | length == 0) or
+    (vm_already_running.rc == 0 and vm_already_running.stdout_lines | select('match', '^\\|\\s\\s*domain_name\\s\\s*\\|\\s\\s*' ~ vmname ~ '\\s\\s*\\|$') | list | length == 0))
   changed_when: false
   register: vm_already_running
 
 - name: Registering {{ vmname }} VM to VBMC IPMI agent
   command: "vbmc add {{ vmname }} --port {{ registration_infos.bmc_port }}"
   environment: "{{ vbmc_venv }}"
-  when: vm_already_running.failed
+  when: vm_already_running.rc == 1
 
 - name: Setting VBMC status string for {{ vmname }} VM
   set_fact:
     vbmc_vm_status_str: "{{ vm_already_running.stdout_lines | select('match', '\\|\\s\\s*status\\s\\s*\\|.*') | list }}"
-  when: not vm_already_running.failed
+  when: vm_already_running.rc == 0
 
 - name: Setting VBMC status for {{ vmname }} VM
   set_fact:
@@ -169,7 +170,7 @@
 - name: Starting VBMC IPMI agent for {{ vmname }} VM
   command: "vbmc start {{ vmname }}"
   environment: "{{ vbmc_venv }}"
-  when: vm_already_running.failed or ( vbmc_vm_status is defined and vbmc_vm_status == 'down')
+  when: vm_already_running.rc == 1 or ( vbmc_vm_status is defined and vbmc_vm_status == 'down')
 
 - name: Checking {{ vmname }} VM status in register-helper utility agent
   uri:
