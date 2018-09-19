@@ -116,6 +116,11 @@
     unhandled_itfs: "{{ ansible_interfaces | difference(primary_net_itf + secondary_net_itfs + handled_itfs) | reject('match', '^bond.*') | reject('match', '^virbr.*') | difference(additional_itfs | default([])) | list }}"
   when: is_host_to_be_modified
 
+- name: Setting fact for non-handled network interfaces (infra master running KVM)
+  set_fact:
+    unhandled_itfs: "{{ unhandled_itfs | reject('match', '^vnet.*') | list }}"
+  when: is_host_to_be_modified and infra_master_running_kvm
+
 - name: Removing already handled interfaces and bridges
   set_fact:
     unhandled_itfs: "{% set sel = [] %}{% for k in unhandled_itfs %}{% set itf = hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}) %}{% if itf.get('type', '') == 'ether' and k.split('.')[0] not in handled_itfs %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
