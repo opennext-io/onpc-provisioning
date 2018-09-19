@@ -25,6 +25,9 @@
 
     - import_tasks: ../tasks/operational_informations.yml
 
+    - include_vars: ../vars/infra-master-kvm_vars.yml
+      when: infra_master_running_kvm
+
 - hosts: kvm-master
   become: no
 
