@@ -117,7 +117,7 @@
         keys_to_store:
           - "^.*vlans_ips"
           - "^cur_interfaces$"
-          - "^.*_dhcp_net_itf.*$"
+          - "^.*_system_net_itfs$"
           - "^osa_vlans$"
           - "^osa_nodes.*$"
           - "^ansible_br_mgmt$"
