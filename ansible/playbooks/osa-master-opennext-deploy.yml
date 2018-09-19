@@ -45,21 +45,21 @@
         is_aio: "{{ hostvars.get('infra-master', {}).get('groups', {}).get('osa-nodes', []) | length == 1 | bool }}"
         # Could also be osa-master instead of infra-master
 
+    - fail: msg="Missing ip_prefix information"
+      when: ip_prefixes | length != 1
+
     - name: Setting extra facts
       set_fact:
         osa_user_conf_file: "{{ osa_deploy_conf_path }}/user_variables.yml"
         onpc_user_conf_file: "{{ osa_deploy_conf_path }}/user_onpc_variables.yml"
         onpc_model_repo_dir: "{{ dest_repo_dir }}/onpc-basic-model"
-
-    - fail: msg="Missing ip_prefix information"
-      when: ip_prefixes | length != 1
+        ip_prefix: "{{ ip_prefixes[0] }}"
 
     - fail: msg="isolated_network option can only be used in AIO mode"
       when: not is_aio and isolated_network is defined and isolated_network | bool
 
-    - name: Setting environment facts
+    - name: Setting proxy environment facts
       set_fact:
-        ip_prefix: "{{ ip_prefixes[0] }}"
         proxy_env: {
           'http_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
           'https_proxy': "http://{{ proxy_host }}:{{ proxy_port | default(3128) }}",
@@ -227,9 +227,13 @@
       set_fact:
         osa_first_controller_node_name:  "{{ controller_hosts_list | sort | first }}"
 
+    - name: Retrieving primary network interface
+      set_fact:
+        primary_net_itf: "{% set sel = [] %}{% for k in hostvars.get(osa_first_controller_node_name, {}).get('ansible_interfaces', []) %}{% if hostvars.get(osa_first_controller_node_name, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(ip_prefix + '\\..*') %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+
     - name: Setting VIP facts
       set_fact:
-        external_public_vip_itf: "{{ osa_nodes_infos[osa_first_controller_node_name]['primary_dhcp_net_itf'][0] }}"
+        external_public_vip_itf: "{{ primary_net_itf[0] }}"
         internal_public_vip_address: "{{ hostvars[osa_first_controller_node_name]['internal_public_vip_address'] }}"
         external_public_vip_address: "{{ hostvars[osa_first_controller_node_name]['external_public_vip_address'] }}"
 
