@@ -116,10 +116,15 @@
     unhandled_itfs: "{{ ansible_interfaces | difference(primary_net_itf + secondary_net_itfs + handled_itfs) | reject('match', '^bond.*') | reject('match', '^virbr.*') | difference(additional_itfs | default([])) | list }}"
   when: is_host_to_be_modified
 
-- name: Setting fact for non-handled network interfaces (infra master running KVM)
+- name: Setting fact for non-handled network interfaces (infra-master running KVM)
   set_fact:
     unhandled_itfs: "{{ unhandled_itfs | reject('match', '^vnet.*') | list }}"
-  when: is_host_to_be_modified and infra_master_running_kvm
+  when: is_host_to_be_modified and infra_master_running_kvm and node_type == 'infra-master'
+
+- name: Setting fact for non-handled network interfaces (osa-nodes)
+  set_fact:
+    unhandled_itfs: "{{ unhandled_itfs | difference(['br-vlan-veth', 'eth12']) | list }}"
+  when: is_host_to_be_modified and node_type == 'osa-nodes'
 
 - name: Removing already handled interfaces and bridges
   set_fact:
