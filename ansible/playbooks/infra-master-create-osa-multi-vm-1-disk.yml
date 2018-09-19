@@ -1,0 +1,208 @@
+# Multi VMs provisioning (single disk VMs)
+#
+# This is a slight alternative to the infra-master-create-osa-aio-vm.yml
+# where the AIO VM only has one single bigger disk attached
+# Please note also that this requires base_system_disk_device: /dev/vda
+# parameter to be changed:
+# See diff infra-master-create-osa-multi-vm.yml infra-master-create-osa-multi-vm-1-disk.yml
+#
+---
+# Copyright (c) 2018, OpenNext SAS
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- hosts: infra-master
+  become: no
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars/infra-master-deploy-bifrost_vars.yml
+
+  tasks:
+
+    - import_tasks: ../tasks/operational_informations.yml
+
+    - include_vars: ../vars/infra-master-kvm_vars.yml
+      when: infra_master_running_kvm
+
+- hosts: kvm-master
+  become: no
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+
+  tasks:
+
+    - include_vars: ../vars/infra-master-kvm_vars.yml
+      when: infra_master_running_kvm
+
+    - name: Retrieving infra-master inventory_hostname
+      set_fact:
+        infra_hostname: "{{ hostvars[inventory_hostname]['groups']['infra-hosts'][0] }}"
+
+    - name: Retrieving infra-master facts
+      set_fact:
+        br_prov_ip: "{{ hostvars[infra_hostname]['br_prov_ip'] }}"
+        vbmc_venv: "{{ hostvars[infra_hostname].get('vbmc_venv', {}) }}"
+        registration_uri: "{{ hostvars[infra_hostname].get('registration_uri') }}"
+        registration_ip: "{{ hostvars[infra_hostname].get('registration_ip') }}"
+        registration_port: "{{ hostvars[infra_hostname].get('registration_port') }}"
+        status_uri: "{{ hostvars[infra_hostname].get('status_uri') }}"
+        clouds: "{{ hostvars[infra_hostname].get('clouds', {}) }}"
+        ansible_master_running_kvm: "{{ hostvars[infra_hostname]['ansible_local']['opennext_infra_master_configure_system'][infra_hostname].get('ansible_master_running_kvm', false) }}"
+
+    - name: Retrieving infra-master facts
+      set_fact:
+        vbmc_ip: "{{ hostvars[inventory_hostname]['groups']['kvm-master'][0] }}"
+      when: ansible_master_running_kvm
+
+    - include_tasks: ../tasks/kvm_vm_create.yml
+      vars:
+        vmname: "{{ vm_item.name }}"
+        vmcpus: "{{ vm_item.cpus }}"
+        vmmemorysizegb: "{{ vm_item.mem }}"
+        vmdisksnb: "{{ vm_item.disks | default(1) }}"
+        vmdisksizegb: "{{ vm_item.hdd }}"
+        vncport: "{{ vm_item.vnc }}"
+        vbmc_port: "{{ vm_item.bmc }}"
+        vmmacprefix: "52:54:01"
+        roles: "{{ vm_item.roles }}"
+        tags: "{{ vm_item.tags }}"
+      with_items:
+        - {
+          name: "{{ osa_master_name | default('osa-master') }}",
+          cpus: "{{ osa_master_cpus | default(1) | int }}",
+          mem: "{{ osa_master_mem | default(4) | int }}",
+          disks: "{{ osa_master_disks | default(1) | int }}",
+          hdd: "{{ osa_master_disk_size | default(60) | int }}",
+          vnc: "{{ osa_master_vnc | default(5901) | int }}",
+          bmc: "{{ osa_master_bmc | default(6001) | int }}",
+          roles: ['osa-master'],
+          tags: "{{ osa_master_tags | default({ 'caracteristics': ['vm', 'multi', 'small', 'single-disk', 'non-ssd'], 'disks': { 'count': osa_master_disks | default(1) | int, 'type': 'ide' }}) }}",
+        }
+        - {
+          name: "{{ infra1_name | default('infra1') }}",
+          cpus: "{{ osa_nodes_cpus | default(8) | int }}",
+          mem: "{{ osa_nodes_mem | default(12) | int }}",
+          disks: "{{ osa_nodes_disks | default(1) | int }}",
+          hdd: "{{ osa_nodes_disk_size | default(600) | int }}",
+          vnc: "{{ infra1_vnc | default(5902) | int }}",
+          bmc: "{{ infra1_bmc | default(6002) | int }}",
+          roles: "{{ infra1_roles | default(['control', 'compute', 'storage']) }}",
+          tags: "{{ infra1_tags | default({ 'caracteristics': ['vm', 'multi', 'medium', 'multi-disks', 'non-ssd'], 'disks': { 'count': osa_nodes_disks | default(2) | int, 'type': 'ide' }}) }}",
+        }
+        - {
+          name: "{{ infra2_name | default('infra2') }}",
+          cpus: "{{ osa_nodes_cpus | default(8) | int }}",
+          mem: "{{ osa_nodes_mem | default(12) | int }}",
+          disks: "{{ osa_nodes_disks | default(1) | int }}",
+          hdd: "{{ osa_nodes_disk_size | default(600) | int }}",
+          vnc: "{{ infra2_vnc | default(5903) | int }}",
+          bmc: "{{ infra2_bmc | default(6003) | int }}",
+          roles: "{{ infra2_roles | default(['control', 'compute', 'storage']) }}",
+          tags: "{{ infra2_tags | default({ 'caracteristics': ['vm', 'multi', 'medium', 'multi-disks', 'non-ssd'], 'disks': { 'count': osa_nodes_disks | default(2) | int, 'type': 'ide' }}) }}",
+        }
+        - {
+          name: "{{ infra3_name | default('infra3') }}",
+          cpus: "{{ osa_nodes_cpus | default(8) | int }}",
+          mem: "{{ osa_nodes_mem | default(12) | int }}",
+          disks: "{{ osa_nodes_disks | default(1) | int }}",
+          hdd: "{{ osa_nodes_disk_size | default(600) | int }}",
+          vnc: "{{ infra3_vnc | default(5904) | int }}",
+          bmc: "{{ infra3_bmc | default(6004) | int }}",
+          roles: "{{ infra3_roles | default(['control', 'compute', 'storage']) }}",
+          tags: "{{ infra3_tags | default({ 'caracteristics': ['vm', 'multi', 'medium', 'multi-disks', 'non-ssd'], 'disks': { 'count': osa_nodes_disks | default(2) | int, 'type': 'ide' }}) }}",
+        }
+      loop_control:
+        loop_var: vm_item
+
+- hosts: infra-master
+  become: no
+
+  vars_files:
+    - ../vars/infra-master-configure-system_vars.yml
+    - ../vars/infra-master-deploy-bifrost_vars.yml
+
+  tasks:
+
+    - import_tasks: ../tasks/nodes_get_status.yml
+      vars:
+        node_status_delay: 30
+        node_status_retries: 20
+        nodes_nb: 4
+        node_prov_status_delay: 30
+        node_prov_status_retries: "{{ 120 if (ansible_master_running_kvm) else 80 | int }}"
+
+    - name: Retrieving infra-master facts
+      set_fact:
+        kvm_prov_bridge_itf: "{{ kvm_prov_bridge_itf | default(provisioning_bridge_itf | default('br-prov')) }}"
+      when: ansible_master_running_kvm
+
+    - name: Extracting VMs names from facts
+      set_fact:
+        node_infos_init: "{{ hostvars[inventory_hostname].registered_status.json }}"
+        node_names: "{{ hostvars[inventory_hostname].registered_status.json | json_query('keys(@)') }}"
+        node_ips: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/all/interfaces/eth0/ip') | list }}"
+        int_vip_addr: "{{ hostvars[inventory_hostname].ansible_br_mgmt.ipv4 }}"
+        pub_addr: "{{ hostvars[inventory_hostname].ansible_br_prov.ipv4 }}"
+        registered_status_init: "{{ registered_status }}"
+        registered_machines_init: "{{ registered_machines }}"
+        # This should be in sync with the disks: parameter number passed to kvm_vm_create.yml task
+        base_system_disk_device: /dev/vda
+        base_system_disk_space: 320.0
+        osa_partition_size: 40.0
+        osa_logs_partition_size: 50.0
+        lxc_partition_size: 60.0
+        storage_partition_size: 70.0
+        compute_partition_size: 80.0
+        swap_partition_size: 16.0
+
+    - name: Waiting for VMs to be reachable by SSH
+      wait_for:
+        sleep: 60
+        # Need to increase timeout to 2h because on KVM/libvirt, Ironic provisioning
+        # takes longer when several VMs are bootstrapped in //
+        timeout: 7200
+        port: 22
+        host: '{{ item }}'
+        search_regex: OpenSSH
+      with_items: "{{ node_ips }}"
+
+    - name: Creating OSA inventory file
+      template:
+        src: ../templates/inventory.cfg.j2
+        dest: "{{ systemuserhome }}/osa-inventory"
+      vars:
+        # TODO next variables to be retrieved from facts
+        infra_master_ip: "{{ registration_ip }}"
+        osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get('osa-master').get('extra/all/interfaces/eth0/ip') }}"
+        osa_nodes: "{{ node_names | difference(['osa-master']) }}"
+        bridge_itf: "{{ kvm_prov_bridge_itf }}"
+        ext_pub_vip_addr: "{{ (pub_addr['network'] ~ '/' ~ pub_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
+        int_pub_vip_itf: "br-mgmt"
+        int_pub_vip_addr: "{{ (int_vip_addr['network'] ~ '/' ~ int_vip_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
+
+    - import_tasks: ../tasks/nodes_get_status.yml
+
+    - name: Extracting VMs names from facts
+      set_fact:
+        node_infos: "{{ hostvars[inventory_hostname].registered_status.json }}"
+
+    - include_tasks: ../tasks/store_facts.yml facts_file="opennext_infra_master_create_osa_nodes"
+      vars:
+        keys_to_store:
+          - "^node_infos.*$"
+          - "^node_ips$"
+          - "^node_names$"
+          - "^registered_machines.*$"
+          - "^registered_status.*$"
