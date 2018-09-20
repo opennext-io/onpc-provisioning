@@ -97,7 +97,7 @@
     - { role: configure-ntp, node_type: infra-master }
     - { role: configure-network-interfaces,
         node_type: infra-master,
-        primary_itf_prefix: "{{ (internal_primary_itf_ip | default(inventory_hostname)).split('.')[:-1] | join('.') }}"
+        primary_itf_prefix: "{{ (internal_primary_itf_ip | default(hostvars[inventory_hostname]['ansible_host'])).split('.')[:-1] | join('.') }}"
       }
 
   post_tasks:
