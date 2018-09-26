@@ -311,7 +311,7 @@
     - name: Setting OpenNext facts
       set_fact:
         hapk_int_vip_cidr: "{{ internal_public_vip_address }}"
-        hapk_ext_vip_cidr: "{{ external_public_vip_address }}/32"
+        hapk_ext_vip_cidr: "{{ external_public_vip_address }}{% if external_public_vip_address.split('/') | length < 2 %}/32{% endif %}"
         hapk_ext_itf: "{{ external_public_vip_itf }}"
 
     - include_tasks: ../tasks/remote_templating.yml
