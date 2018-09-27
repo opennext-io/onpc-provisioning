@@ -139,7 +139,7 @@
 
     - name: Computing Keystone Options
       set_fact:
-        keystone_opts: " -e enable_keystone=true -e noauth_mode=false"
+        keystone_opts: " -e enable_keystone=true -e noauth_mode=false -e use_public_urls=true"
       when: keystone
 
     - name: Making sure libvirt service is running
