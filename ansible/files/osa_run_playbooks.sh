@@ -23,6 +23,10 @@ ansible galera_container -m shell -a "mysql -h localhost -e 'show status like \"
 if [ -r healthcheck-infrastructure.yml ]; then
 	openstack-ansible healthcheck-infrastructure.yml -e rabbit_test_prompt=no
 fi
+# In rocky some playbooks have been added for extra checks
+if [ -r healthcheck-openstack.yml ]; then
+	openstack-ansible healthcheck-openstack.yml
+fi
 # Run OpenStack setup
 openstack-ansible setup-openstack.yml
 
