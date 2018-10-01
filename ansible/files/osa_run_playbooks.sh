@@ -21,7 +21,7 @@ openstack-ansible setup-infrastructure.yml
 ansible galera_container -m shell -a "mysql -h localhost -e 'show status like \"%wsrep_cluster_%\";'"
 # In queens some playbooks have been added for extra checks
 if [ -r healthcheck-infrastructure.yml ]; then
-	openstack-ansible healthcheck-infrastructure.yml
+	openstack-ansible healthcheck-infrastructure.yml -e rabbit_test_prompt=no
 fi
 # Run OpenStack setup
 openstack-ansible setup-openstack.yml
