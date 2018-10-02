@@ -108,7 +108,7 @@
 
     - name: Setting fact for local IPs (list)
       set_fact:
-        local_ips: "[ \'{{ master_ip }}\', \'{{ internal_primary_itf_ip | default(hostvars[inventory_hostname]['ansible_host']) }}\' ]"
+        local_ips: "[ \'{{ master_ip }}\', \'{{ internal_primary_itf_ip | default(hostvars[inventory_hostname]['ansible_host']) }}\'{% if ansible_master_running_kvm is defined and ansible_master_running_kvm | bool %}, \'{{ hostvars['kvm-master']['ansible_host'] }}\'{% endif %} ]"
 
     - name: Setting fact for local IPs (string)
       set_fact:
