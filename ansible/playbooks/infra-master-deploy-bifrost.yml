@@ -53,6 +53,7 @@
         VENV: "{{ venv }}"
         https_proxy: ""
         USE_PYTHON3: "{{ use_python3 | lower }}"
+        ANSIBLE_PIP_VERSION: "2.6.4"
       register: setup_result
 
     - name: Retrieving Bifrost deployment informations
