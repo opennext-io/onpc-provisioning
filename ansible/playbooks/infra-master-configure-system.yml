@@ -106,17 +106,24 @@
       include_tasks: ../tasks/kvm_host_configure.yml
       when: infra_master_running_kvm
 
+    - name: Setting fact for local IPs (list)
+      set_fact:
+        local_ips: "[ \'{{ master_ip }}\', \'{{ internal_primary_itf_ip | default(hostvars[inventory_hostname]['ansible_host']) }}\' ]"
+
+    - name: Setting fact for local IPs (string)
+      set_fact:
+        local_ips: "{{ local_ips | list | unique | join(',') }}"
+
     - name: Configuring System Wide Proxy
       lineinfile:
         path: /etc/environment
         backrefs: yes
         regexp: '^no_proxy="(.*)"$'
-        line: 'no_proxy="\1,{{ ip_prefix }}.0/{{ ip_netmask_bits }}"'
+        line: 'no_proxy="\1,{{ local_ips }}"'
         state: present
         owner: root
         group: root
         mode: 0644
-      when: itf is defined
 
     - name: Cleaning Up Hosts File
       lineinfile:
