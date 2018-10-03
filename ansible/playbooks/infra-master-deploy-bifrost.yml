@@ -140,7 +140,7 @@
 
     - name: Computing Keystone Options
       set_fact:
-        keystone_opts: " -e enable_keystone=true -e noauth_mode=false -e use_public_urls=true"
+        keystone_opts: " -e enable_keystone=true -e noauth_mode=false -e use_public_urls=true -e public_ip={{ hostvars[inventory_hostname]['ansible_host'] }} -e private_ip={{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).get('infra-master', {}).get('master_ip') }}"
       when: keystone
 
     - name: Making sure libvirt service is running
