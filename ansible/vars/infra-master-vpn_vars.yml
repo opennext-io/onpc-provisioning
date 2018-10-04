@@ -19,7 +19,7 @@ openvpn_etcdir: /etc/openvpn
 openvpn_keydir: "{{ openvpn_etcdir }}/keys"
 openvpn_use_external_repo: false
 openvpn_use_system_easyrsa: true
-openvpn_host: "{{ inventory_hostname }}"
+openvpn_host: "{{ ansible_host }}"
 openvpn_port: 1194
 openvpn_proto: udp
 openvpn_dev: tun
@@ -44,7 +44,7 @@ openvpn_key_org: OpenNext SAS
 openvpn_key_ou: ""
 openvpn_key_email: admin@opennext.io
 openvpn_key_size: 1024
-openvpn_clients: ["clients-{{ inventory_hostname }}"]
+openvpn_clients: ["clients-{{ ansible_host }}"]
 openvpn_clients_revoke: []
 openvpn_use_pam: no
 openvpn_use_pam_users: []
