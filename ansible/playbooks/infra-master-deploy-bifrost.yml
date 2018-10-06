@@ -25,6 +25,9 @@
     - include_vars: ../vars/infra-master-kvm_vars.yml
       when: infra_master_running_kvm
 
+    - fail: msg='Non baremetal can not use primary network interface for Bifrost'
+      when: not baremetal_provisioning and use_baremetal_primary_itf
+
     - name: Retrieving Bifrost GitHub Repository
       git:
         repo: https://github.com/opennext-io/bifrost
@@ -140,7 +143,7 @@
 
     - name: Computing Keystone Options
       set_fact:
-        keystone_opts: " -e enable_keystone=true -e noauth_mode=false -e use_public_urls=true -e public_ip={{ hostvars[inventory_hostname]['ansible_host'] }} -e private_ip={{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).get('infra-master', {}).get('master_ip') }}"
+        private_ip: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).get('infra-master', {}).get('master_ip') }}"
       when: keystone
 
     - name: Making sure libvirt service is running
@@ -171,6 +174,11 @@
 
     - import_tasks: ../tasks/baremetal_bifrost_config.yml
       when: baremetal_provisioning
+
+    - name: Computing Keystone Options
+      set_fact:
+        keystone_opts: " -e enable_keystone=true -e noauth_mode=false -e use_public_urls=true -e public_ip={{ hostvars[inventory_hostname]['ansible_host'] }} -e private_ip={{ private_ip }}"
+      when: keystone
 
     - name: Retrieving all deploy options
       set_fact:

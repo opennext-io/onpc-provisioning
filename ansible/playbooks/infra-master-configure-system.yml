@@ -29,6 +29,9 @@
 
   pre_tasks:
 
+    - fail: msg='Non baremetal can not use primary network interface for Bifrost'
+      when: not baremetal_provisioning and use_baremetal_primary_itf
+
     - name: Setting default facts from inventory or variables
       set_fact:
         infra_master_running_kvm: "{{ infra_master_running_kvm | default(kvm_on_infra_master) | default(true) | bool }}"

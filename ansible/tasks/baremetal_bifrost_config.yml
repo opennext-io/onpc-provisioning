@@ -14,9 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Retrieving baremetal provisioning interface from network infos
+- name: Retrieving baremetal provisioning interface (primary)
   set_fact:
     itf: "{{ baremetal_itf | default(host_bridge_itf) }}"
+  when: use_baremetal_primary_itf
+
+- name: Retrieving baremetal provisioning interface (secondary)
+  set_fact:
+    itf: "{{ baremetal_itf | default(kvm_prov_bridge_itf) | default('br-prov') }}"
+  when: not use_baremetal_primary_itf
+
+- name: Setting additional facts
+  set_fact:
     opennext_opts: "{{ opennext_opts }} -e inventory_dhcp=true"
     ntp_conf_file: "/etc/ntp.conf"
     resolv_conf_file: "/etc/resolv.conf"
@@ -28,7 +37,7 @@
 
 - name: Retrieving baremetal provisioning interface system informations
   set_fact:
-    itf_name: "{{ prov_sys_infos.get('interfaces', [])[0] }}"
+    itf_name: "{{ prov_sys_infos.get('interfaces', [])[0].split('.')[0] }}"
   when: prov_sys_infos.get('type', '') == 'bridge'
 
 - name: Getting interfaces infos
@@ -36,8 +45,14 @@
     dest: "/etc/network/interfaces.d/{{ itf_name }}.cfg"
   register: prov_interface_infos
 
-- name: Setting additionial baremetal provisioning options (router, DNS servers, IP prefix)
+- name: Setting additional baremetal provisioning options (router, DNS servers, IP prefix)
   set_fact:
+    private_ip: "{{ prov_sys_infos.get('ipv4', {}).get('address', '') }}"
+  when: use_baremetal_primary_itf
+
+- name: Setting additional baremetal provisioning options (router, DNS servers, IP prefix)
+  set_fact:
+    private_ip: "{{ prov_sys_infos.get('ipv4', {}).get('address', '') }}"
     default_router: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('gateway', '') }}"
     # Need to reject empty strings from splitted results
     dns_servers: "{{ prov_interface_infos.get('ifaces', {}).get(itf, {}).get('dns-nameservers', '').split(' ') | reject('equalto', '') | list }}"
@@ -49,7 +64,7 @@
 # somewhere else
 
 # When interface IP prefix is empty retrieve from running system informations
-- name: Setting additionial baremetal provisioning options (router)
+- name: Setting additional baremetal provisioning options (router)
   set_fact:
     itf_ip_prefix: "{{ prov_sys_infos.get('ipv4', {}).get('address', '').split('.')[0:3] | join('.') }}"
   when: itf_ip_prefix | length == 0
@@ -60,7 +75,7 @@
     shell: awk '$2=="00000000"{for (i=7;i>=0;i-=2) printf "%d.",strtonum("0x" substr($3,i,2));exit}' /proc/net/route | sed -e 's/\.$//'
     register: default_router_infos
 
-  - name: Setting additionial baremetal provisioning options (router)
+  - name: Setting additional baremetal provisioning options (router)
     set_fact:
       default_router: "{{ default_router_infos.stdout }}"
   when: default_router | length == 0

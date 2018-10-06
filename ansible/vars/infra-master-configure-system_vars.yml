@@ -33,6 +33,8 @@ dhcptimeout: "{{ dhcp_timeout | default(10) }}"
 infra_master_running_kvm: "{{ kvm_on_infra_master | default(true) | bool }}"
 ansible_master_running_kvm: "{{ kvm_on_ansible_master | default(false) | bool }}"
 baremetal_provisioning: "{{ real_baremetal | default(false) | bool }}"
+use_baremetal_primary_itf_default: "{% if real_baremetal is defined %}{{ real_baremetal }}{% else %}false{% endif %}"
+use_baremetal_primary_itf: "{{ use_primary_itf | default(use_baremetal_primary_itf_default) | bool }}"
 host_bridge_itf: "{{ primary_host_bridge_itf | default('br-host') }}"
 
 # List of supported (known) roles
