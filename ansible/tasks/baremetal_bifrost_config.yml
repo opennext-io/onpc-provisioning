@@ -116,7 +116,7 @@
   - name: Retrieving NTP servers defined in {{ ntp_conf_file }}
     set_fact:
       ntp_servers: "{{ ntp_servers_ips.get('results', []) | map(attribute='ansible_facts') | map(attribute='ntp_server_ip') | list }}"
-  when: ntp_servers | length == 0
+  when: ntp_conf_stat.stat.exists and ntp_servers | default([]) | length == 0
 
 - name: Setting extra option for default router in Bifrost/Ironic dnsmasq configuration
   set_fact:
