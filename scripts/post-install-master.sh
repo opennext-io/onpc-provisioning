@@ -44,7 +44,9 @@ if egrep -q 'clock-setup/ntp-server="' /proc/cmdline; then
 fi
 
 # Retrieve proxy information from installation
-proxy=$(grep Acquire::http::Proxy /etc/apt/apt.conf | sed -e 's/";$//' | awk -F/ '{print $3}')
+if [ -f /etc/apt/apt.conf ]; then
+	proxy=$(grep Acquire::http::Proxy /etc/apt/apt.conf | sed -e 's/";$//' | awk -F/ '{print $3}')
+fi
 # If exists, make it default proxy for all processes/envs on this machine
 if [ -n "$proxy" ]; then
 	echo -e "http_proxy=http://${proxy}/\nftp_proxy=ftp://${proxy}/\nhttps_proxy=https://${proxy}/\nno_proxy=\"localhost,127.0.0.1\"" >>/etc/environment
@@ -155,8 +157,8 @@ if type dmidecode >/dev/null 2>&1; then
 fi
 # dmidecode is available and output is used to do some virtualization specific steps
 case "$hosttype" in
-	VirtualBox) vbox;;
-	*)      echo -e "\nWARNING $(basename $0): unsupported platform $hosttype\n";;
+	VirtualBox)	vbox;;
+	*)		echo -e "\nWARNING $(basename $0): unsupported platform $hosttype\n";;
 esac
 
 # Regenerate some initrd files if missing
