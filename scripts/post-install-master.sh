@@ -5,6 +5,8 @@ set -ex
 # Trace everything into specific log file
 exec > >(tee -i /var/log/"$(basename "$0" .sh)"_"$(date '+%Y-%m-%d_%H-%M-%S')".log) 2>&1
 
+cat /proc/cmdline > /var/log/onpc_install_cmdline.log
+
 # Store boot arguments in environment
 # Need to exclude nameservers and ntp-server due to the potentiality of multiple values
 # netcfg/get_nameservers="IP1 IP2 IP3"
@@ -16,11 +18,13 @@ if egrep -q 'clock-setup/ntp-server="' /proc/cmdline; then
 	ntpservers=$(cat /proc/cmdline | egrep 'clock-setup/ntp-server="' | sed -e 's?.*clock-setup/ntp-server="\([^"]*\)".*?\1?')
 	NTPDATE_CONF_FILE=/etc/default/ntpdate
 	if [ -f $NTPDATE_CONF_FILE ]; then
+		cp $NTPDATE_CONF_FILE "$NTPDATE_CONF_FILE".ORIG
 		sed -i -e "s/NTPSERVERS=\".*\"/NTPSERVERS=\"$ntpservers\"/" \
 			$NTPDATE_CONF_FILE
 	fi
 	NTPD_CONF_FILE=/etc/ntp.conf
 	if [ -f $NTPD_CONF_FILE ]; then
+		cp $NTPD_CONF_FILE "$NTPD_CONF_FILE".ORIG
 		# Comment out all server and pool entries and add others
 		sed -i -e 's/^server /#server /' -e 's/^pool /#pool /' \
 			-e '/ntp server as a fallback/i# Custom ntp server list' \
@@ -32,6 +36,7 @@ if egrep -q 'clock-setup/ntp-server="' /proc/cmdline; then
 	fi
 	CHRONY_CONF_FILE=/etc/chrony/chrony.conf
 	if [ -f $CHRONY_CONF_FILE ]; then
+		cp $CHRONY_CONF_FILE "$CHRONY_CONF_FILE".ORIG
 		# Comment out all server and pool entries and add others
 		sed -i -e 's/^server /#server /' -e 's/^pool /#pool /' \
 			-e '/# Look here for the admin password needed for chronyc/i# Custom ntp server list\n\nmakestep 1 -1\n' \
