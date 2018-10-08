@@ -13,15 +13,32 @@ eval $(cat /proc/cmdline | tr ' ' '\n' | grep '=' | egrep -v 'netcfg/get_nameser
 
 # Update NTP configuration if necessary
 if egrep -q 'clock-setup/ntp-server="' /proc/cmdline; then
-	ntpservers=$(cat /proc/cmdline | sed -e 's?.*clock-setup/ntp-server="\([^"]*\)".*?\1?')
-	if [ -f /etc/ntp.conf ]; then
+	ntpservers=$(cat /proc/cmdline | egrep 'clock-setup/ntp-server="' | sed -e 's?.*clock-setup/ntp-server="\([^"]*\)".*?\1?')
+	NTPDATE_CONF_FILE=/etc/default/ntpdate
+	if [ -f $NTPDATE_CONF_FILE ]; then
+		sed -i -e "s/NTPSERVERS=\".*\"/NTPSERVERS=\"$ntpservers\"/" \
+			$NTPDATE_CONF_FILE
+	fi
+	NTPD_CONF_FILE=/etc/ntp.conf
+	if [ -f $NTPD_CONF_FILE ]; then
 		# Comment out all server and pool entries and add others
 		sed -i -e 's/^server /#server /' -e 's/^pool /#pool /' \
 			-e '/ntp server as a fallback/i# Custom ntp server list' \
-			/etc/ntp.conf
+			$NTPD_CONF_FILE
 		for n in $ntpservers; do
 			sed -i -e "/# Custom ntp server list/aserver $n" \
-				/etc/ntp.conf
+				$NTPD_CONF_FILE
+		done
+	fi
+	CHRONY_CONF_FILE=/etc/chrony/chrony.conf
+	if [ -f $CHRONY_CONF_FILE ]; then
+		# Comment out all server and pool entries and add others
+		sed -i -e 's/^server /#server /' -e 's/^pool /#pool /' \
+			-e '/# Look here for the admin password needed for chronyc/i# Custom ntp server list\n\nmakestep 1 -1\n' \
+			$CHRONY_CONF_FILE
+		for n in $ntpservers; do
+			sed -i -e "/# Custom ntp server list/aserver $n iburst" \
+				$CHRONY_CONF_FILE
 		done
 	fi
 fi
