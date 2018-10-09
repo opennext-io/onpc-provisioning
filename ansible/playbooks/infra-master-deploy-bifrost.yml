@@ -143,7 +143,7 @@
 
     - name: Computing Keystone Options
       set_fact:
-        private_ip: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).get('infra-master', {}).get('master_ip') }}"
+        private_ip: "{{ hostvars.get('infra-master', {}).get('ansible_local', {}).get('opennext_infra_master_configure_system', {}).get('infra-master', {}).get('prov_itf_ip') }}"
       when: keystone
 
     - name: Making sure libvirt service is running

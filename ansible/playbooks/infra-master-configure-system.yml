@@ -29,7 +29,8 @@
 
   pre_tasks:
 
-    - fail: msg='Non baremetal can not use primary network interface for Bifrost'
+    - name: Checking non baremetal interface
+      fail: msg='Non baremetal can not use primary network interface for Bifrost'
       when: not baremetal_provisioning and use_baremetal_primary_itf
 
     - name: Setting default facts from inventory or variables
@@ -38,7 +39,8 @@
         ansible_master_running_kvm: "{{ ansible_master_running_kvm | default(kvm_on_ansible_master) | default(false) | bool }}"
         baremetal_provisioning: "{{ baremetal_provisioning | default(real_baremetal) | default(false) | bool }}"
 
-    - fail: msg="infra_master_running_kvm and ansible_master_running_kvm can not be both set to true"
+    - name: Checking infra-master KVM settings
+      fail: msg="infra_master_running_kvm and ansible_master_running_kvm can not be both set to true"
       when: infra_master_running_kvm and ansible_master_running_kvm
 
     - include_vars: ../vars/infra-master-kvm_vars.yml
@@ -60,23 +62,69 @@
         is_host_to_be_modified: true
         ip_prefix: "{{ ip_prefix | default('20.20.20') }}"
         ip_suffix: "{{ ip_suffix | default(1) }}"
-        ip_netmask_bits: "{{ ip_netmask_bits | default(24) }}"
+        primary_itf_ip: "{{ internal_primary_itf_ip | default(hostvars[inventory_hostname]['ansible_host']) }}"
+
+    - name: Verifying coherence of network informations
+      block:
+        - set_fact:
+            prov_itf_network_cidr1: '{{ ip_prefix }}.{{ ip_suffix }}/{{ ip_netmask_bits }}'
+            prov_itf_network_cidr2: '{{ ip_prefix }}.{{ ip_suffix }}/{{ ip_netmask }}'
+        - fail: msg='Incoherent network informations {{prov_itf_network_cidr1 }} vs {{ prov_itf_network_cidr2 }}'
+          when: (prov_itf_network_cidr1 | ipaddr('network') != prov_itf_network_cidr2 | ipaddr('network') or
+                 prov_itf_network_cidr1 | ipaddr('prefix') != prov_itf_network_cidr2 | ipaddr('prefix'))
+      when: ip_netmask_bits is defined and ip_netmask is defined
+
+    - name: Setting default IP netmask facts values
+      set_fact:
+        ip_netmask_bits: 24
+      when: ip_netmask_bits is undefined and ip_netmask is undefined
+
+    - name: Setting default IP netmask facts values (bits)
+      set_fact:
+        prov_itf_network_cidr: '{{ ip_prefix }}.{{ ip_suffix }}/{{ ip_netmask_bits }}'
+      when: ip_netmask_bits is defined
+
+    - name: Setting default IP netmask facts values (bits)
+      set_fact:
+        prov_itf_network_cidr: '{{ ip_prefix }}.{{ ip_suffix }}/{{ ip_netmask }}'
+      when: ip_netmask is defined
+
+    - name: Computing extra IP informations (primary + master)
+      set_fact:
+        prov_itf_ip: '{{ ip_prefix }}.{{ ip_suffix }}'
+        prov_itf_network_cidr: "{{ prov_itf_network_cidr | ipaddr('network') }}/{{ prov_itf_network_cidr | ipaddr('prefix') }}"
+        prov_itf_network_broadcast: "{{ prov_itf_network_cidr | ipaddr('broadcast') }}"
+        primary_itf_prefix: "{{ primary_itf_ip.split('.')[:-1] | join('.') }}"
+        primary_itf_name: "{% set sel = [] %}{% for k in ansible_interfaces %}{% if hostvars.get(inventory_hostname, {}).get('ansible_' + k | replace('-', '_'), {}).get('ipv4', {}).get('address', '') is match(primary_itf_ip) %}{% set l = sel.append(k) %}{% endif %}{% endfor %}{{ sel }}"
+
+    - name: Storing additional IP informations (primary)
+      set_fact:
+        primary_itf_infos: "{{ hostvars.get(inventory_hostname, {}).get('ansible_' + primary_itf_name[0] | replace('-', '_'), {}) }}"
+
+    - name: Storing additional IP informations (primary)
+      set_fact:
+        primary_itf_network_cidr: "{{ primary_itf_infos['ipv4']['network'] }}/{{ primary_itf_infos['ipv4']['netmask'] }}"
+
+    - name: Computing extra IP informations (primary)
+      set_fact:
+        primary_itf_network_cidr: "{{ primary_itf_network_cidr | ipaddr('network') }}/{{ primary_itf_network_cidr | ipaddr('prefix') }}"
+        primary_itf_network_broadcast: "{{ primary_itf_network_cidr | ipaddr('broadcast') }}"
+
+    - name: Checking broadcast addresses
+      fail: msg='Incoherent broadcast addresses'
+      when: primary_itf_network_broadcast != primary_itf_infos['ipv4']['broadcast']
 
     - name: Storing collision IP addresses list
       set_fact:
         collision_ips: "{{ hostvars['localhost']['local_ips'] | default([]) | intersect(local_ips) }}"
-
-    - name: Computing provisioning master IP address
-      set_fact:
-        master_ip: '{{ ip_prefix }}.{{ ip_suffix }}'
 
     - name: Checking IP collisions
       fail: msg="Collision in IP addresses {{ collision_ips }}"
       when: ansible_master_running_kvm is defined and ansible_master_running_kvm and collision_ips | length > 0
 
     - name: Checking duplicate IPs
-      fail: msg="ip_prefix and ip_suffix variables lead to {{ master_ip }} colliding with {{ hostvars['localhost']['local_ips'] }}"
-      when: master_ip in hostvars['localhost']['local_ips']
+      fail: msg="ip_prefix and ip_suffix variables lead to {{ prov_itf_ip }} colliding with {{ hostvars['localhost']['local_ips'] }}"
+      when: prov_itf_ip in hostvars['localhost']['local_ips']
 
     - name: Setting facts for host bridge
       set_fact:
@@ -97,11 +145,12 @@
     - { role: configure-packages, node_type: infra-master }
     - { role: configure-packages, node_type: infra-master-kvm, when: infra_master_running_kvm }
     - configure-drivers
-    - { role: configure-ntp, node_type: infra-master }
-    - { role: configure-network-interfaces,
+    - { role: configure-ntp,
         node_type: infra-master,
-        primary_itf_prefix: "{{ (internal_primary_itf_ip | default(hostvars[inventory_hostname]['ansible_host'])).split('.')[:-1] | join('.') }}"
+        itf_network_broadcast: "{{ prov_itf_network_broadcast }}",
+        itf_network_cidr: "{{ prov_itf_network_cidr }}"
       }
+    - { role: configure-network-interfaces, node_type: infra-master }
 
   post_tasks:
 
@@ -111,7 +160,7 @@
 
     - name: Setting fact for local IPs (list)
       set_fact:
-        no_proxy_local_ips: "[ \"{{ master_ip }}\", \"{{ internal_primary_itf_ip | default(hostvars[inventory_hostname]['ansible_host']) }}\"{% if ansible_master_running_kvm is defined and ansible_master_running_kvm | bool %}, \"{{ hostvars['kvm-master']['ansible_host'] }}\"{% endif %} ]"
+        no_proxy_local_ips: "[ \"{{ prov_itf_ip }}\", \"{{ primary_itf_ip }}\"{% if ansible_master_running_kvm is defined and ansible_master_running_kvm | bool %}, \"{{ hostvars['kvm-master']['ansible_host'] }}\"{% endif %} ]"
 
     - name: Setting fact for local IPs (string)
       set_fact:
@@ -170,12 +219,15 @@
         keys_to_ignore:
           - "^system_net_itfs_.*"
           - "^primary_itf_file_content$"
+          - "^primary_itf_blob$"
         keys_to_store:
           - "^kvm_on_.*"
           - ".*_master_running_kvm$"
           - ".*baremetal.*"
           - "^ip_.*fix$"
-          - "^master_ip$"
+          - "^ip_netmask.*$"
+          - "^prov_itf_ip$"
+          - "^prov_itf_network.*$"
           - "^prov_vlan_id$"
           - "^primary_itf.*"
           - "^.*_net_itf.*"

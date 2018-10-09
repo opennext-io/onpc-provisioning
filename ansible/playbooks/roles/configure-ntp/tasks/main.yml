@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ---------------------------------- Generic facts
+
 - name: Setting fact for package query command (Ubuntu)
   set_fact:
     package_name: "chrony"
@@ -45,6 +47,8 @@
     use_chrony: "{{ check_chrony_package.failed == False and check_chrony_package.stdout_lines | select('match', package_query_match) | list | length > 0 }}"
   when: is_host_to_be_modified
 
+# ---------------------------------- ntpd facts
+
 - name: Setting facts for NTP daemon configuration
   set_fact:
     ntp_daemon_conf_file: "/etc/ntp.conf"
@@ -64,9 +68,9 @@
 
 - name: Setting facts for NTP daemon configuration (Ubuntu,infra-master)
   set_fact:
-    ntp_daemon_conf_line: "broadcast {{ ip_prefix | default('20.20.20') }}.{{ ip_netmask_broadcast | default(255) }}"
+    ntp_daemon_conf_line: "broadcast {{ itf_network_broadcast }}"
     ntp_anchor_patterns:
-      - { regexp: '^#broadcast (.*)$', line: '#broadcast \1\nbroadcast {{ ip_prefix | default("20.20.20") }}.{{ ip_netmask_broadcast | default(255) }}' }
+      - { regexp: '^#broadcast (.*)$', line: '#broadcast \1\nbroadcast {{ itf_network_broadcast }}' }
     ntp_service_handler: "restart ntp and stop systemd-timesyncd"
   when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == False
 
@@ -84,6 +88,8 @@
     ntp_service_handler: "restart ntpd"
   when: is_host_to_be_modified and ansible_distribution | lower == 'centos' and node_type == 'osa-nodes' and use_chrony == False
 
+# ---------------------------------- chrony facts
+
 - name: Setting facts for chrony daemon configuration (Ubuntu,osa-nodes)
   set_fact:
     chrony_service_name: "chrony"
@@ -100,9 +106,9 @@
   set_fact:
     chrony_service_name: "chrony"
     chrony_daemon_conf_file: "/etc/chrony/chrony.conf"
-    chrony_daemon_conf_line: "allow {{ ip_prefix | default('20.20.20') }}.0/{{ ip_netmask_bits | default(24) }}"
+    chrony_daemon_conf_line: "allow {{ itf_network_cidr }}"
     chrony_anchor_patterns:
-      - { regexp: '^#allow foo.example.net$', line: 'allow {{ ip_prefix | default("20.20.20") }}.0/{{ ip_netmask_bits | default(24) }}\nmakestep 1 -1\n#allow foo.example.net' }
+      - { regexp: '^#allow foo.example.net$', line: 'allow {{ itf_network_cidr }}\n#allow foo.example.net' }
     chrony_service_handler: "restart chrony and stop systemd-timesyncd"
   when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == True
 
@@ -118,77 +124,7 @@
     chrony_service_handler: "restart chrony"
   when: is_host_to_be_modified and ansible_distribution | lower == 'centos' and node_type == 'osa-nodes' and use_chrony == True
 
-- name: Configuring NTP daemon (removing default pools and servers)
-  replace:
-    path: "{{ ntp_daemon_conf_file }}"
-    regexp: "{{ item.regexp }}"
-    replace: "{{ item.line }}"
-    owner: root
-    group: root
-    mode: 0644
-  with_items: "{{ ntp_patterns_to_comment }}"
-  notify:
-    - "{{ ntp_service_handler }}"
-  when: is_host_to_be_modified and node_type == 'osa-nodes' and use_chrony == False
-
-- name: Retrieving remote NTP daemon configuration
-  slurp:
-    src: "{{ ntp_daemon_conf_file }}"
-  register:
-    ntp_daemon_info
-  when: is_host_to_be_modified and use_chrony == False
-
-- name: Configuring chrony daemon (removing default pools and servers)
-  replace:
-    path: "{{ chrony_daemon_conf_file }}"
-    regexp: "{{ item.regexp }}"
-    replace: "{{ item.line }}"
-    owner: root
-    group: root
-    mode: 0644
-  with_items: "{{ chrony_patterns_to_comment }}"
-  notify:
-    - "{{ chrony_service_handler }}"
-  when: is_host_to_be_modified and node_type == 'osa-nodes' and use_chrony == True
-
-- name: Retrieving remote chrony daemon configuration
-  slurp:
-    src: "{{ chrony_daemon_conf_file }}"
-  register:
-    chrony_daemon_info
-  when: is_host_to_be_modified and use_chrony == True
-
-- name: Configuring NTP daemon
-  replace:
-    path: "{{ ntp_daemon_conf_file }}"
-    regexp: "{{ item.regexp }}"
-    replace: "{{ item.line }}"
-    owner: root
-    group: root
-    mode: 0644
-  with_items: "{{ ntp_anchor_patterns }}"
-  register: ntp_server_reconfig
-  notify:
-    - "{{ ntp_service_handler }}"
-  when: (is_host_to_be_modified and
-    use_chrony == False and
-    not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line)))
-
-- name: Configuring chrony daemon
-  replace:
-    path: "{{ chrony_daemon_conf_file }}"
-    regexp: "{{ item.regexp }}"
-    replace: "{{ item.line }}"
-    owner: root
-    group: root
-    mode: 0644
-  with_items: "{{ chrony_anchor_patterns }}"
-  register: chrony_server_reconfig
-  notify:
-    - "{{ chrony_service_handler }}"
-  when: (is_host_to_be_modified and
-    use_chrony == True and
-    not (chrony_daemon_info['content'] | b64decode is search (chrony_daemon_conf_line)))
+# ---------------------------------- ntpdate tasks
 
 - name: Retrieving remote NTP date configuration
   slurp:
@@ -213,9 +149,85 @@
     node_type == 'osa-nodes' and
     not (ntp_date_info['content'] | b64decode is search (ntp_date_conf_line)))
 
+# ---------------------------------- ntp tasks
+
+- name: Configuring NTP daemon (removing default pools and servers)
+  replace:
+    path: "{{ ntp_daemon_conf_file }}"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items: "{{ ntp_patterns_to_comment }}"
+  notify:
+    - "{{ ntp_service_handler }}"
+  when: is_host_to_be_modified and node_type == 'osa-nodes' and use_chrony == False
+
+- name: Retrieving remote NTP daemon configuration
+  slurp:
+    src: "{{ ntp_daemon_conf_file }}"
+  register:
+    ntp_daemon_info
+  when: is_host_to_be_modified and use_chrony == False
+
+- name: Configuring NTP daemon
+  replace:
+    path: "{{ ntp_daemon_conf_file }}"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items: "{{ ntp_anchor_patterns }}"
+  register: ntp_server_reconfig
+  notify:
+    - "{{ ntp_service_handler }}"
+  when: (is_host_to_be_modified and
+    use_chrony == False and
+    not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line)))
+
 - name: Restarting NTP Service
   service: name=ntp enabled=yes state=restarted
   when: is_host_to_be_modified and ntp_server_reconfig is changed and use_chrony == False
+
+# ---------------------------------- chrony tasks
+
+- name: Configuring chrony daemon (removing default pools and servers)
+  replace:
+    path: "{{ chrony_daemon_conf_file }}"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items: "{{ chrony_patterns_to_comment }}"
+  notify:
+    - "{{ chrony_service_handler }}"
+  when: is_host_to_be_modified and node_type == 'osa-nodes' and use_chrony == True
+
+- name: Retrieving remote chrony daemon configuration
+  slurp:
+    src: "{{ chrony_daemon_conf_file }}"
+  register:
+    chrony_daemon_info
+  when: is_host_to_be_modified and use_chrony == True
+
+- name: Configuring chrony daemon
+  replace:
+    path: "{{ chrony_daemon_conf_file }}"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+    owner: root
+    group: root
+    mode: 0644
+  with_items: "{{ chrony_anchor_patterns }}"
+  register: chrony_server_reconfig
+  notify:
+    - "{{ chrony_service_handler }}"
+  when: (is_host_to_be_modified and
+    use_chrony == True and
+    not (chrony_daemon_info['content'] | b64decode is search (chrony_daemon_conf_line)))
 
 - name: Restarting chrony Service
   service: name="{{ chrony_service_name }}" enabled=yes state=restarted
