@@ -114,9 +114,12 @@
   set_fact:
     chrony_service_name: "chrony"
     chrony_daemon_conf_file: "/etc/chrony/chrony.conf"
-    chrony_daemon_conf_line: "allow {{ itf_network_cidr }}"
     chrony_anchor_patterns:
-      - { regexp: '^#allow foo.example.net$', line: 'allow {{ itf_network_cidr }}\n#allow foo.example.net' }
+      - {
+        regexp: '^#allow foo.example.net$',
+        line: 'allow {{ itf_network_cidr }}\n#allow foo.example.net',
+        conf_line: 'allow {{ itf_network_cidr }}'
+        }
     chrony_service_handler: "restart chrony and stop systemd-timesyncd"
   when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == True
 
@@ -221,22 +224,22 @@
     chrony_daemon_info
   when: is_host_to_be_modified and use_chrony == True
 
-- name: Configuring chrony daemon
-  replace:
-    path: "{{ chrony_daemon_conf_file }}"
+- set_fact:
+    conf_file_changed: false
+
+- include_tasks: insert_line_in_file.yml
+  vars:
+    name: Configuring chrony daemon
+    conf_file: "{{ chrony_daemon_conf_file }}"
     regexp: "{{ item.regexp }}"
-    replace: "{{ item.line }}"
-    owner: root
-    group: root
-    mode: 0644
+    line:  "{{ item.line }}"
+    conf_line: "{{ item.conf_line }}"
+    conf_info: "{{ chrony_daemon_info }}"
   with_items: "{{ chrony_anchor_patterns }}"
-  register: chrony_server_reconfig
-  notify:
-    - "{{ chrony_service_handler }}"
-  when: (is_host_to_be_modified and
-    use_chrony == True and
-    not (chrony_daemon_info['content'] | b64decode is search (chrony_daemon_conf_line)))
+  when: is_host_to_be_modified and use_chrony == True
 
 - name: Restarting chrony Service
   service: name="{{ chrony_service_name }}" enabled=yes state=restarted
-  when: is_host_to_be_modified and chrony_server_reconfig is changed and use_chrony == True
+  notify:
+    - "{{ chrony_service_handler }}"
+  when: is_host_to_be_modified and conf_file_changed and use_chrony == True
