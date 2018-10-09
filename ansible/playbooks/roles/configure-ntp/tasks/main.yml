@@ -68,9 +68,17 @@
 
 - name: Setting facts for NTP daemon configuration (Ubuntu,infra-master)
   set_fact:
-    ntp_daemon_conf_line: "broadcast {{ itf_network_broadcast }}"
     ntp_anchor_patterns:
-      - { regexp: '^#broadcast (.*)$', line: '#broadcast \1\nbroadcast {{ itf_network_broadcast }}' }
+      - {
+        regexp: '^#broadcast (.*)$',
+        line: '#broadcast \1\nbroadcast {{ itf_network_broadcast }}',
+        conf_line: 'broadcast {{ itf_network_broadcast }}'
+        }
+      - {
+        regexp: '^#restrict (.*)$',
+        line: '#restrict \1\n\n# Clients on provider network\nrestrict {{ itf_network_cidr | ipaddr("network") }} mask {{ itf_network_cidr | ipaddr("netmask") }}',
+        conf_line: 'restrict {{ itf_network_cidr | ipaddr("network") }} mask {{ itf_network_cidr | ipaddr("netmask") }}'
+        }
     ntp_service_handler: "restart ntp and stop systemd-timesyncd"
   when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == False
 
@@ -171,25 +179,25 @@
     ntp_daemon_info
   when: is_host_to_be_modified and use_chrony == False
 
-- name: Configuring NTP daemon
-  replace:
-    path: "{{ ntp_daemon_conf_file }}"
+- set_fact:
+    conf_file_changed: false
+
+- include_tasks: insert_line_in_file.yml
+  vars:
+    name: Configuring NTP daemon
+    conf_file: "{{ ntp_daemon_conf_file }}"
     regexp: "{{ item.regexp }}"
-    replace: "{{ item.line }}"
-    owner: root
-    group: root
-    mode: 0644
+    line:  "{{ item.line }}"
+    conf_line: "{{ item.conf_line }}"
+    conf_info: "{{ ntp_daemon_info }}"
   with_items: "{{ ntp_anchor_patterns }}"
-  register: ntp_server_reconfig
-  notify:
-    - "{{ ntp_service_handler }}"
-  when: (is_host_to_be_modified and
-    use_chrony == False and
-    not (ntp_daemon_info['content'] | b64decode is search (ntp_daemon_conf_line)))
+  when: is_host_to_be_modified and use_chrony == False
 
 - name: Restarting NTP Service
   service: name=ntp enabled=yes state=restarted
-  when: is_host_to_be_modified and ntp_server_reconfig is changed and use_chrony == False
+  notify:
+    - "{{ ntp_service_handler }}"
+  when: is_host_to_be_modified and conf_file_changed and use_chrony == False
 
 # ---------------------------------- chrony tasks
 
