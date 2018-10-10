@@ -147,8 +147,8 @@
     - configure-drivers
     - { role: configure-ntp,
         node_type: infra-master,
-        itf_network_broadcast: "{{ prov_itf_network_broadcast }}",
-        itf_network_cidr: "{{ prov_itf_network_cidr }}"
+        itf_network_broadcast: "{% if baremetal_provisioning is defined and baremetal_provisioning | bool %}{{ primary_itf_network_broadcast }}{% else %}{{ prov_itf_network_broadcast }}{% endif %}",
+        itf_network_cidr: "{% if baremetal_provisioning is defined and baremetal_provisioning | bool %}{{ primary_itf_network_cidr }}{% else %}{{ prov_itf_network_cidr }}{% endif %}"
       }
     - { role: configure-network-interfaces, node_type: infra-master }
 
