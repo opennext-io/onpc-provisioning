@@ -120,6 +120,11 @@
         line: 'allow {{ itf_network_cidr }}\n#allow foo.example.net',
         conf_line: 'allow {{ itf_network_cidr }}'
         }
+      - {
+        regexp: '^maxupdateskew (.*)$',
+        line: 'maxupdateskew \1\n\n# Allow to detect and fix timeshift faster\n\nmakestep 1 -1',
+        conf_line: 'makestep 1 -1'
+        }
     chrony_service_handler: "restart chrony and stop systemd-timesyncd"
   when: is_host_to_be_modified and ansible_distribution | lower == 'ubuntu' and node_type == 'infra-master' and use_chrony == True
 
