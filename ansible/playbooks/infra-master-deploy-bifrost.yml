@@ -177,7 +177,7 @@
 
     - name: Computing Keystone Options
       set_fact:
-        keystone_opts: " -e enable_keystone=true -e noauth_mode=false -e use_public_urls=true -e public_ip={{ hostvars[inventory_hostname]['ansible_host'] }} -e private_ip={{ private_ip }}"
+        keystone_opts: " -e enable_keystone=true -e noauth_mode=false -e use_public_urls=true -e public_ip={{ internal_primary_itf_ip | default(hostvars[inventory_hostname]['ansible_host']) }} -e private_ip={{ private_ip }}"
       when: keystone
 
     - name: Retrieving all deploy options
