@@ -171,7 +171,7 @@
         path: /etc/environment
         backrefs: yes
         regexp: '^no_proxy="(.*)"$'
-        line: 'no_proxy="\1,{{ no_proxy_local_ips }}"'
+        line: 'no_proxy="localhost,127.0.0.1,{{ no_proxy_local_ips }}"'
         state: present
         owner: root
         group: root
