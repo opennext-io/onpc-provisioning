@@ -51,6 +51,7 @@ def _update_persisted_objects():
     if not shelve_db is None:
         shelve_db['registered_machines'] = registered_machines
         shelve_db['todo_machines'] = todo_machines
+        shelve_db.sync()
 
 
 # Get shade library credentials
@@ -337,6 +338,7 @@ try:
     # script name (without .py extension) with additional .db extension
     shelve_file = os.path.join(script_base_dir, os.path.splitext(script_filename)[0] + ".db")
     has_shelve = os.path.isfile(shelve_file)
+    shelve_db = shelve.open(shelve_file, writeback=True)
     # Retrieve saved variables if they exist in shelve store
     if has_shelve:
         # Check proper access (but may be this should have failed in the shelve.open call above)
@@ -344,7 +346,6 @@ try:
             app.logger.error('Can not read saved state from: {}'.format(shelve_file))
         else:
             app.logger.error('Restoring saved state from: {}'.format(shelve_file))
-            shelve_db = shelve.open(shelve_file, writeback=True)
             # Restore persited objects into current memory
             registered_machines = shelve_db.get('registered_machines', {})
             todo_machines = shelve_db.get('todo_machines', {})
