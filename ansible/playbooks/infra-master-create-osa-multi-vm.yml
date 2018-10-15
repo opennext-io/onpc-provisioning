@@ -180,6 +180,7 @@
         infra_master_ip: "{{ registration_ip }}"
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get('osa-master').get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names | difference(['osa-master']) }}"
+        osa_nodes_roles: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/roles') | flatten | unique | difference('[osa-master]') | list }}"
         bridge_itf: "{{ kvm_prov_bridge_itf }}"
         ext_pub_vip_addr: "{{ (pub_addr['network'] ~ '/' ~ pub_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
         int_pub_vip_itf: "br-mgmt"

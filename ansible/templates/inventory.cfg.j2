@@ -9,6 +9,15 @@ osa-master ansible_host={{ osa_master_ip }}
 {{ name }} ansible_host={{ hostvars[inventory_hostname].registered_status.json.get(name).get('extra/all/interfaces/eth0/ip') }}
 {% endfor %}
 
+{% for role in osa_nodes_roles %}
+[{{ role}}]
+{% for name in osa_nodes %}
+{% if role in hostvars[inventory_hostname].registered_status.json.get(name).get('extra/roles') %}
+{{ name }}
+{% endif %}
+{% endfor %}
+
+{% endfor %}
 [all:vars]
 environment_name=cloud-opennext
 ansible_user=vagrant

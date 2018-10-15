@@ -162,6 +162,7 @@
         infra_master_ip: "{{ hostvars[inventory_hostname].ansible_br_host.ipv4.address }}"
         osa_master_ip: "{{ hostvars[inventory_hostname].registered_status.json.get(node_names[0]).get('extra/all/interfaces/eth0/ip') }}"
         osa_nodes: "{{ node_names }}"
+        osa_nodes_roles: "{{ hostvars[inventory_hostname].registered_status.json | json_query('values(@)') | map(attribute='extra/roles') | flatten | unique | difference('[osa-master]') | list }}"
         bridge_itf: "{{ host_bridge_itf }}"
         ext_pub_vip_addr: "{{ (pub_addr['network'] ~ '/' ~ pub_addr['netmask']) | ipaddr('net') | ipaddr('100') }}"
         int_pub_vip_itf: "br-mgmt"
